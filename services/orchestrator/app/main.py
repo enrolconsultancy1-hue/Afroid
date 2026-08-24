@@ -14,6 +14,7 @@ from services.orchestrator.app.routes.builder import router as builder_router
 from services.orchestrator.app.routes.orchestrate import router as orchestrate_router
 from services.orchestrator.app.routes.ws import ws_router
 from services.shared.database import create_engine, create_session_factory
+from services.shared.event_bus import event_bus
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging
 from services.shared.schemas import HealthCheck
@@ -22,6 +23,7 @@ from services.shared.schemas import HealthCheck
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging(app_env=settings.app_env)
+    await event_bus.initialize()
     engine = create_engine(settings.database_url, pool_size=settings.database_pool_size, max_overflow=settings.database_max_overflow)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
