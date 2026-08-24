@@ -1,0 +1,16 @@
+[project]
+name = "afroid-auth"
+version = "1.0.0"
+description = "Afroid Authentication Service — JWT + OAuth2"
+requires-python = ">=3.12"
+
+dependencies = [
+    "afroid-shared",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[argon2]>=1.7.4",
+    "python-multipart>=0.0.9",
+    "email-validator>=2.2.0",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }

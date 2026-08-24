@@ -1,0 +1,13 @@
+[project]
+name = "afroid-codegen"
+version = "1.0.0"
+description = "Afroid Code Generation Engine — AST/DSL pipeline and code generators"
+requires-python = ">=3.12"
+dependencies = [
+    "afroid-shared",
+    "langchain-google-genai>=2.0.0",
+    "jinja2>=3.1.0",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }

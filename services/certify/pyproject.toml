@@ -1,0 +1,14 @@
+[project]
+name = "afroid-certify"
+version = "1.0.0"
+description = "Afroid Certify — RegTech compliance engine, IP verification, audit trails"
+requires-python = ">=3.12"
+dependencies = [
+    "afroid-shared",
+    "datasketch>=1.6.0",
+    "weasyprint>=62.0",
+    "jinja2>=3.1.0",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }

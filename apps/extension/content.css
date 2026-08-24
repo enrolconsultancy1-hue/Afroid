@@ -1,0 +1,61 @@
+/* geezcodE ፩</> Floating Copilot Badge */
+
+#geezcode-floating-copilot {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background-color: #050807;
+  color: #F5F7FA;
+  border: 1.5px solid #33FF66;
+  border-radius: 30px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(51, 255, 102, 0.35);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#geezcode-floating-copilot:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7), 0 0 22px rgba(51, 255, 102, 0.6);
+  background-color: #0B1110;
+}
+
+.geezcode-float-icon {
+  display: flex;
+  align-items: center;
+  color: #33FF66;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.geezcode-float-icon .geez-numeral {
+  color: #F5F7FA;
+  font-size: 14px;
+  margin: 0 1px;
+}
+
+.geezcode-float-text {
+  color: #33FF66;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+
+#geezcode-floating-copilot.autofilled {
+  background-color: #33FF66;
+  color: #050807;
+  border-color: #33FF66;
+}
+
+#geezcode-floating-copilot.autofilled .geezcode-float-icon,
+#geezcode-floating-copilot.autofilled .geezcode-float-text {
+  color: #050807;
+}

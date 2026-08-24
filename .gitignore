@@ -1,0 +1,64 @@
+# ============================================
+# Afroid .gitignore
+# ============================================
+
+# --- Dependencies ---
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.uv/
+
+# --- Build outputs ---
+.next/
+dist/
+build/
+*.egg-info/
+.turbo/
+
+# --- Environment ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- IDE ---
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Testing ---
+coverage/
+htmlcov/
+.coverage
+.pytest_cache/
+.mypy_cache/
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Docker ---
+docker-compose.override.yml
+
+# --- ML ---
+ml/datasets/
+ml/models/
+*.h5
+*.pkl
+*.pt
+*.onnx
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Secrets ---
+*.pem
+*.key
+service-account*.json
+credentials.json

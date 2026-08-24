@@ -1,0 +1,1 @@
+"""Afroid Auth Service."""

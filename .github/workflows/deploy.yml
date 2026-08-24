@@ -1,0 +1,60 @@
+name: Afroid CD Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: "afroid-production"
+  REGION: "africa-south1"
+  REGISTRY: "africa-south1-docker.pkg.dev/afroid-production/afroid-containers"
+
+jobs:
+  deploy:
+    name: Build & Deploy to Cloud Run (africa-south1)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "deployer-sa@afroid-production.iam.gserviceaccount.com"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker africa-south1-docker.pkg.dev --quiet
+
+      - name: Build and Deploy Microservices
+        run: |
+          SERVICES=("auth" "platform" "orchestrator" "certify" "incubate" "vector-store" "codegen" "notification")
+          
+          for svc in "${SERVICES[@]}"; do
+            echo "===================================================="
+            echo "🚀 Building & Deploying service: $svc"
+            echo "===================================================="
+            
+            IMAGE_URI="${REGISTRY}/${svc}:${GITHUB_SHA}"
+            
+            # Build container image
+            docker build -t "$IMAGE_URI" -f "services/${svc}/Dockerfile" .
+            docker push "$IMAGE_URI"
+            
+            # Deploy to Google Cloud Run in Johannesburg
+            gcloud run deploy "afroid-${svc}-prod" \
+              --image "$IMAGE_URI" \
+              --region "$REGION" \
+              --platform managed \
+              --allow-unauthenticated \
+              --vpc-connector "afroid-vpc-conn-prod" \
+              --quiet
+          done

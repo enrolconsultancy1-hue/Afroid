@@ -1,0 +1,81 @@
+[project]
+name = "afroid"
+version = "1.0.0"
+description = "Afroid: The Sovereign Autonomous Startup Factory — Python Backend Services"
+requires-python = ">=3.12"
+readme = "README.md"
+license = { text = "PROPRIETARY" }
+
+[tool.uv.workspace]
+members = [
+    "services/auth",
+    "services/platform",
+    "services/orchestrator",
+    "services/codegen",
+    "services/certify",
+    "services/incubate",
+    "services/vector-store",
+    "services/notification",
+    "services/shared",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=5.0",
+    "httpx>=0.27",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "ANN",  # flake8-annotations
+    "ASYNC",# flake8-async
+    "S",    # flake8-bandit (security)
+    "RUF",  # ruff-specific rules
+]
+ignore = [
+    "ANN101",  # Missing type annotation for self
+    "ANN102",  # Missing type annotation for cls
+    "S101",    # Use of assert (needed in tests)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["services"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+plugins = ["pydantic.mypy"]
+
+[tool.mypy.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-v --tb=short --strict-markers"
+markers = [
+    "integration: marks tests as integration tests",
+    "e2e: marks tests as end-to-end tests",
+]

@@ -1,0 +1,71 @@
+name: Afroid CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  python-services:
+    name: Test Python Microservices
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - auth
+          - platform
+          - orchestrator
+          - certify
+          - incubate
+          - vector-store
+          - codegen
+          - notification
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv Package Manager
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install Dependencies
+        run: |
+          uv sync --package afroid-${{ matrix.service }}
+
+      - name: Run Ruff Linting & Formatting Check
+        run: |
+          uv run ruff check services/${{ matrix.service }}
+          uv run ruff format --check services/${{ matrix.service }}
+
+      - name: Run Pytest Suite
+        run: |
+          uv run pytest services/${{ matrix.service }} -v
+
+  typescript-monorepo:
+    name: Test TypeScript Packages & Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Run Typecheck Across All Workspaces
+        run: npm run typecheck
+
+      - name: Run Vitest Suite Across Monorepo
+        run: npm run test

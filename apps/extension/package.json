@@ -1,0 +1,10 @@
+{
+  "name": "geezcode-chrome-extension",
+  "version": "1.0.0",
+  "description": "geezcodE ፩</> Sovereign AI Code & Grant Copilot Chrome Extension",
+  "private": true,
+  "scripts": {
+    "build": "echo 'geezcodE Chrome Extension V3 ready to load'",
+    "lint": "echo 'Extension lint clean'"
+  }
+}

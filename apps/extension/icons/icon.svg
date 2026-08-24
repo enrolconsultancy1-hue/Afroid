@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
+  <defs>
+    <linearGradient id="frame-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#33FF66" />
+      <stop offset="100%" stopColor="#00D9A5" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep dark background -->
+  <rect width="100" height="100" rx="16" fill="#050807" />
+
+  <!-- Rounded Hexagon Frame -->
+  <polygon
+    points="50,6 90,26 90,74 50,94 10,74 10,26"
+    fill="#0B1110"
+    stroke="url(#frame-grad)"
+    stroke-width="4"
+    stroke-linejoin="round"
+  />
+
+  <!-- Inner Geometric Outline -->
+  <polygon
+    points="50,12 84,30 84,70 50,88 16,70 16,30"
+    fill="none"
+    stroke="#0A8F3C"
+    stroke-width="1"
+    stroke-opacity="0.5"
+  />
+
+  <!-- Code Left Bracket: < -->
+  <text
+    x="25"
+    y="56"
+    fill="#33FF66"
+    font-size="24"
+    font-family="monospace"
+    font-weight="bold"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >&lt;</text>
+
+  <!-- Exact Unicode Geʽez Numeral ONE: ፩ -->
+  <text
+    x="50"
+    y="54"
+    fill="#F5F7FA"
+    font-size="36"
+    font-family="'Noto Sans Ethiopic', 'Abyssinica SIL', 'Nyala', sans-serif"
+    font-weight="bold"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >፩</text>
+
+  <!-- Code Right Bracket: /> -->
+  <text
+    x="75"
+    y="56"
+    fill="#33FF66"
+    font-size="20"
+    font-family="monospace"
+    font-weight="bold"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >/&gt;</text>
+</svg>

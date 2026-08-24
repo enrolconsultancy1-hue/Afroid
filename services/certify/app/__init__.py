@@ -1,0 +1,1 @@
+"""Afroid Certify Service."""

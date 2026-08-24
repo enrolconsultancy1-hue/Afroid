@@ -1,0 +1,13 @@
+[project]
+name = "afroid-platform"
+version = "1.0.0"
+description = "Afroid Platform Service — Projects, Organizations, Billing"
+requires-python = ">=3.12"
+dependencies = [
+    "afroid-shared",
+    "stripe>=10.0.0",
+    "python-slugify>=8.0.0",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }

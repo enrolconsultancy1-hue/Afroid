@@ -1,0 +1,14 @@
+[project]
+name = "afroid-orchestrator"
+version = "1.0.0"
+description = "Afroid Multi-Agent Orchestrator — LangGraph-based code generation pipeline"
+requires-python = ">=3.12"
+dependencies = [
+    "afroid-shared",
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "langchain-google-genai>=2.0.0",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }

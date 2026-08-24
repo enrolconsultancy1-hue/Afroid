@@ -1,0 +1,1 @@
+"""Afroid Notification Service."""
