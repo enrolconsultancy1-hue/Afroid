@@ -37,7 +37,7 @@ async def zero_question_intake(
     """
     concept = body.get("concept") or body.get("prompt")
     idea_dict = body.get("idea")
-    model_id = body.get("model_id", "gemini-2.5-pro")
+    model_id = body.get("model_id", "gemini-flash-latest")
 
     if idea_dict:
         idea = BusinessIdea(**idea_dict)

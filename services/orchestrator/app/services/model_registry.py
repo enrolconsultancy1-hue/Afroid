@@ -55,13 +55,13 @@ class ModelRegistry:
 
     def __init__(self) -> None:
         self._models: dict[str, ModelDescriptor] = {}
-        self._default_model_id = "gemini-2.5-pro"
+        self._default_model_id = "gemini-flash-latest"
         self._agent_defaults: dict[str, str] = {
-            "analyst": "gemini-2.5-pro",
-            "architect": "gemini-2.5-pro",
-            "codegen": "gemini-2.5-pro",
-            "reviewer": "gemini-2.5-flash",
-            "deployer": "gemini-2.5-flash",
+            "analyst": "gemini-flash-latest",
+            "architect": "gemini-flash-latest",
+            "codegen": "gemini-flash-latest",
+            "reviewer": "gemini-flash-latest",
+            "deployer": "gemini-flash-latest",
         }
         self._initialize_builtins()
 
@@ -69,13 +69,29 @@ class ModelRegistry:
         """Seed known current & latest Gemini model families."""
         builtins = [
             ModelDescriptor(
-                id="gemini-2.5-pro",
-                name="Gemini 2.5 Pro (Flagship Reasoning & Code)",
+                id="gemini-flash-latest",
+                name="Gemini Flash (latest stable)",
+                provider="google",
+                context_window=1048576,
+                max_output_tokens=65536,
+                is_default=True,
+                description="Google current-generation fast multimodal model (stable -latest alias).",
+            ),
+            ModelDescriptor(
+                id="gemini-pro-latest",
+                name="Gemini Pro (latest stable)",
                 provider="google",
                 context_window=2097152,
                 max_output_tokens=65536,
-                is_default=True,
-                description="Google flagship multimodal reasoning and code generation model.",
+                description="Google current-generation flagship reasoning & code model (stable -latest alias).",
+            ),
+            ModelDescriptor(
+                id="gemini-2.5-pro",
+                name="Gemini 2.5 Pro (legacy)",
+                provider="google",
+                context_window=2097152,
+                max_output_tokens=65536,
+                description="Legacy flagship model (deprecated).",
             ),
             ModelDescriptor(
                 id="gemini-2.5-flash",

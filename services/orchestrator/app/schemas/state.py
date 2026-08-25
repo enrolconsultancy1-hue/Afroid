@@ -50,7 +50,7 @@ class ConceptInput(BaseModel):
     compliance: List[str] = []
     model_preferences: dict[str, Any] = Field(
         default_factory=dict,
-        description="Custom model configuration (e.g. {'model': 'gemini-2.5-pro'})",
+        description="Custom model configuration (e.g. {'model': 'gemini-flash-latest'})",
     )
 
 
