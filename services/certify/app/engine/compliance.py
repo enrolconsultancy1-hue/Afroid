@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -115,7 +115,7 @@ class ComplianceEngine:
             "status": status,
             "score": round(score, 2),
             "rules": [r.to_dict() for r in results],
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     # --- Rule implementations ---
@@ -183,7 +183,7 @@ class AuditTrail:
             "event_type": event_type,
             "actor_id": actor_id,
             "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "prev_hash": prev_hash,
         }
 

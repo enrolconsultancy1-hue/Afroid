@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field
@@ -36,4 +36,4 @@ class NotificationResponse(BaseModel):
     status: str = "delivered"
     channel: str
     recipient: str
-    sent_at: datetime = Field(default_factory=datetime.utcnow)
+    sent_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

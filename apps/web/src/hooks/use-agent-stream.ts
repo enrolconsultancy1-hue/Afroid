@@ -50,8 +50,8 @@ export function useAgentStream({
     const wsUrl =
       process.env.NEXT_PUBLIC_WS_URL ||
       (window.location.protocol === "https:" ? "wss://" : "ws://") +
-        (window.location.host.includes("localhost")
-          ? "localhost:8014"
+        (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+          ? `localhost:${process.env.NEXT_PUBLIC_WS_PORT || "8014"}`
           : window.location.host);
 
     const fullUrl = `${wsUrl}/ws/${targetSessionId}`;

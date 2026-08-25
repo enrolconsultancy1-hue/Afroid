@@ -10,7 +10,7 @@ Supports:
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
@@ -34,7 +34,7 @@ class ModelDescriptor(BaseModel):
     is_default: bool = False
     endpoint_url: str | None = None
     description: str = ""
-    discovered_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    discovered_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
 
 
 class CustomModelRegistration(BaseModel):

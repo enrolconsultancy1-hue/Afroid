@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from typing import Any, List, Optional
 
@@ -145,6 +145,6 @@ class OrchestrationState(BaseModel):
 
     agent_history: List[dict[str, Any]] = []
     total_tokens_used: int = 0
-    started_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    started_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     completed_at: Optional[str] = None
     error_message: Optional[str] = None
