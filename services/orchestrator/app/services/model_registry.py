@@ -138,23 +138,23 @@ class ModelRegistry:
         discovered_count = 0
 
         try:
-            import google.generativeai as genai
+            from google import genai
 
-            if key:
-                genai.configure(api_key=key)
+            client = genai.Client(api_key=key)
 
-            for m in genai.list_models():
+            for m in client.models.list():
                 # Filter for models that support generateContent
-                if "generateContent" in m.supported_generation_methods:
+                methods = getattr(m, "supported_generation_methods", None) or []
+                if "generateContent" in methods:
                     clean_id = m.name.replace("models/", "")
                     if clean_id not in self._models:
                         new_descriptor = ModelDescriptor(
                             id=clean_id,
-                            name=m.display_name or clean_id,
+                            name=getattr(m, "display_name", None) or clean_id,
                             provider="google",
-                            context_window=getattr(m, "input_token_limit", 1048576),
-                            max_output_tokens=getattr(m, "output_token_limit", 65536),
-                            description=m.description or f"Discovered Google Gemini model ({clean_id})",
+                            context_window=getattr(m, "input_token_limit", None) or 1048576,
+                            max_output_tokens=getattr(m, "output_token_limit", None) or 65536,
+                            description=getattr(m, "description", None) or f"Discovered Google Gemini model ({clean_id})",
                         )
                         self._models[clean_id] = new_descriptor
                         discovered_count += 1
@@ -211,20 +211,24 @@ class ModelRegistry:
         """Determine which model ID to use based on per-agent, per-job, or global config."""
         cfg = state_config or {}
 
-        # 1. Per-agent override in job state
+        # 1. Per-agent override in job state (most specific)
         if agent_name:
             agent_key = agent_name.lower()
             agent_map = cfg.get("agent_models", {})
             if agent_key in agent_map:
                 return agent_map[agent_key]
-            if agent_key in self._agent_defaults:
-                return self._agent_defaults[agent_key]
 
         # 2. General model override in job state
         if "model" in cfg and cfg["model"] in self._models:
             return cfg["model"]
 
-        # 3. System default
+        # 3. Agent default
+        if agent_name:
+            agent_key = agent_name.lower()
+            if agent_key in self._agent_defaults:
+                return self._agent_defaults[agent_key]
+
+        # 4. System default
         return self._default_model_id
 
     def create_llm(

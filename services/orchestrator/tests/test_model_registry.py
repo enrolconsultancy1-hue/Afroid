@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 from services.orchestrator.app.schemas.state import ConceptInput, OrchestrationState
 from services.orchestrator.app.services.model_registry import (
@@ -45,7 +50,7 @@ class TestModelRegistry:
 
     def test_dynamic_per_agent_resolution(self, registry: ModelRegistry) -> None:
         # Default for analyst
-        assert registry.resolve_model_id(agent_name="analyst") == "gemini-2.5-pro"
+        assert registry.resolve_model_id(agent_name="analyst") == "gemini-flash-latest"
 
         # Per-agent override in job state
         job_config = {
@@ -73,5 +78,5 @@ class TestModelRegistry:
     def test_llm_factory_instantiation(self, registry: ModelRegistry) -> None:
         llm = registry.create_llm(agent_name="analyst", temperature=0.2)
         assert llm is not None
-        assert llm.model == "gemini-2.5-pro"
+        assert llm.model == "gemini-flash-latest"
         assert llm.temperature == 0.2
