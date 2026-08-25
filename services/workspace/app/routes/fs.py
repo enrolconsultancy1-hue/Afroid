@@ -1,4 +1,4 @@
-"""Workspace filesystem routes: tree, file read/write, search."""
+"""Workspace filesystem routes: tree, file read/write, search (per-user scoped)."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import User
-from services.workspace.app.config import EXCLUDED_DIRS, WORKSPACE_ROOT
+from services.workspace.app.config import EXCLUDED_DIRS, user_workspace
 
 router = APIRouter(tags=["filesystem"])
 
@@ -38,15 +38,21 @@ EXCLUDED_FILE_SUFFIXES = {
 }
 
 
-def _safe_resolve(rel: str) -> Path:
-    root = WORKSPACE_ROOT.resolve()
+def _safe_resolve(rel: str, base: Path) -> Path:
+    """Resolve a relative path within the given base, blocking traversal."""
+    root = base.resolve()
     candidate = (root / rel).resolve()
     if str(candidate) != str(root) and not str(candidate).startswith(str(root) + os.sep):
         raise HTTPException(status_code=400, detail="Path escapes workspace root")
     return candidate
 
 
-def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str, Any]]:
+def _walk(
+    directory: Path,
+    base: Path,
+    depth: int = 0,
+    max_depth: int = 6,
+) -> list[dict[str, Any]]:
     nodes: list[dict[str, Any]] = []
     try:
         entries = sorted(directory.iterdir(), key=lambda p: (p.is_file(), p.name.lower()))
@@ -58,11 +64,11 @@ def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str,
             continue
         try:
             if entry.is_dir():
-                children = _walk(entry, depth + 1, max_depth) if depth < max_depth else []
+                children = _walk(entry, base, depth + 1, max_depth) if depth < max_depth else []
                 nodes.append(
                     {
                         "name": name,
-                        "path": str(entry.relative_to(WORKSPACE_ROOT)),
+                        "path": str(entry.relative_to(base)),
                         "type": "directory",
                         "children": children,
                     }
@@ -75,7 +81,7 @@ def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str,
                 nodes.append(
                     {
                         "name": name,
-                        "path": str(entry.relative_to(WORKSPACE_ROOT)),
+                        "path": str(entry.relative_to(base)),
                         "type": "file",
                     }
                 )
@@ -86,15 +92,17 @@ def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str,
 
 @router.get("/tree")
 async def get_tree(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
-    return {"data": _walk(WORKSPACE_ROOT)}
+    base = user_workspace(str(current_user.id))
+    return {"data": _walk(base, base)}
 
 
 @router.get("/file")
 async def get_file(
     current_user: User = Depends(get_current_user),
-    path: str = Query(..., description="Relative path inside the workspace"),
+    path: str = Query(..., description="Relative path inside the user's workspace"),
 ) -> dict[str, Any]:
-    p = _safe_resolve(path)
+    base = user_workspace(str(current_user.id))
+    p = _safe_resolve(path, base)
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File not found")
     content = p.read_text(encoding="utf-8", errors="replace")
@@ -112,7 +120,8 @@ class WriteFileBody(BaseModel):
 async def write_file(
     body: WriteFileBody, current_user: User = Depends(get_current_user)
 ) -> dict[str, Any]:
-    p = _safe_resolve(body.path)
+    base = user_workspace(str(current_user.id))
+    p = _safe_resolve(body.path, base)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(body.content, encoding="utf-8")
     return {"data": {"path": body.path, "written": True}}
@@ -124,9 +133,10 @@ async def search(
     q: str = Query(..., min_length=1),
     max_results: int = Query(default=100, le=500),
 ) -> dict[str, Any]:
+    base = user_workspace(str(current_user.id))
     results: list[dict[str, Any]] = []
     needle = q.lower()
-    for dirpath, dirnames, filenames in os.walk(WORKSPACE_ROOT):
+    for dirpath, dirnames, filenames in os.walk(base):
         dirnames[:] = [
             d
             for d in dirnames
@@ -146,7 +156,7 @@ async def search(
                 if needle in line.lower():
                     results.append(
                         {
-                            "file": str(fp.relative_to(WORKSPACE_ROOT)),
+                            "file": str(fp.relative_to(base)),
                             "line": i,
                             "text": line.strip()[:200],
                         }

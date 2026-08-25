@@ -28,6 +28,18 @@ EXCLUDED_DIRS = {
 }
 
 
+def user_workspace(user_id: str) -> Path:
+    """Return (and create) the isolated per-user workspace directory.
+
+    Each authenticated user operates on their own directory, so filesystem,
+    git, and terminal routes can never touch the repo root (which contains
+    the live ".env" secrets) or another user's files.
+    """
+    base = WORKSPACE_ROOT / "workspaces" / user_id
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
 class WorkspaceSettings(BaseAppSettings):
     """Workspace service settings (inherits database_url, app_env, pool, logging)."""
 

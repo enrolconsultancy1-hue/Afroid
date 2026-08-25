@@ -6,7 +6,10 @@ import json
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
+from jose import JWTError
+
+from services.auth.app.services.jwt_service import JWTService
 
 logger = structlog.get_logger()
 
@@ -58,9 +61,39 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
+def _extract_ws_token(websocket: WebSocket, query_token: str | None) -> str | None:
+    """Extract a bearer token from the query string or Authorization header."""
+    if query_token:
+        return query_token
+    auth = websocket.headers.get("authorization", "")
+    if auth.lower().startswith("bearer "):
+        return auth[7:].strip()
+    return None
+
+
+def _is_authorized(websocket: WebSocket, query_token: str | None) -> bool:
+    """Validate the JWT access token for a WebSocket connection."""
+    token = _extract_ws_token(websocket, query_token)
+    if not token:
+        return False
+    try:
+        JWTService.decode_access_token(token)
+    except JWTError:
+        return False
+    return True
+
+
 @ws_router.websocket("/ws/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
+async def websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    token: str | None = Query(default=None),
+) -> None:
     """Real-time bidirectional event streaming channel for geezcodE IDE."""
+    if not _is_authorized(websocket, token):
+        logger.warning("websocket_auth_failed", session_id=session_id)
+        await websocket.close(code=4401, reason="Unauthorized")
+        return
     await manager.connect(session_id, websocket)
 
     # Send initial connection confirmation

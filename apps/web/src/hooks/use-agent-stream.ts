@@ -54,7 +54,14 @@ export function useAgentStream({
           ? `localhost:${process.env.NEXT_PUBLIC_WS_PORT || "8014"}`
           : window.location.host);
 
-    const fullUrl = `${wsUrl}/ws/${targetSessionId}`;
+    const accessToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("afroid_access_token")
+        : null;
+    const tokenParam = accessToken
+      ? `?token=${encodeURIComponent(accessToken)}`
+      : "";
+    const fullUrl = `${wsUrl}/ws/${targetSessionId}${tokenParam}`;
     const ws = new WebSocket(fullUrl);
 
     ws.onopen = () => {
