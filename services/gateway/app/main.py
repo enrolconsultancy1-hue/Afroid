@@ -81,7 +81,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "https://app.afroid.io"],
+        allow_origins=_env("CORS_ORIGINS", "http://localhost:3000,https://app.afroid.io").split(","),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

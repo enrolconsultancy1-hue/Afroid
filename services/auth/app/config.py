@@ -27,6 +27,8 @@ class AuthSettings(BaseAppSettings):
     def _enforce_jwt_secret(self) -> "AuthSettings":
         if self.is_production and (not self.jwt_secret_key or self.jwt_secret_key == "CHANGE_ME_IN_PRODUCTION"):
             raise ValueError("JWT_SECRET_KEY must be set to a secure random value in production.")
+        if self.is_production and self.google_redirect_uri.startswith("http://localhost"):
+            raise ValueError("GOOGLE_REDIRECT_URI must not point to localhost in production.")
         return self
 
 

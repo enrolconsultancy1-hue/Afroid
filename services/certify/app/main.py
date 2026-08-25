@@ -39,7 +39,7 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000", "https://app.afroid.io"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origin_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next) -> Response:

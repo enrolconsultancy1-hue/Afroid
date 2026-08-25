@@ -6,7 +6,7 @@
  * its payloads in `{ data: ... }`. Each method below declares the actual shape.
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
 
 /** Standard API error shape (RFC 7807) */
 export interface ApiError {

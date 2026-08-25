@@ -28,6 +28,9 @@ class BaseAppSettings(BaseSettings):
     # --- Observability ---
     sentry_dsn: str = ""
 
+    # --- CORS ---
+    cors_origins: str = "http://localhost:3000,https://app.afroid.io"
+
     # --- Database ---
     database_url: str = "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid"
     database_pool_size: int = 20
@@ -52,3 +55,8 @@ class BaseAppSettings(BaseSettings):
     def is_development(self) -> bool:
         """Check if running in development."""
         return self.app_env == "development"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse the comma-separated CORS origins into a list."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
