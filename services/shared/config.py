@@ -1,6 +1,13 @@
 """Base configuration for all Afroid services using Pydantic Settings."""
 
+from pathlib import Path
+
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Load repo-root .env (gitignored) into os.environ so secrets like GOOGLE_API_KEY
+# are available to every service without being committed to the repo.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class BaseAppSettings(BaseSettings):
