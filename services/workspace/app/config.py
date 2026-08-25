@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from services.shared.config import BaseAppSettings
+
 # Afroid repo root = services/workspace/app/config.py -> parents[3]
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -24,3 +26,10 @@ EXCLUDED_DIRS = {
     ".mypy_cache",
     ".ruff_cache",
 }
+
+
+class WorkspaceSettings(BaseAppSettings):
+    """Workspace service settings (inherits database_url, app_env, pool, logging)."""
+
+
+settings = WorkspaceSettings()

@@ -6,9 +6,11 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from services.auth.app.middleware.auth_middleware import get_current_user
+from services.auth.app.models.user import User
 from services.workspace.app.config import EXCLUDED_DIRS, WORKSPACE_ROOT
 
 router = APIRouter(tags=["filesystem"])
@@ -63,12 +65,12 @@ def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str,
 
 
 @router.get("/tree")
-async def get_tree() -> dict[str, Any]:
+async def get_tree(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     return {"data": _walk(WORKSPACE_ROOT)}
 
 
 @router.get("/file")
-async def get_file(path: str = Query(..., description="Relative path inside the workspace")) -> dict[str, Any]:
+async def get_file(current_user: User = Depends(get_current_user), path: str = Query(..., description="Relative path inside the workspace")) -> dict[str, Any]:
     p = _safe_resolve(path)
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File not found")
@@ -82,7 +84,7 @@ class WriteFileBody(BaseModel):
 
 
 @router.post("/file")
-async def write_file(body: WriteFileBody) -> dict[str, Any]:
+async def write_file(body: WriteFileBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     p = _safe_resolve(body.path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(body.content, encoding="utf-8")
@@ -91,6 +93,7 @@ async def write_file(body: WriteFileBody) -> dict[str, Any]:
 
 @router.get("/search")
 async def search(
+    current_user: User = Depends(get_current_user),
     q: str = Query(..., min_length=1),
     max_results: int = Query(default=100, le=500),
 ) -> dict[str, Any]:

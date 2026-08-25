@@ -5,9 +5,11 @@ from __future__ import annotations
 import subprocess
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
+from services.auth.app.middleware.auth_middleware import get_current_user
+from services.auth.app.models.user import User
 from services.workspace.app.config import WORKSPACE_ROOT
 
 router = APIRouter(tags=["terminal"])
@@ -20,7 +22,7 @@ class TerminalBody(BaseModel):
 
 
 @router.post("/terminal")
-async def run_terminal(body: TerminalBody) -> dict[str, Any]:
+async def run_terminal(body: TerminalBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     try:
         proc = subprocess.run(
             body.command,

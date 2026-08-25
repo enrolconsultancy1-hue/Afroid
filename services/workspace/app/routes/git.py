@@ -5,9 +5,11 @@ from __future__ import annotations
 import subprocess
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from services.auth.app.middleware.auth_middleware import get_current_user
+from services.auth.app.models.user import User
 from services.workspace.app.config import WORKSPACE_ROOT
 
 router = APIRouter(tags=["git"])
@@ -27,7 +29,7 @@ def _run_git(args: list[str]) -> tuple[int, str, str]:
 
 
 @router.get("/git/status")
-async def git_status() -> dict[str, Any]:
+async def git_status(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     code, out, _ = _run_git(["rev-parse", "--abbrev-ref", "HEAD"])
     branch = out.strip() if code == 0 else "unknown"
     code2, out2, _ = _run_git(["status", "--porcelain"])
@@ -44,7 +46,7 @@ class CommitBody(BaseModel):
 
 
 @router.post("/git/commit")
-async def git_commit(body: CommitBody) -> dict[str, Any]:
+async def git_commit(body: CommitBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
     code, out, err = _run_git(["add", "-A"])
     if code != 0:
         raise HTTPException(status_code=500, detail=f"git add failed: {err or out}")

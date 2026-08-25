@@ -23,7 +23,7 @@ class BaseAppSettings(BaseSettings):
     # --- Application ---
     app_env: str = "development"
     app_debug: bool = True
-    app_secret_key: str = "CHANGE_ME_IN_PRODUCTION"
+    app_secret_key: str = ""
 
     # --- Database ---
     database_url: str = "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid"
