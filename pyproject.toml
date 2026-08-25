@@ -18,6 +18,7 @@ members = [
     "services/notification",
     "services/shared",
     "services/gateway",
+    "services/workspace",
 ]
 
 [tool.uv]

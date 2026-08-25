@@ -440,33 +440,96 @@ export default function GeezCodeIDE() {
       setSearchResults([]);
       return;
     }
-    const q = searchQuery.toLowerCase();
-    const results: Array<{ file: string; line: number; text: string }> = [];
-    const searchInNodes = (nodes: FileNode[]) => {
-      for (const node of nodes) {
-        if (node.type === "file" && node.content) {
-          const lines = node.content.split("\n");
-          lines.forEach((line, idx) => {
-            if (line.toLowerCase().includes(q)) {
-              results.push({ file: node.path, line: idx + 1, text: line.trim() });
-            }
-          });
-        } else if (node.type === "directory" && node.children) {
-          searchInNodes(node.children);
-        }
+    let cancelled = false;
+    const run = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/v1/workspace/search?q=${encodeURIComponent(searchQuery.trim())}`);
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!cancelled) setSearchResults(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        if (!cancelled) setSearchResults([]);
       }
     };
-    searchInNodes(fileTree);
-    setSearchResults(results);
-  }, [searchQuery, fileTree]);
+    const t = setTimeout(run, 250);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [searchQuery]);
 
-  const handleFileSelect = (node: FileNode) => {
-    if (node.type === "file") {
-      if (!openFiles.some((f) => f.path === node.path)) {
-        setOpenFiles((prev) => [...prev, node]);
+  const fetchWorkspaceTree = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/tree`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const nodes: FileNode[] = Array.isArray(json.data) ? json.data : [];
+      if (nodes.length > 0) setFileTree(nodes);
+    } catch {
+      // keep current tree on failure
+    }
+  }, []);
+
+  const fetchGitStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/git/status`);
+      if (!res.ok) return;
+      const json = await res.json();
+      const d = json.data;
+      if (d) {
+        setGitBranch(d.branch || "main");
+        setChangedFiles(Array.isArray(d.changed_files) ? d.changed_files : []);
       }
-      setActiveFilePath(node.path);
-      setEditorContent(node.content || "");
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleCommit = useCallback(async () => {
+    if (!commitMessage.trim()) return;
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/git/commit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: commitMessage.trim() }),
+      });
+      const json = await res.json();
+      if (res.ok) {
+        setCommitMessage("");
+        fetchGitStatus();
+        setTerminalLogs((prev) => [...prev, `[git] committed ${json.data?.commit_sha ?? ""}`]);
+      } else {
+        setTerminalLogs((prev) => [...prev, `[git] ${json.detail || "commit failed"}`]);
+      }
+    } catch {
+      setTerminalLogs((prev) => [...prev, "[git] workspace service unreachable"]);
+    }
+  }, [commitMessage, fetchGitStatus]);
+
+  useEffect(() => {
+    fetchWorkspaceTree();
+    fetchGitStatus();
+  }, [fetchWorkspaceTree, fetchGitStatus]);
+
+  const handleFileSelect = async (node: FileNode) => {
+    if (node.type !== "file") return;
+    if (!openFiles.some((f) => f.path === node.path)) {
+      setOpenFiles((prev) => [...prev, { ...node, content: "" }]);
+    }
+    setActiveFilePath(node.path);
+    if (node.content) {
+      setEditorContent(node.content);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(node.path)}`);
+      if (res.ok) {
+        const json = await res.json();
+        const content = json.data?.content ?? "";
+        setEditorContent(content);
+        setOpenFiles((prev) => prev.map((f) => (f.path === node.path ? { ...f, content } : f)));
+      } else {
+        setEditorContent(`// Unable to load ${node.path}`);
+      }
+    } catch {
+      setEditorContent(`// Unable to load ${node.path}`);
     }
   };
 
@@ -501,26 +564,36 @@ export default function GeezCodeIDE() {
     }
   };
 
-  const handleTerminalCommand = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && terminalInput.trim()) {
-      const cmd = terminalInput.trim();
-      const currentDir = activeFilePath ? activeFilePath.split("/").slice(0, -1).join("/") || "~" : "~";
-      setTerminalLogs((prev) => [...prev, `geezcodE@ide:~/${currentDir}$ ${cmd}`]);
-      if (cmd === "clear") {
-        setTerminalLogs([]);
-      } else if (cmd === "help") {
-        setTerminalLogs((prev) => [
-          ...prev,
-          "Available commands:",
-          "  geezcode build <prompt>   Run parallel sub-agent builder",
-          "  afroid test               Run Python AST & unit test suite",
-          "  afroid certify            Audit legal compliance (Nigeria, Kenya, AU)",
-          "  clear                     Clear terminal",
-        ]);
-      } else {
-        setTerminalLogs((prev) => [...prev, `executing '${cmd}' in container environment...`, "Command executed with return code 0."]);
+  const handleTerminalCommand = async (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter" || !terminalInput.trim()) return;
+    const cmd = terminalInput.trim();
+    setTerminalLogs((prev) => [...prev, `geezcodE@ide:~$ ${cmd}`]);
+    setTerminalInput("");
+    if (cmd === "clear") {
+      setTerminalLogs([]);
+      return;
+    }
+    if (cmd === "help") {
+      setTerminalLogs((prev) => [...prev, "Available commands:", "  clear                     Clear terminal", "  <any shell command>       Runs in the workspace root (git status, dir, pytest, ...)"]);
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/terminal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: cmd }),
+      });
+      const json = await res.json();
+      const d = json.data;
+      if (d) {
+        const out = ((d.stdout || "") + (d.stderr || "")).trim();
+        if (out) setTerminalLogs((prev) => [...prev, out]);
+        if (d.exit_code !== undefined && d.exit_code !== 0) {
+          setTerminalLogs((prev) => [...prev, `[exit code ${d.exit_code}]`]);
+        }
       }
-      setTerminalInput("");
+    } catch {
+      setTerminalLogs((prev) => [...prev, "[terminal] workspace service unreachable"]);
     }
   };
 
@@ -1031,7 +1104,7 @@ export default function GeezCodeIDE() {
                         >
                           <FilePlus className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setFileTree([...INITIAL_FILES])} title="Refresh" className="p-1 rounded hover:text-surface-200 hover:bg-surface-800">
+                        <button onClick={fetchWorkspaceTree} title="Refresh" className="p-1 rounded hover:text-surface-200 hover:bg-surface-800">
                           <RefreshCw className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -1093,7 +1166,7 @@ export default function GeezCodeIDE() {
                         className="w-full rounded border border-surface-750 bg-surface-950 px-2 py-1.5 text-xs outline-none placeholder:text-surface-500"
                       />
                       <button
-                        onClick={() => { if (commitMessage.trim()) { setChangedFiles([]); setCommitMessage(""); } }}
+                        onClick={handleCommit}
                         className="mt-2 w-full rounded bg-brand-600 py-1.5 text-xs font-medium text-white hover:bg-brand-500"
                       >
                         Commit

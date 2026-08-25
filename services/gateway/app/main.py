@@ -33,6 +33,7 @@ UPSTREAMS: dict[str, str] = {
     "codegen": _env("GATEWAY_CODEGEN_URL", "http://127.0.0.1:8015"),
     "vector-store": _env("GATEWAY_VECTOR_STORE_URL", "http://127.0.0.1:8016"),
     "notification": _env("GATEWAY_NOTIFICATION_URL", "http://127.0.0.1:8017"),
+    "workspace": _env("GATEWAY_WORKSPACE_URL", "http://127.0.0.1:8018"),
 }
 
 # Longest-prefix routing table: (path prefix, service key).
@@ -49,6 +50,7 @@ ROUTES: list[tuple[str, str]] = [
     ("/v1/codegen", "codegen"),
     ("/v1/vector", "vector-store"),
     ("/v1/notifications", "notification"),
+    ("/v1/workspace", "workspace"),
 ]
 
 _HOP_BY_HOP = {"host", "content-length", "transfer-encoding", "connection", "keep-alive", "upgrade"}

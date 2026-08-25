@@ -21,6 +21,7 @@ members = [
     "afroid-platform",
     "afroid-shared",
     "afroid-vector-store",
+    "afroid-workspace",
 ]
 
 [[package]]
@@ -263,6 +264,17 @@ requires-dist = [
     { name = "afroid-shared", editable = "services/shared" },
     { name = "langchain-google-genai", specifier = ">=2.0.0" },
 ]
+
+[[package]]
+name = "afroid-workspace"
+version = "1.0.0"
+source = { editable = "services/workspace" }
+dependencies = [
+    { name = "afroid-shared" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "afroid-shared", editable = "services/shared" }]
 
 [[package]]
 name = "alembic"
