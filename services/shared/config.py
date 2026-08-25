@@ -25,6 +25,10 @@ class BaseAppSettings(BaseSettings):
     app_debug: bool = True
     app_secret_key: str = ""
 
+    # --- Auth (JWT) ---
+    jwt_secret_key: str = ""
+    jwt_algorithm: str = "HS256"
+
     # --- Observability ---
     sentry_dsn: str = ""
 

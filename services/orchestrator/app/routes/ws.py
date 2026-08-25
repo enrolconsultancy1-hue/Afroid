@@ -7,9 +7,9 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-from jose import JWTError
+from jose import JWTError, jwt
 
-from services.auth.app.services.jwt_service import JWTService
+from services.orchestrator.app.config import settings
 
 logger = structlog.get_logger()
 
@@ -77,7 +77,7 @@ def _is_authorized(websocket: WebSocket, query_token: str | None) -> bool:
     if not token:
         return False
     try:
-        JWTService.decode_access_token(token)
+        jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except JWTError:
         return False
     return True
