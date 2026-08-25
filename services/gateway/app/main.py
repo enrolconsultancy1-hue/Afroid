@@ -111,6 +111,10 @@ def create_app() -> FastAPI:
             url += "?" + request.url.query
 
         headers = {k: v for k, v in request.headers.items() if k.lower() not in _HOP_BY_HOP}
+        # Forward the real client IP so downstream services can rate-limit per client.
+        client_ip = request.client.host if request.client else "127.0.0.1"
+        existing_xff = headers.get("x-forwarded-for")
+        headers["x-forwarded-for"] = f"{existing_xff}, {client_ip}" if existing_xff else client_ip
         body = await request.body()
 
         req = app.state.client.build_request(request.method, url, headers=headers, content=body)

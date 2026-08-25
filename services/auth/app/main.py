@@ -8,8 +8,10 @@ from collections.abc import AsyncGenerator
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
+from slowapi.errors import RateLimitExceeded
 
 from services.auth.app.config import settings
+from services.auth.app.limiter import limiter, rate_limit_exceeded_handler
 from services.auth.app.routes.auth import router as auth_router
 from services.auth.app.routes.kyc import router as kyc_router
 from services.shared.database import Base, create_engine, create_session_factory
@@ -85,6 +87,10 @@ def create_app() -> FastAPI:
 
     # --- Exception Handlers ---
     register_exception_handlers(app)
+
+    # --- Rate Limiting (slowapi) ---
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
     # --- Routes ---
     app.include_router(auth_router, prefix="/v1")

@@ -25,6 +25,9 @@ class BaseAppSettings(BaseSettings):
     app_debug: bool = True
     app_secret_key: str = ""
 
+    # --- Observability ---
+    sentry_dsn: str = ""
+
     # --- Database ---
     database_url: str = "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid"
     database_pool_size: int = 20

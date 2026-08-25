@@ -15,6 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.app.config import settings
+from services.auth.app.limiter import limiter
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import RefreshToken, User
 from services.auth.app.schemas.auth import (
@@ -80,6 +81,7 @@ async def _create_tokens_and_store(
 # POST /auth/register
 # ============================================
 @router.post("/register", response_model=AuthResponse, status_code=201)
+@limiter.limit(f"{settings.auth_rate_limit_per_minute}/minute")
 async def register(
     request: Request,
     body: RegisterRequest,
@@ -119,6 +121,7 @@ async def register(
 # POST /auth/login
 # ============================================
 @router.post("/login", response_model=AuthResponse)
+@limiter.limit(f"{settings.auth_rate_limit_per_minute}/minute")
 async def login(
     request: Request,
     body: LoginRequest,
@@ -160,6 +163,7 @@ async def login(
 # POST /auth/refresh
 # ============================================
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit(f"{settings.auth_rate_limit_per_minute}/minute")
 async def refresh_tokens(
     request: Request,
     body: RefreshRequest,

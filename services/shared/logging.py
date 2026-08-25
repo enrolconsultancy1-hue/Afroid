@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import time
 import uuid
@@ -74,6 +75,21 @@ def setup_logging(app_env: str = "development", log_level: str = "INFO") -> None
     # Silence noisy libraries
     logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
     logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+
+    # Initialize Sentry error monitoring if a DSN is configured (SENTRY_DSN env / .env).
+    sentry_dsn = os.environ.get("SENTRY_DSN", "").strip()
+    if sentry_dsn:
+        try:
+            import sentry_sdk  # noqa: PLC0415
+
+            sentry_sdk.init(
+                dsn=sentry_dsn,
+                environment=app_env,
+                traces_sample_rate=1.0 if app_env != "production" else 0.1,
+                send_default_pii=False,
+            )
+        except Exception:  # noqa: BLE001
+            logging.getLogger("sentry").exception("Failed to initialize Sentry")
 
 
 class TracingMiddleware(BaseHTTPMiddleware):
