@@ -1,5 +1,9 @@
 /**
  * Afroid API Client — Type-safe HTTP client for backend services.
+ *
+ * Contract note: the backend returns raw JSON objects/arrays (NOT wrapped in a
+ * `{ data }` envelope). The sole exception is the Certify service, which wraps
+ * its payloads in `{ data: ... }`. Each method below declares the actual shape.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -12,16 +16,6 @@ export interface ApiError {
   detail: string;
   instance?: string;
   errors?: { field: string; message: string; code: string }[];
-}
-
-/** Generic API response envelope */
-export interface ApiResponse<T> {
-  data: T;
-  meta?: {
-    cursor?: string;
-    has_more?: boolean;
-    total?: number;
-  };
 }
 
 class ApiClientError extends Error {
@@ -47,9 +41,12 @@ async function request<T>(
       : null;
 
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
     ...((options.headers as Record<string, string>) || {}),
   };
+
+  if (options.body) {
+    headers["Content-Type"] = "application/json";
+  }
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
@@ -78,32 +75,33 @@ async function request<T>(
   return response.json();
 }
 
-/** Auth API endpoints */
+// --- Auth ---
+
 export const authApi = {
   register: (data: {
     email: string;
     password: string;
     full_name: string;
   }) =>
-    request<ApiResponse<{
-      user: UserProfile;
-      tokens: TokenPair;
-    }>>("/v1/auth/register", {
+    request<{ user: UserProfile; tokens: TokenPair }>("/v1/auth/register", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   login: (data: { email: string; password: string }) =>
-    request<ApiResponse<{
-      user: UserProfile;
-      tokens: TokenPair;
-    }>>("/v1/auth/login", {
+    request<{ user: UserProfile; tokens: TokenPair }>("/v1/auth/login", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
+  google: (idToken: string) =>
+    request<{ user: UserProfile; tokens: TokenPair }>("/v1/auth/google", {
+      method: "POST",
+      body: JSON.stringify({ id_token: idToken }),
+    }),
+
   refresh: (refreshToken: string) =>
-    request<ApiResponse<TokenPair>>("/v1/auth/refresh", {
+    request<TokenPair>("/v1/auth/refresh", {
       method: "POST",
       body: JSON.stringify({ refresh_token: refreshToken }),
     }),
@@ -114,27 +112,29 @@ export const authApi = {
       body: JSON.stringify({ refresh_token: refreshToken }),
     }),
 
-  getMe: () => request<ApiResponse<UserProfile>>("/v1/auth/me"),
+  getMe: () => request<UserProfile>("/v1/auth/me"),
 };
 
-/** Projects API endpoints */
+// --- Projects ---
+
 export const projectsApi = {
-  list: (cursor?: string, limit = 20) =>
-    request<ApiResponse<Project[]>>(
-      `/v1/projects?limit=${limit}${cursor ? `&cursor=${cursor}` : ""}`
-    ),
+  list: (limit = 20, offset = 0) =>
+    request<Project[]>(`/v1/projects?limit=${limit}&offset=${offset}`),
 
-  get: (id: string) =>
-    request<ApiResponse<Project>>(`/v1/projects/${id}`),
+  get: (id: string) => request<Project>(`/v1/projects/${id}`),
 
-  create: (data: { name: string; description?: string; organization_id?: string }) =>
-    request<ApiResponse<Project>>("/v1/projects", {
+  create: (data: {
+    name: string;
+    description?: string;
+    organization_id?: string;
+  }) =>
+    request<Project>("/v1/projects", {
       method: "POST",
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: Partial<Project>) =>
-    request<ApiResponse<Project>>(`/v1/projects/${id}`, {
+    request<Project>(`/v1/projects/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     }),
@@ -143,17 +143,65 @@ export const projectsApi = {
     request<void>(`/v1/projects/${id}`, { method: "DELETE" }),
 };
 
+// --- Certify ---
+
+export const certifyApi = {
+  check: (jurisdictions: string[], profile: Record<string, unknown>) =>
+    request<CertifyCheckResponse>("/v1/certify/check", {
+      method: "POST",
+      body: JSON.stringify({ jurisdictions, profile }),
+    }),
+
+  ipCheck: (texts: Record<string, string>, corpus: string[] = []) =>
+    request<{ data: IpReport }>("/v1/certify/ip-check", {
+      method: "POST",
+      body: JSON.stringify({ texts, corpus }),
+    }),
+};
+
+// --- Incubate ---
+
+export const incubateApi = {
+  listOpportunities: (params?: {
+    funding_type?: string;
+    country?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const q = new URLSearchParams();
+    if (params?.funding_type) q.set("funding_type", params.funding_type);
+    if (params?.country) q.set("country", params.country);
+    if (params?.limit) q.set("limit", String(params.limit));
+    if (params?.offset) q.set("offset", String(params.offset));
+    const qs = q.toString();
+    return request<Opportunity[]>(`/v1/opportunities${qs ? `?${qs}` : ""}`);
+  },
+
+  getOpportunity: (id: string) =>
+    request<Opportunity>(`/v1/opportunities/${id}`),
+
+  match: (projectId: string, topK = 10, minScore = 0.65) =>
+    request<MatchResponse>("/v1/match", {
+      method: "POST",
+      body: JSON.stringify({
+        project_id: projectId,
+        top_k: topK,
+        min_score: minScore,
+      }),
+    }),
+};
+
 // --- Type Definitions ---
 
 export interface UserProfile {
   id: string;
   email: string;
   full_name: string;
-  avatar_url?: string;
+  avatar_url?: string | null;
   role: string;
   is_verified: boolean;
   created_at: string;
-  last_login_at?: string;
+  last_login_at?: string | null;
 }
 
 export interface TokenPair {
@@ -167,10 +215,74 @@ export interface Project {
   id: string;
   name: string;
   slug: string;
-  description?: string;
+  description?: string | null;
   status: "draft" | "active" | "archived";
   owner_id: string;
-  organization_id?: string;
+  organization_id?: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CertificationRule {
+  rule_id: string;
+  rule_name: string;
+  status: string;
+  detail: string;
+  severity: string;
+  evidence?: Record<string, unknown>;
+}
+
+export interface CertificationResult {
+  jurisdiction: string;
+  status: "passed" | "failed" | "conditional" | "unsupported";
+  score: number;
+  rules: CertificationRule[];
+  timestamp?: string;
+}
+
+export interface CertifyCheckResponse {
+  data: {
+    results: CertificationResult[];
+    total_jurisdictions: number;
+    audit_entry_id: string;
+  };
+}
+
+export interface IpReport {
+  [key: string]: unknown;
+}
+
+export interface Opportunity {
+  id: string;
+  title: string;
+  funder: string;
+  funder_type?: string | null;
+  funding_type: string;
+  amount_min: number | string | null;
+  amount_max: number | string | null;
+  currency: string;
+  eligible_regions: string[];
+  eligible_sectors: string[];
+  eligible_stages: string[];
+  deadline: string | null;
+  is_rolling: boolean;
+  description: string;
+  application_url?: string | null;
+  source_url: string;
+  status: string;
+}
+
+export interface OpportunityMatch {
+  opportunity: Opportunity;
+  similarity_score: number;
+  eligibility_passed: boolean;
+  reasons: string[];
+  strengths: string[];
+  gaps: string[];
+}
+
+export interface MatchResponse {
+  project_id: string;
+  total_matches: number;
+  matches: OpportunityMatch[];
 }

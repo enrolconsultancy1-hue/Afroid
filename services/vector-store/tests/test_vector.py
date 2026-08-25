@@ -6,7 +6,7 @@ import pytest
 
 import importlib
 
-embedding_module = importlib.import_module("services.vector-store.app.services.embedding_service")
+embedding_module = importlib.import_module("services.vector_store.app.services.embedding_service")
 EmbeddingService = embedding_module.EmbeddingService
 
 

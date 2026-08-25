@@ -17,6 +17,7 @@ members = [
     "services/vector-store",
     "services/notification",
     "services/shared",
+    "services/gateway",
 ]
 
 [tool.uv]

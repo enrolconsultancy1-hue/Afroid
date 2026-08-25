@@ -1,0 +1,1 @@
+"""Afroid API Gateway package."""

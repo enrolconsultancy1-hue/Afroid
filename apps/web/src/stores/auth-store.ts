@@ -14,6 +14,7 @@ interface AuthState {
   // Actions
   register: (email: string, password: string, fullName: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
+  googleSignIn: (idToken: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshTokens: () => Promise<void>;
   loadUser: () => Promise<void>;
@@ -47,18 +48,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       password,
       full_name: fullName,
     });
-    storeTokens(response.data.tokens);
+    storeTokens(response.tokens);
     set({
-      user: response.data.user,
+      user: response.user,
       isAuthenticated: true,
     });
   },
 
   login: async (email, password) => {
     const response = await authApi.login({ email, password });
-    storeTokens(response.data.tokens);
+    storeTokens(response.tokens);
     set({
-      user: response.data.user,
+      user: response.user,
+      isAuthenticated: true,
+    });
+  },
+
+  googleSignIn: async (idToken) => {
+    const response = await authApi.google(idToken);
+    storeTokens(response.tokens);
+    set({
+      user: response.user,
       isAuthenticated: true,
     });
   },
@@ -89,7 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     try {
       const response = await authApi.refresh(refreshToken);
-      storeTokens(response.data);
+      storeTokens(response);
     } catch {
       clearTokens();
       set({ user: null, isAuthenticated: false });
@@ -109,7 +119,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const response = await authApi.getMe();
       set({
-        user: response.data,
+        user: response,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -119,7 +129,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         await get().refreshTokens();
         const response = await authApi.getMe();
         set({
-          user: response.data,
+          user: response,
           isAuthenticated: true,
           isLoading: false,
         });

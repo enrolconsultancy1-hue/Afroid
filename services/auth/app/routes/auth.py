@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
+import json
 import uuid
 from datetime import UTC, datetime, timedelta
+from urllib.error import HTTPError, URLError
+from urllib.request import Request as URLRequest, urlopen
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
@@ -15,6 +19,7 @@ from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import RefreshToken, User
 from services.auth.app.schemas.auth import (
     AuthResponse,
+    GoogleLoginRequest,
     LoginRequest,
     LogoutRequest,
     RefreshRequest,
@@ -222,3 +227,73 @@ async def get_me(
 ) -> UserResponse:
     """Get the currently authenticated user's profile."""
     return UserResponse.model_validate(current_user)
+
+# ============================================
+# POST /auth/google
+# ============================================
+GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token={}"
+
+
+def _verify_google_id_token(id_token: str) -> dict:
+    """Verify a Google ID token via Google's tokeninfo endpoint."""
+    req = URLRequest(GOOGLE_TOKENINFO_URL.format(id_token), method="GET")
+    try:
+        with urlopen(req, timeout=5) as resp:
+            payload = json.loads(resp.read().decode("utf-8"))
+    except (HTTPError, URLError, ValueError) as exc:
+        raise UnauthorizedError(detail="Invalid Google token.") from exc
+
+    if payload.get("error"):
+        raise UnauthorizedError(detail="Invalid Google token.")
+
+    if settings.google_client_id and payload.get("aud") != settings.google_client_id:
+        raise UnauthorizedError(detail="Google token audience mismatch.")
+
+    if not payload.get("email_verified"):
+        raise UnauthorizedError(detail="Google account email is not verified.")
+
+    return payload
+
+
+@router.post("/google", response_model=AuthResponse)
+async def google_login(
+    request: Request,
+    body: GoogleLoginRequest,
+) -> AuthResponse:
+    """Sign in (or register) using a Google ID token."""
+    session = _get_session(request)
+
+    payload = await asyncio.to_thread(_verify_google_id_token, body.id_token)
+
+    email = payload.get("email")
+    if not email:
+        raise UnauthorizedError(detail="Google token missing email.")
+
+    name = payload.get("name") or email.split("@")[0]
+    picture = payload.get("picture")
+
+    result = await session.execute(select(User).where(User.email == email))
+    user = result.scalar_one_or_none()
+
+    if user is None:
+        user = User(
+            id=uuid.uuid4(),
+            email=email,
+            password_hash=None,
+            full_name=name,
+            avatar_url=picture,
+            role="user",
+            is_verified=True,
+            is_active=True,
+        )
+        session.add(user)
+        await session.flush()
+    else:
+        user.avatar_url = user.avatar_url or picture
+        user.is_verified = True
+        user.last_login_at = datetime.now(UTC)
+
+    device_info = request.headers.get("User-Agent")
+    tokens = await _create_tokens_and_store(session, user, device_info)
+
+    return AuthResponse(user=UserResponse.model_validate(user), tokens=tokens)

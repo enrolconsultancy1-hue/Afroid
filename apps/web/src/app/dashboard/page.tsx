@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth-store";
 import { GeezCodeLogo } from "@/components/geezcode-logo";
+import { projectsApi, type Project } from "@/lib/api-client";
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, isAuthenticated, isLoading, loadUser, logout } = useAuthStore();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
 
   useEffect(() => {
     loadUser();
@@ -19,6 +22,26 @@ export default function DashboardPage() {
       router.push("/login");
     }
   }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    let cancelled = false;
+    setProjectsLoading(true);
+    projectsApi
+      .list(5, 0)
+      .then((list) => {
+        if (!cancelled) setProjects(list);
+      })
+      .catch(() => {
+        if (!cancelled) setProjects([]);
+      })
+      .finally(() => {
+        if (!cancelled) setProjectsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
 
   if (isLoading) {
     return (
@@ -101,7 +124,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link href="/dashboard/certify" className="card group p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-500/10 text-accent-500 group-hover:bg-accent-500 group-hover:text-white transition-colors">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
@@ -113,7 +136,7 @@ export default function DashboardPage() {
           </Link>
 
           <Link href="/dashboard/incubate" className="card group p-6 transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 text-green-500 group-hover:bg-green-500 group-hover:text-white transition-colors">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-500 group-hover:bg-brand-500 group-hover:text-white transition-colors">
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
@@ -125,15 +148,42 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        {/* Recent Projects placeholder */}
+        {/* Recent Projects */}
         <div className="mt-12">
           <h2 className="text-xl font-bold">Recent Projects</h2>
-          <div className="mt-6 card p-12 text-center">
-            <p className="text-surface-500">No projects yet.</p>
-            <Link href="/dashboard/ide" className="btn-primary mt-4 inline-flex">
-              Create Your First Project
-            </Link>
-          </div>
+          {projectsLoading ? (
+            <div className="mt-6 card p-12 text-center text-surface-500">Loading projects…</div>
+          ) : projects.length === 0 ? (
+            <div className="mt-6 card p-12 text-center">
+              <p className="text-surface-500">No projects yet.</p>
+              <Link href="/dashboard/ide" className="btn-primary mt-4 inline-flex">
+                Create Your First Project
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {projects.map((p) => (
+                <Link
+                  key={p.id}
+                  href="/dashboard/ide"
+                  className="card p-5 transition-shadow hover:shadow-md"
+                >
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold">{p.name}</h3>
+                    <span className="rounded-full bg-surface-100 px-2 py-0.5 text-xs capitalize text-surface-500 dark:bg-surface-800">
+                      {p.status}
+                    </span>
+                  </div>
+                  {p.description && (
+                    <p className="mt-1 line-clamp-2 text-sm text-surface-500">{p.description}</p>
+                  )}
+                  <p className="mt-3 text-xs text-surface-400">
+                    Updated {new Date(p.updated_at).toLocaleDateString()}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -155,7 +155,7 @@ class SmokeTestRunner:
     async def test_vector_store_logic(self) -> None:
         print("\n[VECTOR_STORE] Testing Vector Store & Embeddings...")
         import importlib
-        emb_mod = importlib.import_module("services.vector-store.app.services.embedding_service")
+        emb_mod = importlib.import_module("services.vector_store.app.services.embedding_service")
         EmbeddingService = emb_mod.EmbeddingService
 
         service = EmbeddingService()

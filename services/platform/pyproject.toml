@@ -11,3 +11,11 @@ dependencies = [
 
 [tool.uv.sources]
 afroid-shared = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["services.platform.app", "services.platform.app.models", "services.platform.app.routes", "services.platform.app.schemas", "services.platform.tests"]
+package-dir = {"services.platform.app" = "app", "services.platform.tests" = "tests"}

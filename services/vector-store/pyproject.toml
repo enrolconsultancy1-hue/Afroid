@@ -10,3 +10,11 @@ dependencies = [
 
 [tool.uv.sources]
 afroid-shared = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["services.vector_store.app", "services.vector_store.app.routes", "services.vector_store.app.schemas", "services.vector_store.app.services", "services.vector_store.tests"]
+package-dir = {"services.vector_store.app" = "app", "services.vector_store.tests" = "tests"}

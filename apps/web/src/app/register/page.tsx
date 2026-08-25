@@ -53,11 +53,7 @@ export default function RegisterPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6 py-12">
-      {/* Background effects */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -right-40 top-1/4 h-80 w-80 rounded-full bg-brand-500/15 blur-[100px]" />
-        <div className="absolute -left-40 bottom-1/4 h-80 w-80 rounded-full bg-accent-500/10 blur-[100px]" />
-      </div>
+      
 
       <div className="card relative w-full max-w-md p-8 animate-scale-in">
         {/* Header */}

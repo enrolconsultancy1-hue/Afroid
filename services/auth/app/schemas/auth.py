@@ -88,3 +88,9 @@ class AuthResponse(BaseModel):
 
     user: UserResponse
     tokens: TokenResponse
+
+
+class GoogleLoginRequest(BaseModel):
+    """Google OAuth ID-token exchange request."""
+
+    id_token: str = Field(..., min_length=10)

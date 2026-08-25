@@ -9,3 +9,11 @@ dependencies = [
 
 [tool.uv.sources]
 afroid-shared = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["services.notification.app", "services.notification.app.routes", "services.notification.app.schemas", "services.notification.app.services", "services.notification.tests"]
+package-dir = {"services.notification.app" = "app", "services.notification.tests" = "tests"}

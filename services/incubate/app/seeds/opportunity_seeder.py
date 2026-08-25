@@ -17,7 +17,6 @@ from decimal import Decimal
 
 import structlog
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_engine
 
 from services.incubate.app.config import settings
 from services.platform.app.models.platform import Opportunity

@@ -26,3 +26,11 @@ dependencies = [
     "google-cloud-secret-manager>=2.20.0",
     "orjson>=3.10.0",
 ]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["services.shared"]
+package-dir = {"services.shared" = "."}

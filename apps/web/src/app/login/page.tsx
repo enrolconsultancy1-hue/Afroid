@@ -1,12 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuthStore } from "@/stores/auth-store";
+
+const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
+const GSI_SCRIPT_ID = "afroid-gsi-client";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -18,6 +21,7 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
+  const googleSignIn = useAuthStore((s) => s.googleSignIn);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,6 +32,67 @@ export default function LoginPage() {
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
   });
+
+  // Load Google Identity Services script once, when a client id is configured.
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+    if (document.getElementById(GSI_SCRIPT_ID)) return;
+    const script = document.createElement("script");
+    script.id = GSI_SCRIPT_ID;
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+  }, []);
+
+  const onGoogleCredential = useCallback(
+    async (credential: string) => {
+      setError(null);
+      try {
+        await googleSignIn(credential);
+        router.push("/dashboard");
+      } catch (err: any) {
+        setError(err?.error?.detail || "Google sign-in failed.");
+      }
+    },
+    [googleSignIn, router]
+  );
+
+  const handleGoogleSignIn = useCallback(() => {
+    if (!GOOGLE_CLIENT_ID) {
+      setError(
+        "Google Sign-In is not configured. Set NEXT_PUBLIC_GOOGLE_CLIENT_ID."
+      );
+      return;
+    }
+    const google = (window as any).google;
+    if (!google?.accounts?.id) {
+      setError("Google Sign-In is still loading. Please try again.");
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (response: any) => {
+        if (response?.credential) {
+          onGoogleCredential(response.credential);
+        }
+      },
+    });
+
+    google.accounts.id.prompt((notification: any) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        const el = document.getElementById("google-render");
+        if (el) {
+          google.accounts.id.renderButton(el, {
+            theme: "outline",
+            size: "large",
+            width: 400,
+          });
+        }
+      }
+    });
+  }, [onGoogleCredential]);
 
   const onSubmit = async (data: LoginForm) => {
     setError(null);
@@ -44,12 +109,6 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-screen items-center justify-center px-6">
-      {/* Background effects */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 top-1/4 h-80 w-80 rounded-full bg-brand-500/15 blur-[100px]" />
-        <div className="absolute -right-40 bottom-1/4 h-80 w-80 rounded-full bg-accent-500/10 blur-[100px]" />
-      </div>
-
       <div className="card relative w-full max-w-md p-8 animate-scale-in">
         {/* Header */}
         <div className="text-center">
@@ -137,7 +196,11 @@ export default function LoginPage() {
         </div>
 
         {/* OAuth */}
-        <button className="btn-secondary w-full">
+        <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          className="btn-secondary w-full"
+        >
           <svg className="h-5 w-5" viewBox="0 0 24 24">
             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -146,6 +209,7 @@ export default function LoginPage() {
           </svg>
           Continue with Google
         </button>
+        <div id="google-render" className="mt-3 flex justify-center" />
 
         {/* Register link */}
         <p className="mt-8 text-center text-sm text-surface-500">

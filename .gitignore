@@ -62,3 +62,6 @@ logs/
 *.key
 service-account*.json
 credentials.json
+
+# TypeScript build cache
+*.tsbuildinfo

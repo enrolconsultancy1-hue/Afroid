@@ -4,18 +4,13 @@ import { GeezCodeLogo } from "@/components/geezcode-logo";
 export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden">
-      {/* Background gradient effects */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-40 -top-40 h-80 w-80 rounded-full bg-brand-500/20 blur-[100px]" />
-        <div className="absolute -right-40 top-1/3 h-96 w-96 rounded-full bg-accent-500/15 blur-[120px]" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-brand-500/10 blur-[100px]" />
-      </div>
+      
 
       {/* Navigation */}
       <nav className="glass fixed top-0 z-50 w-full">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-2">
-            <GeezCodeLogo size={32} showWordmark={true} glow={true} />
+            <GeezCodeLogo size={32} showWordmark={true} />
           </div>
           <div className="hidden items-center gap-8 md:flex">
             <Link href="#features" className="text-sm font-medium text-surface-600 dark:text-surface-400 hover:text-surface-900 dark:hover:text-surface-50 transition-colors">
@@ -53,7 +48,7 @@ export default function HomePage() {
 
         <h1 className="animate-slide-up max-w-4xl text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl lg:text-7xl">
           Build. Certify. Fund.{" "}
-          <span className="gradient-text">Without Permission.</span>
+          <span className="text-brand-400">Without Permission.</span>
         </h1>
 
         <p className="mt-6 max-w-2xl animate-slide-up text-lg leading-relaxed text-surface-600 dark:text-surface-400 [animation-delay:100ms]">
@@ -74,15 +69,15 @@ export default function HomePage() {
         {/* Stats */}
         <div className="mt-20 grid animate-slide-up grid-cols-3 gap-8 [animation-delay:300ms]">
           <div>
-            <div className="text-3xl font-bold gradient-text">84K+</div>
+            <div className="text-3xl font-bold text-brand-400">84K+</div>
             <div className="mt-1 text-sm text-surface-500">Founders Served</div>
           </div>
           <div>
-            <div className="text-3xl font-bold gradient-text">$90M</div>
+            <div className="text-3xl font-bold text-brand-400">$90M</div>
             <div className="mt-1 text-sm text-surface-500">Funding Landed</div>
           </div>
           <div>
-            <div className="text-3xl font-bold gradient-text">2,000</div>
+            <div className="text-3xl font-bold text-brand-400">2,000</div>
             <div className="mt-1 text-sm text-surface-500">Jobs Created</div>
           </div>
         </div>
@@ -127,8 +122,8 @@ export default function HomePage() {
             </div>
 
             {/* Certify */}
-            <div className="card group p-8 transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/5 hover:-translate-y-1">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent-500/10 text-accent-500 transition-colors group-hover:bg-accent-500 group-hover:text-white">
+            <div className="card group p-8 transition-all duration-300 hover:shadow-lg hover:shadow-brand/5 hover:-translate-y-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
@@ -140,20 +135,20 @@ export default function HomePage() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-surface-500">
                 <li className="flex items-center gap-2">
-                  <span className="text-accent-500">✓</span> Nigeria, Kenya, AU Compliance
+                  <span className="text-brand">✓</span> Nigeria, Kenya, AU Compliance
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-accent-500">✓</span> IP Originality Scoring
+                  <span className="text-brand">✓</span> IP Originality Scoring
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-accent-500">✓</span> Hash-Chained Audit Trail
+                  <span className="text-brand">✓</span> Hash-Chained Audit Trail
                 </li>
               </ul>
             </div>
 
             {/* Incubate */}
             <div className="card group p-8 transition-all duration-300 hover:shadow-lg hover:shadow-brand-500/5 hover:-translate-y-1">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-500/10 text-green-500 transition-colors group-hover:bg-green-500 group-hover:text-white">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -165,13 +160,13 @@ export default function HomePage() {
               </p>
               <ul className="mt-6 space-y-2 text-sm text-surface-500">
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> Vector Similarity Matching
+                  <span className="text-brand">✓</span> Vector Similarity Matching
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> 95% Auto-Fill Accuracy
+                  <span className="text-brand">✓</span> 95% Auto-Fill Accuracy
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span> AI Grant Writing Engine
+                  <span className="text-brand">✓</span> AI Grant Writing Engine
                 </li>
               </ul>
             </div>

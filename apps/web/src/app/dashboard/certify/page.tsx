@@ -2,25 +2,79 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { certifyApi, type CertificationResult } from "@/lib/api-client";
 
-interface CertificationResult {
-  jurisdiction: string;
-  status: "passed" | "failed" | "conditional";
-  score: number;
-  rules: { name: string; status: string; detail: string }[];
+const JURISDICTIONS = [
+  { id: "nigeria", name: "Nigeria Startup Act", flag: "🇳🇬" },
+  { id: "kenya", name: "Kenya Startup Bill", flag: "🇰🇪" },
+  { id: "ethiopia", name: "Ethiopia Digital Strategy", flag: "🇪🇹" },
+  { id: "au", name: "African Union Digital Framework", flag: "🌍" },
+];
+
+const COUNTRIES = [
+  "Nigeria",
+  "Kenya",
+  "Ethiopia",
+  "South Africa",
+  "Ghana",
+  "Egypt",
+  "Morocco",
+  "Tanzania",
+  "Rwanda",
+  "Senegal",
+];
+
+function statusBadge(status: string): string {
+  switch (status) {
+    case "passed":
+      return "bg-emerald-500/20 text-emerald-400";
+    case "conditional":
+      return "bg-amber-500/20 text-amber-400";
+    case "failed":
+      return "bg-red-500/20 text-red-400";
+    default:
+      return "bg-surface-500/20 text-surface-400";
+  }
+}
+
+function statusHeader(status: string): string {
+  switch (status) {
+    case "passed":
+      return "bg-emerald-500/10";
+    case "conditional":
+      return "bg-amber-500/10";
+    case "failed":
+      return "bg-red-500/10";
+    default:
+      return "bg-surface-500/10";
+  }
+}
+
+function statusText(status: string): string {
+  switch (status) {
+    case "passed":
+      return "✓";
+    case "conditional":
+      return "⚠";
+    case "failed":
+      return "✕";
+    default:
+      return "—";
+  }
 }
 
 export default function CertifyPage() {
   const [selectedJurisdictions, setSelectedJurisdictions] = useState<string[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<CertificationResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const jurisdictions = [
-    { id: "nigeria", name: "Nigeria Startup Act", flag: "🇳🇬" },
-    { id: "kenya", name: "Kenya Startup Bill", flag: "🇰🇪" },
-    { id: "ethiopia", name: "Ethiopia Digital Strategy", flag: "🇪🇹" },
-    { id: "au", name: "African Union Digital Framework", flag: "🌍" },
-  ];
+  // Startup profile inputs used to feed the compliance engine.
+  const [legalName, setLegalName] = useState("");
+  const [country, setCountry] = useState("");
+  const [taxId, setTaxId] = useState("");
+  const [jobsCreated, setJobsCreated] = useState(0);
+  const [technologies, setTechnologies] = useState("");
 
   const toggleJurisdiction = (id: string) => {
     setSelectedJurisdictions((prev) =>
@@ -31,24 +85,31 @@ export default function CertifyPage() {
   const runCertification = async () => {
     if (selectedJurisdictions.length === 0) return;
     setIsRunning(true);
+    setError(null);
     setResults([]);
 
-    await new Promise((r) => setTimeout(r, 3000));
+    try {
+      const profile = {
+        legal_name: legalName.trim(),
+        country: country.toLowerCase(),
+        documents: taxId.trim() ? { tax_id: taxId.trim() } : {},
+        jobs_created: jobsCreated,
+        technologies: technologies
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      };
 
-    const mockResults: CertificationResult[] = selectedJurisdictions.map((j) => ({
-      jurisdiction: j,
-      status: "passed" as const,
-      score: 87 + Math.random() * 10,
-      rules: [
-        { name: "Business Registration", status: "passed", detail: "Valid registration detected" },
-        { name: "Data Residency", status: "passed", detail: "Data stored in-region" },
-        { name: "Tax Compliance", status: "conditional", detail: "Requires tax ID verification" },
-        { name: "IP Originality", status: "passed", detail: "92% originality score" },
-      ],
-    }));
-
-    setResults(mockResults);
-    setIsRunning(false);
+      const response = await certifyApi.check(selectedJurisdictions, profile);
+      setResults(response.data.results);
+    } catch (err: any) {
+      setError(
+        err?.error?.detail ||
+          "Could not reach the certification service. Make sure the backend is running."
+      );
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   return (
@@ -57,7 +118,9 @@ export default function CertifyPage() {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-sm font-bold text-white">A</div>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-sm font-bold text-white">
+                A
+              </div>
               <span className="text-lg font-bold">Afroid</span>
             </Link>
             <span className="text-surface-300">/</span>
@@ -72,11 +135,91 @@ export default function CertifyPage() {
           Verify your startup's compliance with African Startup Acts and regulations.
         </p>
 
+        {/* Startup Profile */}
+        <div className="mt-10">
+          <h2 className="text-lg font-semibold">Startup Profile</h2>
+          <p className="mt-1 text-sm text-surface-500">
+            Used to evaluate compliance rules. Fields marked * drive the most checks.
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="legalName" className="mb-1.5 block text-sm font-medium">
+                Legal entity name *
+              </label>
+              <input
+                id="legalName"
+                type="text"
+                value={legalName}
+                onChange={(e) => setLegalName(e.target.value)}
+                placeholder="e.g. Acme Labs Ltd"
+                className="input"
+              />
+            </div>
+            <div>
+              <label htmlFor="country" className="mb-1.5 block text-sm font-medium">
+                Country of operation *
+              </label>
+              <select
+                id="country"
+                value={country}
+                onChange={(e) => setCountry(e.target.value)}
+                className="input"
+              >
+                <option value="">Select country…</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="taxId" className="mb-1.5 block text-sm font-medium">
+                Tax ID / TIN
+              </label>
+              <input
+                id="taxId"
+                type="text"
+                value={taxId}
+                onChange={(e) => setTaxId(e.target.value)}
+                placeholder="e.g. RC-1234567"
+                className="input"
+              />
+            </div>
+            <div>
+              <label htmlFor="jobs" className="mb-1.5 block text-sm font-medium">
+                Jobs created
+              </label>
+              <input
+                id="jobs"
+                type="number"
+                min={0}
+                value={jobsCreated}
+                onChange={(e) => setJobsCreated(Number(e.target.value) || 0)}
+                className="input"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label htmlFor="tech" className="mb-1.5 block text-sm font-medium">
+                Technology stack (comma-separated)
+              </label>
+              <input
+                id="tech"
+                type="text"
+                value={technologies}
+                onChange={(e) => setTechnologies(e.target.value)}
+                placeholder="e.g. Python, React, PostgreSQL"
+                className="input"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Jurisdiction Selection */}
         <div className="mt-10">
           <h2 className="text-lg font-semibold">Select Jurisdictions</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {jurisdictions.map((j) => (
+            {JURISDICTIONS.map((j) => (
               <button
                 key={j.id}
                 onClick={() => toggleJurisdiction(j.id)}
@@ -99,6 +242,12 @@ export default function CertifyPage() {
           </div>
         </div>
 
+        {error && (
+          <div className="mt-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
         <button
           onClick={runCertification}
           disabled={isRunning || selectedJurisdictions.length === 0}
@@ -113,7 +262,7 @@ export default function CertifyPage() {
               Running Verification...
             </span>
           ) : (
-            "🛡️ Run Certification"
+            "Run Certification"
           )}
         </button>
 
@@ -123,12 +272,10 @@ export default function CertifyPage() {
             <h2 className="text-xl font-bold">Certification Results</h2>
             {results.map((result) => (
               <div key={result.jurisdiction} className="card overflow-hidden">
-                <div className={`flex items-center justify-between p-4 ${
-                  result.status === "passed" ? "bg-green-500/10" : result.status === "conditional" ? "bg-yellow-500/10" : "bg-red-500/10"
-                }`}>
+                <div className={`flex items-center justify-between p-4 ${statusHeader(result.status)}`}>
                   <div className="flex items-center gap-3">
                     <span className="text-xl">
-                      {jurisdictions.find((j) => j.id === result.jurisdiction)?.flag}
+                      {JURISDICTIONS.find((j) => j.id === result.jurisdiction)?.flag}
                     </span>
                     <div>
                       <p className="font-semibold">{result.jurisdiction.toUpperCase()}</p>
@@ -137,23 +284,27 @@ export default function CertifyPage() {
                       </p>
                     </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    result.status === "passed" ? "bg-green-500/20 text-green-400" : result.status === "conditional" ? "bg-yellow-500/20 text-yellow-400" : "bg-red-500/20 text-red-400"
-                  }`}>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusBadge(result.status)}`}>
                     {result.status.toUpperCase()}
                   </span>
                 </div>
                 <div className="divide-y divide-surface-200 dark:divide-surface-800">
-                  {result.rules.map((rule, i) => (
-                    <div key={i} className="flex items-center justify-between px-4 py-3">
+                  {result.rules.map((rule) => (
+                    <div key={rule.rule_id} className="flex items-center justify-between px-4 py-3">
                       <div>
-                        <p className="text-sm font-medium">{rule.name}</p>
+                        <p className="text-sm font-medium">{rule.rule_name}</p>
                         <p className="text-xs text-surface-500">{rule.detail}</p>
                       </div>
                       <span className={`text-xs font-medium ${
-                        rule.status === "passed" ? "text-green-400" : rule.status === "conditional" ? "text-yellow-400" : "text-red-400"
+                        rule.status === "passed"
+                          ? "text-emerald-400"
+                          : rule.status === "conditional"
+                          ? "text-amber-400"
+                          : rule.status === "failed"
+                          ? "text-red-400"
+                          : "text-surface-400"
                       }`}>
-                        {rule.status === "passed" ? "✓" : rule.status === "conditional" ? "⚠" : "✗"} {rule.status}
+                        {statusText(rule.status)} {rule.status}
                       </span>
                     </div>
                   ))}

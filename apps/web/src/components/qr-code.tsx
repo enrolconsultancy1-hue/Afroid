@@ -9,21 +9,16 @@ interface QrCodeProps {
   bgColor?: string;
 }
 
-/**
- * Standard-compliant, crisp vector QR Code Matrix with geezcodE ፩ watermark.
- */
 export function QrCodeView({
   value,
   size = 200,
-  fgColor = "#33FF66",
-  bgColor = "#050807",
+  fgColor = "#131316",
+  bgColor = "#ffffff",
 }: QrCodeProps) {
-  // Deterministic 25x25 QR Matrix generated from input string
   const matrix = useMemo(() => {
     const n = 25;
     const grid: boolean[][] = Array.from({ length: n }, () => Array(n).fill(false));
 
-    // Helper: draw finder pattern
     const drawFinder = (startX: number, startY: number) => {
       for (let r = 0; r < 7; r++) {
         for (let c = 0; c < 7; c++) {
@@ -34,11 +29,10 @@ export function QrCodeView({
       }
     };
 
-    drawFinder(0, 0); // Top-left
-    drawFinder(n - 7, 0); // Top-right
-    drawFinder(0, n - 7); // Bottom-left
+    drawFinder(0, 0);
+    drawFinder(n - 7, 0);
+    drawFinder(0, n - 7);
 
-    // Alignment pattern
     for (let r = 0; r < 5; r++) {
       for (let c = 0; c < 5; c++) {
         if (r === 0 || r === 4 || c === 0 || c === 4 || (r === 2 && c === 2)) {
@@ -47,7 +41,6 @@ export function QrCodeView({
       }
     }
 
-    // Timing patterns
     for (let i = 8; i < n - 8; i++) {
       if (i % 2 === 0) {
         grid[6][i] = true;
@@ -55,7 +48,6 @@ export function QrCodeView({
       }
     }
 
-    // Deterministic pseudo-random data bits based on input value
     let hash = 0;
     for (let i = 0; i < value.length; i++) {
       hash = (hash << 5) - hash + value.charCodeAt(i);
@@ -64,7 +56,6 @@ export function QrCodeView({
 
     for (let r = 0; r < n; r++) {
       for (let c = 0; c < n; c++) {
-        // Skip finder and center watermark zones
         if (
           (r < 8 && c < 8) ||
           (r < 8 && c >= n - 8) ||
@@ -86,7 +77,7 @@ export function QrCodeView({
 
   return (
     <div
-      className="relative flex items-center justify-center p-3 rounded-2xl border border-surface-700 shadow-2xl overflow-hidden"
+      className="relative flex items-center justify-center p-3 rounded-lg border border-surface-200 dark:border-surface-700"
       style={{ width: size + 24, height: size + 24, backgroundColor: bgColor }}
     >
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
@@ -101,23 +92,13 @@ export function QrCodeView({
                 y={r * cellSize}
                 width={cellSize - 0.3}
                 height={cellSize - 0.3}
-                rx={cellSize * 0.25}
+                rx={cellSize * 0.22}
                 fill={fgColor}
               />
             );
           })
         )}
       </svg>
-
-      {/* Center ፩ Watermark Badge */}
-      <div
-        className="absolute flex items-center justify-center rounded-lg border border-brand-500/80 bg-surface-950/95 shadow-lg backdrop-blur-md"
-        style={{ width: size * 0.26, height: size * 0.26 }}
-      >
-        <span className="font-mono text-xs font-bold text-white tracking-tighter">
-          <span className="text-brand-400 font-extrabold text-sm font-sans">፩</span>
-        </span>
-      </div>
     </div>
   );
 }
