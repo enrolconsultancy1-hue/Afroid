@@ -270,6 +270,11 @@ class ModelRegistry:
             except ImportError:
                 logger.warning("langchain_openai_not_found_fallback_gemini")
 
+        # If no Google API key is configured, use the offline mock (CI/test mode)
+        if not (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")):
+            logger.warning("llm_offline_mock", reason="no_api_key")
+            return self._offline_mock_llm(target_model_id, temperature)
+
         # Standard Google Generative AI / Vertex AI instantiation
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
@@ -281,15 +286,19 @@ class ModelRegistry:
             )
         except ImportError:
             # Fallback mock for testing or offline runner
-            return type(
-                "MockLLM",
-                (),
-                {
-                    "model": target_model_id,
-                    "temperature": temperature,
-                    "ainvoke": lambda *args, **kwargs: type("Res", (), {"content": "{}"})(),
-                },
-            )()
+            return self._offline_mock_llm(target_model_id, temperature)
+
+    def _offline_mock_llm(self, model_id: str, temperature: float) -> Any:
+        """Return an offline mock LLM for CI/test runs without a Gemini API key."""
+        return type(
+            "MockLLM",
+            (),
+            {
+                "model": model_id,
+                "temperature": temperature,
+                "ainvoke": lambda *args, **kwargs: type("Res", (), {"content": "{}"})(),
+            },
+        )()
 
 
 # Global singleton instance

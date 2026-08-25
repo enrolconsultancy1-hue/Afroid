@@ -9,6 +9,8 @@ on:
 jobs:
   python-services:
     name: Test Python Microservices
+    env:
+      LANGSMITH_TRACING: "false"
     runs-on: ubuntu-latest
     services:
       postgres:
