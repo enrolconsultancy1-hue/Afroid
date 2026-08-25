@@ -351,6 +351,9 @@ export default function GeezCodeIDE() {
   const [jsonText, setJsonText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
+  const [blueprintRaw, setBlueprintRaw] = useState<any>(null);
+  const [swarmAgents, setSwarmAgents] = useState<any[]>([]);
+  const [models, setModels] = useState<Array<{ id: string; name: string }>>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   const [kycSessionId, setKycSessionId] = useState<string | null>(null);
@@ -507,6 +510,22 @@ export default function GeezCodeIDE() {
     fetchWorkspaceTree();
     fetchGitStatus();
   }, [fetchWorkspaceTree, fetchGitStatus]);
+
+  const fetchModels = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/orchestrate/models`, { headers: { ...authHeaders() } });
+      if (!res.ok) return;
+      const json = await res.json();
+      const list = Array.isArray(json.data?.models) ? json.data.models : [];
+      if (list.length > 0) setModels(list.map((m: any) => ({ id: m.id, name: m.name })));
+    } catch {
+      // keep default model list
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
 
   const handleFileSelect = async (node: FileNode) => {
     if (node.type !== "file") return;
@@ -671,6 +690,7 @@ export default function GeezCodeIDE() {
       if (res.ok) {
         const json = await res.json();
         const bp = json.data.blueprint;
+        setBlueprintRaw(bp);
         const normalizedBp: BlueprintData = {
           projectName: bp.project_name || ideaForm.projectName,
           summary: bp.summary || `Sovereign full-stack blueprint for ${ideaForm.projectName}`,
@@ -752,6 +772,46 @@ export default function GeezCodeIDE() {
     const generatedSessionId = `build-${Date.now()}`;
     setSessionId(generatedSessionId);
     connectWs(generatedSessionId);
+    if (blueprintRaw) {
+      try {
+        const res = await fetch(`${API_BASE}/v1/builder/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: generatedSessionId, blueprint: blueprintRaw, autopilot }),
+        });
+        const json = await res.json();
+        if (res.ok && json.data) {
+          const d = json.data;
+          const agents = Array.isArray(d.sub_agents) ? d.sub_agents : [];
+          const files = Array.isArray(d.generated_files) ? d.generated_files : [];
+          setSwarmAgents(agents);
+          setTerminalLogs((prev) => [
+            ...prev,
+            `[Parallel Builder] Build complete for ${d.project_name ?? blueprintData?.projectName}`,
+            `[Parallel Builder] Generated ${files.length} file(s) at ${d.project_path ?? "projects/"}`,
+            ...files.map((f: any) => `[CodeGen] ${f.path}`),
+          ]);
+          setActiveLiveAgent("Parallel Builder");
+          setActiveLiveTask("Build complete. All sub-agents finished.");
+          setLiveProgress(100);
+          setDockMessages((prev) => [
+            ...prev,
+            {
+              id: `msg-${Date.now()}`,
+              sender: "agent",
+              agentName: "Parallel Builder",
+              text: `Build complete: ${files.length} files generated across ${agents.length} sub-agents.`,
+              filesModified: files.map((f: any) => f.path),
+              timestamp: "Just now",
+            },
+          ]);
+          setIsBuilding(false);
+          return;
+        }
+      } catch {
+        // fall through to mock build
+      }
+    }
     setActiveLiveAgent("CodeGen Worker 1");
     setActiveLiveTask("Building Milestone 1/5: Writing services/api/main.py...");
     setLiveProgress(30);
@@ -972,11 +1032,18 @@ export default function GeezCodeIDE() {
               onChange={(e) => setSelectedModel(e.target.value)}
               className="bg-transparent text-xs text-surface-200 outline-none cursor-pointer font-mono"
             >
-              <option value="gemini-2.5-pro" className="bg-surface-900">Gemini 2.5 Pro</option>
-              <option value="gemini-2.5-flash" className="bg-surface-900">Gemini 2.5 Flash</option>
-              <option value="gemini-2.0-flash" className="bg-surface-900">Gemini 2.0 Flash</option>
-              <option value="gemini-1.5-pro" className="bg-surface-900">Gemini 1.5 Pro</option>
-              <option value="custom" className="bg-surface-900">Custom Model</option>
+              {(models.length > 0
+                ? models
+                : [
+                    { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro" },
+                    { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+                    { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash" },
+                    { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro" },
+                    { id: "custom", name: "Custom Model" },
+                  ]
+              ).map((m: any) => (
+                <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
+              ))}
             </select>
           </div>
 
@@ -1210,20 +1277,26 @@ export default function GeezCodeIDE() {
                 {activeActivity === "swarm" && (
                   <div className="flex flex-col gap-2 p-3">
                     <div className="text-[11px] font-semibold uppercase tracking-wider text-surface-500">Sub-Agent Swarm</div>
-                    {[
-                      ["Architect", "complete"],
-                      ["CodeGen Worker 1", isBuilding ? "running" : "idle"],
-                      ["CodeGen Worker 2", "idle"],
-                      ["QA & AST Runner", "idle"],
-                      ["RegTech Auditor", "idle"],
-                    ].map(([name, status]) => (
-                      <div key={name} className="flex items-center justify-between rounded border border-surface-750 bg-surface-950 px-2.5 py-2">
-                        <span className="text-xs text-surface-200">{name}</span>
+                    {(swarmAgents.length > 0
+                      ? swarmAgents
+                      : [
+                          { name: "Architect", status: "completed" },
+                          { name: "CodeGen Worker 1", status: isBuilding ? "running" : "idle" },
+                          { name: "CodeGen Worker 2", status: "idle" },
+                          { name: "QA & AST Runner", status: "idle" },
+                          { name: "RegTech Auditor", status: "idle" },
+                        ]
+                    ).map((a: any) => (
+                      <div key={a.name} className="flex items-center justify-between rounded border border-surface-750 bg-surface-950 px-2.5 py-2">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-xs text-surface-200">{a.name}</span>
+                          {a.current_task && <span className="text-[10px] text-surface-500">{a.current_task}</span>}
+                        </div>
                         <span className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide ${
-                          status === "complete" ? "text-emerald-400" : status === "running" ? "text-brand-400" : "text-surface-500"
+                          a.status === "completed" || a.status === "complete" ? "text-emerald-400" : a.status === "running" ? "text-brand-400" : "text-surface-500"
                         }`}>
-                          {status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
-                          {status}
+                          {a.status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
+                          {a.status}
                         </span>
                       </div>
                     ))}

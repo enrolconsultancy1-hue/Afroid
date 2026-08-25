@@ -65,3 +65,6 @@ credentials.json
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# --- Generated project builds (orchestrator output) ---
+projects/
