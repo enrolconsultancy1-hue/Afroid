@@ -15,7 +15,7 @@ jobs:
         image: postgres:16
         env:
           POSTGRES_USER: afroid
-          POSTGRES_PASSWORD: ***
+          POSTGRES_PASSWORD: afroid_dev
           POSTGRES_DB: afroid_test
         ports:
           - 5432:5432
