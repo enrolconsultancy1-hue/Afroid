@@ -464,9 +464,30 @@ export default function GeezCodeIDE() {
     e.stopPropagation();
     const filtered = openFiles.filter((f) => f.path !== path);
     setOpenFiles(filtered);
-    if (activeFilePath === path && filtered.length > 0) {
-      setActiveFilePath(filtered[filtered.length - 1].path);
-      setEditorContent(filtered[filtered.length - 1].content || "");
+    if (activeFilePath === path) {
+      if (filtered.length > 0) {
+        setActiveFilePath(filtered[filtered.length - 1].path);
+        setEditorContent(filtered[filtered.length - 1].content || "");
+      } else {
+        setActiveFilePath("");
+        setEditorContent("");
+      }
+    }
+  };
+
+  const handleNewFile = () => {
+    const name = prompt("Enter new file path (e.g. services/api/utils.py):");
+    if (name) {
+      const newFile: FileNode = {
+        name: name.split("/").pop() || name,
+        path: name,
+        type: "file",
+        content: "# New file\n",
+      };
+      setFileTree((prev) => [...prev, newFile]);
+      setOpenFiles((prev) => [...prev, newFile]);
+      setActiveFilePath(name);
+      setEditorContent("# New file\n");
     }
   };
 
@@ -1223,26 +1244,66 @@ export default function GeezCodeIDE() {
             <span className="text-surface-300">{activeFilePath}</span>
           </div>
 
-          <div className="min-h-0 flex-1">
-            <MonacoEditor
-              height="100%"
-              language={getLanguage(activeFilePath)}
-              value={editorContent}
-              onChange={(v) => setEditorContent(v || "")}
-              theme="vs-dark"
-              options={{
-                fontSize: editorFontSize,
-                fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
-                fontLigatures,
-                minimap: { enabled: editorMinimap },
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-                cursorBlinking: "smooth",
-                renderLineHighlight: "all",
-                tabSize: 4,
-              }}
-            />
+          <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-950">
+            {openFiles.length === 0 ? (
+              <div className="relative z-10 flex h-full flex-col items-center justify-center gap-7 px-6 text-center">
+                <GeezCodeLogo size={72} showWordmark={true} showTagline={true} />
+                <p className="max-w-md text-sm leading-relaxed text-surface-400">
+                  Welcome to{" "}
+                  <span className="font-semibold text-surface-200">geezcodE</span> — the
+                  sovereign autonomous startup factory. Open a file to start building.
+                </p>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleNewFile}
+                    className="flex items-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+                  >
+                    <FilePlus className="h-4 w-4" /> New File
+                  </button>
+                  <button
+                    onClick={() => setActiveActivity("explorer")}
+                    className="flex items-center gap-2 rounded-md border border-surface-700 bg-surface-900 px-4 py-2 text-sm font-medium text-surface-200 transition-colors hover:bg-surface-800"
+                  >
+                    <Files className="h-4 w-4" /> Explore Files
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center"
+                >
+                  <GeezCodeLogo
+                    size={150}
+                    showWordmark={true}
+                    showTagline={true}
+                    className="opacity-[0.10]"
+                  />
+                </div>
+                <div className="geezcodE-editor relative z-10 h-full">
+                  <MonacoEditor
+                    height="100%"
+                    language={getLanguage(activeFilePath)}
+                    value={editorContent}
+                    onChange={(v) => setEditorContent(v || "")}
+                    theme="vs-dark"
+                    options={{
+                      fontSize: editorFontSize,
+                      fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                      fontLigatures,
+                      minimap: { enabled: editorMinimap },
+                      automaticLayout: true,
+                      scrollBeyondLastLine: false,
+                      smoothScrolling: true,
+                      cursorBlinking: "smooth",
+                      renderLineHighlight: "all",
+                      tabSize: 4,
+                    }}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           {showBottomTerminal && (

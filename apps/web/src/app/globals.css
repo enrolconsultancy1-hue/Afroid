@@ -96,3 +96,10 @@
            border border-white/10 dark:border-surface-750/70;
   }
 }
+
+/* geezcodE IDE — make Monaco background transparent so the logo watermark shows through */
+.geezcodE-editor .monaco-editor,
+.geezcodE-editor .monaco-editor .monaco-editor-background,
+.geezcodE-editor .monaco-editor .margin {
+  background-color: transparent !important;
+}
