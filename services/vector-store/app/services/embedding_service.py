@@ -24,6 +24,7 @@ class EmbeddingService:
                 from langchain_google_genai import GoogleGenerativeAIEmbeddings
                 self._embedder = GoogleGenerativeAIEmbeddings(
                     model=settings.embedding_model,
+                    output_dimensionality=settings.embedding_dimension,
                 )
             except ImportError:
                 return None
