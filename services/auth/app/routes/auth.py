@@ -8,7 +8,8 @@ import json
 import uuid
 from datetime import UTC, datetime, timedelta
 from urllib.error import HTTPError, URLError
-from urllib.request import Request as URLRequest, urlopen
+from urllib.request import Request as URLRequest
+from urllib.request import urlopen
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
@@ -72,7 +73,7 @@ async def _create_tokens_and_store(
     return TokenResponse(
         access_token=access_token,
         refresh_token=raw_refresh_token,
-        token_type="Bearer",
+        token_type="Bearer",  # noqa: S106
         expires_in=JWTService.get_token_expiry_seconds(),
     )
 
@@ -186,9 +187,7 @@ async def refresh_tokens(
         raise UnauthorizedError(detail="Refresh token has expired.")
 
     # Get user
-    user_result = await session.execute(
-        select(User).where(User.id == refresh_record.user_id)
-    )
+    user_result = await session.execute(select(User).where(User.id == refresh_record.user_id))
     user = user_result.scalar_one_or_none()
     if user is None or not user.is_active:
         raise UnauthorizedError(detail="User not found or deactivated.")
@@ -232,6 +231,7 @@ async def get_me(
     """Get the currently authenticated user's profile."""
     return UserResponse.model_validate(current_user)
 
+
 # ============================================
 # POST /auth/google
 # ============================================
@@ -240,9 +240,9 @@ GOOGLE_TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo?id_token={}"
 
 def _verify_google_id_token(id_token: str) -> dict:
     """Verify a Google ID token via Google's tokeninfo endpoint."""
-    req = URLRequest(GOOGLE_TOKENINFO_URL.format(id_token), method="GET")
+    req = URLRequest(GOOGLE_TOKENINFO_URL.format(id_token), method="GET")  # noqa: S310
     try:
-        with urlopen(req, timeout=5) as resp:
+        with urlopen(req, timeout=5) as resp:  # noqa: S310
             payload = json.loads(resp.read().decode("utf-8"))
     except (HTTPError, URLError, ValueError) as exc:
         raise UnauthorizedError(detail="Invalid Google token.") from exc

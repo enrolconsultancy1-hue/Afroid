@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import uuid
-import pytest
 from slugify import slugify
 
 from services.platform.app.schemas.platform import (
     CreateOrganizationRequest,
     CreateProjectRequest,
     CreateStartupProfileRequest,
-    ProjectResponse,
 )
 
 

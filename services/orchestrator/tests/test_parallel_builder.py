@@ -21,11 +21,11 @@ class TestParallelBuilder:
 
     @pytest.fixture
     def builder(self, tmp_path) -> ParallelBuilderCore:
-        return ParallelBuilderCore(base_workspace_dir=str(tmp_path))
+        return ParallelBuilderCore(workspace_root=str(tmp_path))
 
     async def test_zero_question_intake_blueprint(self, intake: ZeroQuestionIntakeEngine) -> None:
         concept = "Build a micro-finance loan origination engine for East African farmers"
-        blueprint = await intake.generate_blueprint(concept_description=concept)
+        blueprint = await intake.generate_blueprint(concept_input=concept)
 
         assert blueprint is not None
         assert len(blueprint.project_name) > 0
@@ -44,12 +44,13 @@ class TestParallelBuilder:
             deployment={"docker": True},
         )
 
-        session = builder.create_session("agri-loan", blueprint, autopilot=True)
+        session = await builder.execute_parallel_build(
+            session_id="build-agri-loan",
+            blueprint=blueprint,
+            autopilot=True,
+        )
         assert session.session_id.startswith("build-")
         assert len(session.sub_agents) == 5
-
-        # Execute parallel build
-        updated_session = await builder.execute_parallel_build(session.session_id)
-        assert updated_session.status == "complete"
-        assert len(updated_session.generated_files) == 2
-        assert len(updated_session.test_results) == 3
+        assert session.status == "complete"
+        assert len(session.generated_files) == 5
+        assert len(session.test_results) == 1

@@ -36,7 +36,7 @@ async def get_current_user(
     try:
         payload = JWTService.decode_access_token(token)
     except JWTError:
-        raise UnauthorizedError(detail="Invalid or expired access token.")
+        raise UnauthorizedError(detail="Invalid or expired access token.") from None
 
     user_id_str = payload.get("sub")
     if user_id_str is None:
@@ -45,7 +45,7 @@ async def get_current_user(
     try:
         user_id = uuid.UUID(user_id_str)
     except ValueError:
-        raise UnauthorizedError(detail="Invalid user ID in token.")
+        raise UnauthorizedError(detail="Invalid user ID in token.") from None
 
     # Retrieve user from DB (session injected via request.state)
     session: AsyncSession = request.state.db_session

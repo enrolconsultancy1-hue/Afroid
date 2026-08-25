@@ -22,9 +22,11 @@ class TerminalBody(BaseModel):
 
 
 @router.post("/terminal")
-async def run_terminal(body: TerminalBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
+async def run_terminal(
+    body: TerminalBody, current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # noqa: S602, ASYNC221
             body.command,
             cwd=str(WORKSPACE_ROOT),
             shell=True,
@@ -35,8 +37,14 @@ async def run_terminal(body: TerminalBody, current_user: User = Depends(get_curr
             timeout=MAX_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired:
-        return {"data": {"stdout": "", "stderr": f"Command timed out after {MAX_TIMEOUT_SECONDS}s", "exit_code": 124}}
-    except Exception as e:  # noqa: BLE001
+        return {
+            "data": {
+                "stdout": "",
+                "stderr": f"Command timed out after {MAX_TIMEOUT_SECONDS}s",
+                "exit_code": 124,
+            }
+        }
+    except Exception as e:
         return {"data": {"stdout": "", "stderr": str(e), "exit_code": 1}}
 
     return {"data": {"stdout": proc.stdout, "stderr": proc.stderr, "exit_code": proc.returncode}}

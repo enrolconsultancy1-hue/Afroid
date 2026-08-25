@@ -6,6 +6,7 @@ import hashlib
 from typing import Any
 
 import structlog
+
 from ..config import settings
 
 logger = structlog.get_logger()
@@ -22,6 +23,7 @@ class EmbeddingService:
         if self._embedder is None:
             try:
                 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
                 self._embedder = GoogleGenerativeAIEmbeddings(
                     model=settings.embedding_model,
                     output_dimensionality=settings.embedding_dimension,
@@ -51,13 +53,15 @@ class EmbeddingService:
             try:
                 embedder = self._get_embedder()
                 new_embeddings = await embedder.aembed_documents(uncached_texts)
-                for idx, emb, txt in zip(uncached_indices, new_embeddings, uncached_texts):
+                for idx, emb, txt in zip(
+                    uncached_indices, new_embeddings, uncached_texts, strict=False
+                ):
                     results[idx] = emb
                     self._cache[self._hash_text(txt)] = emb
             except Exception as e:
                 logger.warning("embedding_api_fallback", error=str(e))
                 # Fallback deterministic pseudo-embedding for testing or fallback
-                for idx, txt in zip(uncached_indices, uncached_texts):
+                for idx, txt in zip(uncached_indices, uncached_texts, strict=False):
                     pseudo_emb = self._generate_pseudo_embedding(txt)
                     results[idx] = pseudo_emb
                     self._cache[self._hash_text(txt)] = pseudo_emb
@@ -67,6 +71,7 @@ class EmbeddingService:
     def _generate_pseudo_embedding(self, text: str) -> list[float]:
         """Generate deterministic normalized 768-dim vector from text hash (fallback)."""
         import math
+
         h = hashlib.sha512(text.encode()).digest()
         vec = []
         for i in range(768):

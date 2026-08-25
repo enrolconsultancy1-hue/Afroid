@@ -9,10 +9,9 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from services.shared.database import Base
-
 # Import ALL models so they register with Base.metadata
-from services.auth.app.models.user import User, RefreshToken  # noqa: F401
+from services.auth.app.models.user import RefreshToken, User  # noqa: F401
+from services.shared.database import Base
 
 # Alembic Config object
 config = context.config

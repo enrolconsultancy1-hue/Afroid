@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import uuid
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 
 import structlog
@@ -20,7 +20,8 @@ from sqlalchemy import select
 
 from services.incubate.app.config import settings
 from services.platform.app.models.platform import Opportunity
-from services.shared.database import create_engine as create_db_engine, create_session_factory
+from services.shared.database import create_engine as create_db_engine
+from services.shared.database import create_session_factory
 
 logger = structlog.get_logger()
 
@@ -33,7 +34,16 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("5000"),
         "amount_max": Decimal("5000"),
         "currency": "USD",
-        "eligible_regions": ["Pan-African", "Nigeria", "Kenya", "Ghana", "South Africa", "Rwanda", "Uganda", "Egypt"],
+        "eligible_regions": [
+            "Pan-African",
+            "Nigeria",
+            "Kenya",
+            "Ghana",
+            "South Africa",
+            "Rwanda",
+            "Uganda",
+            "Egypt",
+        ],
         "eligible_sectors": ["All", "Agritech", "Fintech", "Healthtech", "Edtech", "Clean Energy"],
         "eligible_stages": ["Idea", "MVP", "Seed"],
         "deadline": date(2026, 3, 31),
@@ -50,7 +60,15 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("18000"),
         "amount_max": Decimal("100000"),
         "currency": "USD",
-        "eligible_regions": ["Pan-African", "Senegal", "Ivory Coast", "Nigeria", "Kenya", "Morocco", "South Africa"],
+        "eligible_regions": [
+            "Pan-African",
+            "Senegal",
+            "Ivory Coast",
+            "Nigeria",
+            "Kenya",
+            "Morocco",
+            "South Africa",
+        ],
         "eligible_sectors": ["Fintech", "Agritech", "Climate Tech", "Supply Chain", "Healthtech"],
         "eligible_stages": ["MVP", "Seed", "Early"],
         "deadline": date(2026, 11, 30),
@@ -67,8 +85,23 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("50000"),
         "amount_max": Decimal("350000"),
         "currency": "USD",
-        "eligible_regions": ["Pan-African", "Nigeria", "Kenya", "South Africa", "Ghana", "Rwanda", "Ethiopia", "Egypt"],
-        "eligible_sectors": ["AI & Machine Learning", "Fintech", "Logistics", "Healthtech", "Sustainability"],
+        "eligible_regions": [
+            "Pan-African",
+            "Nigeria",
+            "Kenya",
+            "South Africa",
+            "Ghana",
+            "Rwanda",
+            "Ethiopia",
+            "Egypt",
+        ],
+        "eligible_sectors": [
+            "AI & Machine Learning",
+            "Fintech",
+            "Logistics",
+            "Healthtech",
+            "Sustainability",
+        ],
         "eligible_stages": ["Seed", "Early", "Growth"],
         "deadline": date(2026, 8, 15),
         "is_rolling": False,
@@ -85,7 +118,14 @@ SEEDED_OPPORTUNITIES = [
         "amount_max": Decimal("500000"),
         "currency": "USD",
         "eligible_regions": ["Nigeria"],
-        "eligible_sectors": ["Tech-Enabled", "Software", "Hardware", "Fintech", "Agritech", "Healthtech"],
+        "eligible_sectors": [
+            "Tech-Enabled",
+            "Software",
+            "Hardware",
+            "Fintech",
+            "Agritech",
+            "Healthtech",
+        ],
         "eligible_stages": ["Idea", "MVP", "Seed", "Early", "Growth"],
         "deadline": None,
         "is_rolling": True,
@@ -101,7 +141,15 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("100000"),
         "amount_max": Decimal("500000"),
         "currency": "USD",
-        "eligible_regions": ["Ghana", "Kenya", "Nigeria", "Rwanda", "Senegal", "Uganda", "Ethiopia"],
+        "eligible_regions": [
+            "Ghana",
+            "Kenya",
+            "Nigeria",
+            "Rwanda",
+            "Senegal",
+            "Uganda",
+            "Ethiopia",
+        ],
         "eligible_sectors": ["Agritech", "Digital Economy", "Youth Employment", "Manufacturing"],
         "eligible_stages": ["Seed", "Early", "Growth"],
         "deadline": date(2026, 10, 31),
@@ -118,7 +166,15 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("100000"),
         "amount_max": Decimal("100000"),
         "currency": "EUR",
-        "eligible_regions": ["Ghana", "Kenya", "Nigeria", "Rwanda", "South Africa", "Tanzania", "Ivory Coast"],
+        "eligible_regions": [
+            "Ghana",
+            "Kenya",
+            "Nigeria",
+            "Rwanda",
+            "South Africa",
+            "Tanzania",
+            "Ivory Coast",
+        ],
         "eligible_sectors": ["Climate Tech", "Agritech", "Circularity", "Healthtech", "Edtech"],
         "eligible_stages": ["Seed", "Early"],
         "deadline": date(2026, 6, 30),
@@ -135,7 +191,14 @@ SEEDED_OPPORTUNITIES = [
         "amount_min": Decimal("125000"),
         "amount_max": Decimal("300000"),
         "currency": "GBP",
-        "eligible_regions": ["Pan-African", "Kenya", "Nigeria", "Ethiopia", "Tanzania", "Madagascar"],
+        "eligible_regions": [
+            "Pan-African",
+            "Kenya",
+            "Nigeria",
+            "Ethiopia",
+            "Tanzania",
+            "Madagascar",
+        ],
         "eligible_sectors": ["Mobile Tech", "Climate Resilience", "Agritech", "Disaster Response"],
         "eligible_stages": ["MVP", "Seed", "Early"],
         "deadline": date(2026, 9, 15),
@@ -153,7 +216,13 @@ SEEDED_OPPORTUNITIES = [
         "amount_max": Decimal("75000"),
         "currency": "USD",
         "eligible_regions": ["Kenya"],
-        "eligible_sectors": ["Fintech", "Agritech", "Clean Energy", "Creative Economy", "Healthtech"],
+        "eligible_sectors": [
+            "Fintech",
+            "Agritech",
+            "Clean Energy",
+            "Creative Economy",
+            "Healthtech",
+        ],
         "eligible_stages": ["Idea", "MVP", "Seed"],
         "deadline": None,
         "is_rolling": True,

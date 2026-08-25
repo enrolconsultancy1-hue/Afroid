@@ -2,19 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.orchestrator.app.agents.parallel_builder import (
-    ParallelBuilderCore,
     ZeroQuestionIntakeEngine,
     parallel_builder_core,
 )
-from services.orchestrator.app.routes.ws import manager as ws_manager
 from services.orchestrator.app.schemas.state import ArchitectureBlueprint, BusinessIdea
 
 router = APIRouter(prefix="/builder", tags=["builder"])

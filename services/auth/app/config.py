@@ -22,10 +22,11 @@ class AuthSettings(BaseAppSettings):
     # Rate Limiting
     auth_rate_limit_per_minute: int = 10
 
-
     @model_validator(mode="after")
     def _enforce_jwt_secret(self) -> "AuthSettings":
-        if self.is_production and (not self.jwt_secret_key or self.jwt_secret_key == "CHANGE_ME_IN_PRODUCTION"):
+        if self.is_production and (
+            not self.jwt_secret_key or self.jwt_secret_key == "CHANGE_ME_IN_PRODUCTION"  # noqa: S105
+        ):
             raise ValueError("JWT_SECRET_KEY must be set to a secure random value in production.")
         if self.is_production and self.google_redirect_uri.startswith("http://localhost"):
             raise ValueError("GOOGLE_REDIRECT_URI must not point to localhost in production.")

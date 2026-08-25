@@ -16,8 +16,8 @@ router = APIRouter(tags=["git"])
 
 
 def _run_git(args: list[str]) -> tuple[int, str, str]:
-    proc = subprocess.run(
-        ["git", *args],
+    proc = subprocess.run(  # noqa: S603
+        ["git", *args],  # noqa: S607
         cwd=str(WORKSPACE_ROOT),
         capture_output=True,
         text=True,
@@ -46,7 +46,9 @@ class CommitBody(BaseModel):
 
 
 @router.post("/git/commit")
-async def git_commit(body: CommitBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
+async def git_commit(
+    body: CommitBody, current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
     code, out, err = _run_git(["add", "-A"])
     if code != 0:
         raise HTTPException(status_code=500, detail=f"git add failed: {err or out}")

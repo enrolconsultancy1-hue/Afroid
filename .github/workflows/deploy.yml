@@ -12,6 +12,7 @@ env:
 jobs:
   deploy:
     name: Build & Deploy to Cloud Run (africa-south1)
+    if: ${{ vars.GCP_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

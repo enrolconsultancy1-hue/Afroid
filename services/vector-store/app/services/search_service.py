@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 import structlog
@@ -15,7 +14,7 @@ logger = structlog.get_logger()
 class VectorSearchService:
     """Executes HNSW similarity search on PostgreSQL pgvector columns."""
 
-    ALLOWED_TABLES = {"startup_profiles", "opportunities"}
+    ALLOWED_TABLES = frozenset({"startup_profiles", "opportunities"})
 
     async def search_similar(
         self,

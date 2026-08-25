@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +22,11 @@ settings = BaseAppSettings()
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     setup_logging(app_env=settings.app_env)
-    engine = create_engine(settings.database_url, pool_size=settings.database_pool_size, max_overflow=settings.database_max_overflow)
+    engine = create_engine(
+        settings.database_url,
+        pool_size=settings.database_pool_size,
+        max_overflow=settings.database_max_overflow,
+    )
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
     yield
@@ -39,7 +43,13 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origin_list, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origin_list,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next) -> Response:

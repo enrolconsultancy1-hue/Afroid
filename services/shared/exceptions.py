@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import structlog
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import ORJSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-
-import structlog
 
 logger = structlog.get_logger()
 
@@ -158,7 +157,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> ORJSONResponse:
         errors = []
         for error in exc.errors():
-            loc = ".".join(str(l) for l in error["loc"])
+            loc = ".".join(str(part) for part in error["loc"])
             errors.append(
                 {
                     "field": loc,

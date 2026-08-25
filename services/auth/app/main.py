@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,13 +14,13 @@ from services.auth.app.config import settings
 from services.auth.app.limiter import limiter, rate_limit_exceeded_handler
 from services.auth.app.routes.auth import router as auth_router
 from services.auth.app.routes.kyc import router as kyc_router
-from services.shared.database import Base, create_engine, create_session_factory
+from services.shared.database import create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging
 from services.shared.schemas import HealthCheck
 
-
 # --- Lifespan ---
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -46,6 +46,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 # --- App Factory ---
+
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""

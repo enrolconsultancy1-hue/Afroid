@@ -24,12 +24,14 @@ class CodeGenEngine:
 
     def __init__(self) -> None:
         self.jinja_env = jinja2.Environment(
-            loader=jinja2.DictLoader({
-                "fastapi_main": FASTAPI_MAIN_TEMPLATE,
-                "dockerfile": DOCKERFILE_TEMPLATE,
-                "docker_compose": DOCKER_COMPOSE_TEMPLATE,
-            }),
-            autoescape=False,
+            loader=jinja2.DictLoader(
+                {
+                    "fastapi_main": FASTAPI_MAIN_TEMPLATE,
+                    "dockerfile": DOCKERFILE_TEMPLATE,
+                    "docker_compose": DOCKER_COMPOSE_TEMPLATE,
+                }
+            ),
+            autoescape=False,  # noqa: S701
         )
 
     def validate_syntax(self, code: str, language: str) -> tuple[bool, list[str]]:

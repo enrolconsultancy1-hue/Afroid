@@ -15,14 +15,14 @@ class TestRegister:
         response = await client.post("/v1/auth/register", json=sample_user_data)
         assert response.status_code == 201
 
-        data = response.json()["data"]
+        data = response.json()
         assert "user" in data
         assert "tokens" in data
         assert data["user"]["email"] == sample_user_data["email"]
         assert data["user"]["full_name"] == sample_user_data["full_name"]
         assert data["user"]["role"] == "user"
         assert data["user"]["is_verified"] is False
-        assert data["tokens"]["token_type"] == "Bearer"
+        assert data["tokens"]["token_type"] == "Bearer"  # noqa: S105
         assert data["tokens"]["access_token"]
         assert data["tokens"]["refresh_token"]
         assert data["tokens"]["expires_in"] > 0
@@ -98,13 +98,11 @@ class TestLogin:
         )
         assert response.status_code == 200
 
-        data = response.json()["data"]
+        data = response.json()
         assert data["user"]["email"] == sample_user_data["email"]
         assert data["tokens"]["access_token"]
 
-    async def test_login_wrong_password(
-        self, client: AsyncClient, sample_user_data: dict
-    ) -> None:
+    async def test_login_wrong_password(self, client: AsyncClient, sample_user_data: dict) -> None:
         """Wrong password returns 401."""
         await client.post("/v1/auth/register", json=sample_user_data)
 
@@ -136,7 +134,7 @@ class TestRefresh:
     async def test_refresh_success(self, client: AsyncClient, sample_user_data: dict) -> None:
         """Valid refresh token returns new token pair."""
         reg = await client.post("/v1/auth/register", json=sample_user_data)
-        refresh_token = reg.json()["data"]["tokens"]["refresh_token"]
+        refresh_token = reg.json()["tokens"]["refresh_token"]
 
         response = await client.post(
             "/v1/auth/refresh",
@@ -144,7 +142,7 @@ class TestRefresh:
         )
         assert response.status_code == 200
 
-        data = response.json()["data"]
+        data = response.json()
         assert data["access_token"]
         assert data["refresh_token"]
         # Token rotation: new refresh token should be different
@@ -163,12 +161,10 @@ class TestRefresh:
 class TestGetMe:
     """Tests for GET /v1/auth/me."""
 
-    async def test_get_me_authenticated(
-        self, client: AsyncClient, sample_user_data: dict
-    ) -> None:
+    async def test_get_me_authenticated(self, client: AsyncClient, sample_user_data: dict) -> None:
         """Authenticated request returns user profile."""
         reg = await client.post("/v1/auth/register", json=sample_user_data)
-        access_token = reg.json()["data"]["tokens"]["access_token"]
+        access_token = reg.json()["tokens"]["access_token"]
 
         response = await client.get(
             "/v1/auth/me",
@@ -176,7 +172,7 @@ class TestGetMe:
         )
         assert response.status_code == 200
 
-        data = response.json()["data"]
+        data = response.json()
         assert data["email"] == sample_user_data["email"]
 
     async def test_get_me_no_token(self, client: AsyncClient) -> None:

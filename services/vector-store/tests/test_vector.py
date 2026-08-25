@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import pytest
-
 import importlib
+
+import pytest
 
 embedding_module = importlib.import_module("services.vector_store.app.services.embedding_service")
 EmbeddingService = embedding_module.EmbeddingService

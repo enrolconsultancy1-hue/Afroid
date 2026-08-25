@@ -42,16 +42,22 @@ class TestMatchingEngine:
             "description": "Catalytic grant funding for innovative agricultural technologies in East Africa.",
         }
 
-    def test_eligibility_evaluation_pass(self, engine: MatchingEngine, sample_profile: dict, sample_opportunity: dict) -> None:
-        eligible, reasons, strengths, gaps = engine.evaluate_eligibility(sample_profile, sample_opportunity)
+    def test_eligibility_evaluation_pass(
+        self, engine: MatchingEngine, sample_profile: dict, sample_opportunity: dict
+    ) -> None:
+        eligible, _, strengths, gaps = engine.evaluate_eligibility(
+            sample_profile, sample_opportunity
+        )
         assert eligible is True
         assert len(strengths) >= 2
         assert len(gaps) == 0
 
-    def test_location_mismatch_fails_eligibility(self, engine: MatchingEngine, sample_profile: dict, sample_opportunity: dict) -> None:
+    def test_location_mismatch_fails_eligibility(
+        self, engine: MatchingEngine, sample_profile: dict, sample_opportunity: dict
+    ) -> None:
         sample_profile["country"] = "nigeria"
         sample_profile["region"] = "west africa"
-        eligible, reasons, strengths, gaps = engine.evaluate_eligibility(sample_profile, sample_opportunity)
+        eligible, _, _, gaps = engine.evaluate_eligibility(sample_profile, sample_opportunity)
         assert eligible is False
         assert len(gaps) >= 1
         assert any("Location constraint" in g for g in gaps)

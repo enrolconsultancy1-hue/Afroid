@@ -27,11 +27,11 @@ class TestCodeGenEngine:
 
     def test_json_syntax_validation(self, engine: CodeGenEngine) -> None:
         valid_json = '{"name": "afroid", "version": "1.0.0"}'
-        is_valid, errors = engine.validate_syntax(valid_json, "json")
+        is_valid, _ = engine.validate_syntax(valid_json, "json")
         assert is_valid is True
 
         invalid_json = '{"name": "afroid", '
-        is_valid, errors = engine.validate_syntax(invalid_json, "json")
+        is_valid, _ = engine.validate_syntax(invalid_json, "json")
         assert is_valid is False
 
     @pytest.mark.asyncio

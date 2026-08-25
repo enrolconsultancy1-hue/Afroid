@@ -35,10 +35,16 @@ class Organization(Base):
     plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
     settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     logo_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
-    members: Mapped[list[OrganizationMember]] = relationship(back_populates="organization", cascade="all, delete-orphan")
+    members: Mapped[list[OrganizationMember]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
     projects: Mapped[list[Project]] = relationship(back_populates="organization")
 
     def __repr__(self) -> str:
@@ -52,10 +58,16 @@ class OrganizationMember(Base):
     __table_args__ = (UniqueConstraint("organization_id", "user_id", name="uq_org_member"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="member")
-    joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    joined_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
     organization: Mapped[Organization] = relationship(back_populates="members")
 
@@ -67,20 +79,32 @@ class Project(Base):
     __table_args__ = (UniqueConstraint("organization_id", "slug", name="uq_project_org_slug"),)
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    owner_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    organization_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True)
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
     settings: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     ide_metadata: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
     organization: Mapped[Organization | None] = relationship(back_populates="projects")
-    profile: Mapped[StartupProfile | None] = relationship(back_populates="project", uselist=False, cascade="all, delete-orphan")
-    certification_jobs: Mapped[list[CertificationJob]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    profile: Mapped[StartupProfile | None] = relationship(
+        back_populates="project", uselist=False, cascade="all, delete-orphan"
+    )
+    certification_jobs: Mapped[list[CertificationJob]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Project id={self.id} name={self.name}>"
@@ -92,7 +116,12 @@ class StartupProfile(Base):
     __tablename__ = "startup_profiles"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), unique=True, nullable=False)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("projects.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+    )
     company_name: Mapped[str] = mapped_column(String(255), nullable=False)
     legal_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     industry: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -116,8 +145,12 @@ class StartupProfile(Base):
     jobs_created: Mapped[int] = mapped_column(Integer, default=0)
     previous_funding: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     documents: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
     project: Mapped[Project] = relationship(back_populates="profile")
 
@@ -148,23 +181,35 @@ class Opportunity(Base):
     source_url: Mapped[str] = mapped_column(String(2000), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
     last_verified: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class Match(Base):
     """Startup ↔ Opportunity match result."""
 
     __tablename__ = "matches"
-    __table_args__ = (UniqueConstraint("profile_id", "opportunity_id", name="uq_match_profile_opp"),)
+    __table_args__ = (
+        UniqueConstraint("profile_id", "opportunity_id", name="uq_match_profile_opp"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("startup_profiles.id", ondelete="CASCADE"), nullable=False)
-    opportunity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False)
+    profile_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("startup_profiles.id", ondelete="CASCADE"), nullable=False
+    )
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False
+    )
     similarity_score: Mapped[Decimal] = mapped_column(Numeric(5, 4), nullable=False)
     match_reasons: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="new")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class Application(Base):
@@ -173,9 +218,15 @@ class Application(Base):
     __tablename__ = "applications"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    opportunity_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("opportunities.id"), nullable=False)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    opportunity_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("opportunities.id"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     filled_fields: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     missing_fields: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     field_confidence: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
@@ -184,8 +235,12 @@ class Application(Base):
     quality_scores: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="draft")
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class CertificationJob(Base):
@@ -194,8 +249,12 @@ class CertificationJob(Base):
     __tablename__ = "certification_jobs"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    project_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False)
-    initiated_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
+    )
+    initiated_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
+    )
     jurisdictions: Mapped[list[str]] = mapped_column(ARRAY(String), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     compliance_report: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -206,7 +265,9 @@ class CertificationJob(Base):
     originality_score: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
     project: Mapped[Project] = relationship(back_populates="certification_jobs")
 
@@ -217,12 +278,24 @@ class Subscription(Base):
     __tablename__ = "subscriptions"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    organization_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False)
+    organization_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
     stripe_customer_id: Mapped[str] = mapped_column(String(255), nullable=False)
-    stripe_subscription_id: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
+    stripe_subscription_id: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True
+    )
     plan: Mapped[str] = mapped_column(String(20), nullable=False, default="free")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")
-    current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now())
+    current_period_start: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    current_period_end: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )

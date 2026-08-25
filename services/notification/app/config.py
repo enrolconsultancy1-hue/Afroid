@@ -14,11 +14,12 @@ class NotificationSettings(BaseAppSettings):
     africas_talking_api_key: str = ""
     africas_talking_username: str = "sandbox"
 
-
     @model_validator(mode="after")
     def _enforce_webhook_secret(self) -> "NotificationSettings":
         if self.is_production and not self.webhook_signing_secret:
-            raise ValueError("WEBHOOK_SIGNING_SECRET must be set to a secure random value in production.")
+            raise ValueError(
+                "WEBHOOK_SIGNING_SECRET must be set to a secure random value in production."
+            )
         return self
 
 

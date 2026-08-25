@@ -4,20 +4,20 @@ Revision ID: 001_initial
 Revises: None
 Create Date: 2026-08-23
 """
+
 from __future__ import annotations
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 
 # revision identifiers
 revision: str = "001_initial"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -29,7 +29,9 @@ def upgrade() -> None:
     # --- Users ---
     op.create_table(
         "users",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
         sa.Column("email", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("password_hash", sa.String(255), nullable=True),
         sa.Column("full_name", sa.String(255), nullable=False),
@@ -38,31 +40,55 @@ def upgrade() -> None:
         sa.Column("is_verified", sa.Boolean, nullable=False, server_default=sa.text("false")),
         sa.Column("is_active", sa.Boolean, nullable=False, server_default=sa.text("true")),
         sa.Column("last_login_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
     # --- Organizations ---
     op.create_table(
         "organizations",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("slug", sa.String(255), unique=True, nullable=False, index=True),
         sa.Column("plan", sa.String(20), nullable=False, server_default="free"),
         sa.Column("settings", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("logo_url", sa.String(2000), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
     # --- Organization Members ---
     op.create_table(
         "organization_members",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("organization_id", UUID(as_uuid=True), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "organization_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("organizations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "user_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("role", sa.String(20), nullable=False, server_default="member"),
-        sa.Column("joined_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "joined_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.UniqueConstraint("organization_id", "user_id", name="uq_org_member"),
     )
     op.create_index("ix_org_members_org", "organization_members", ["organization_id"])
@@ -71,17 +97,33 @@ def upgrade() -> None:
     # --- Projects ---
     op.create_table(
         "projects",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("owner_id", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("organization_id", UUID(as_uuid=True), sa.ForeignKey("organizations.id", ondelete="SET NULL"), nullable=True),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "owner_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "organization_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("organizations.id", ondelete="SET NULL"),
+            nullable=True,
+        ),
         sa.Column("name", sa.String(255), nullable=False),
         sa.Column("slug", sa.String(255), nullable=False),
         sa.Column("description", sa.Text, nullable=True),
         sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
         sa.Column("settings", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("ide_metadata", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.UniqueConstraint("organization_id", "slug", name="uq_project_org_slug"),
     )
     op.create_index("ix_projects_owner", "projects", ["owner_id"])
@@ -91,8 +133,16 @@ def upgrade() -> None:
     # --- Startup Profiles ---
     op.create_table(
         "startup_profiles",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("project_id", UUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="CASCADE"), unique=True, nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "project_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("projects.id", ondelete="CASCADE"),
+            unique=True,
+            nullable=False,
+        ),
         sa.Column("company_name", sa.String(255), nullable=False),
         sa.Column("legal_name", sa.String(255), nullable=True),
         sa.Column("industry", sa.String(100), nullable=False),
@@ -116,8 +166,12 @@ def upgrade() -> None:
         sa.Column("jobs_created", sa.Integer, server_default=sa.text("0")),
         sa.Column("previous_funding", JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column("documents", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
     # pgvector embedding column added separately
     op.execute("ALTER TABLE startup_profiles ADD COLUMN embedding vector(768)")
@@ -136,7 +190,9 @@ def upgrade() -> None:
     # --- Opportunities ---
     op.create_table(
         "opportunities",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
         sa.Column("title", sa.String(500), nullable=False),
         sa.Column("funder", sa.String(300), nullable=False),
         sa.Column("funder_type", sa.String(30), nullable=True),
@@ -144,10 +200,27 @@ def upgrade() -> None:
         sa.Column("amount_min", sa.Numeric(15, 2), nullable=True),
         sa.Column("amount_max", sa.Numeric(15, 2), nullable=True),
         sa.Column("currency", sa.String(3), server_default="USD"),
-        sa.Column("eligible_regions", sa.ARRAY(sa.String), nullable=False, server_default=sa.text("ARRAY[]::text[]")),
-        sa.Column("eligible_sectors", sa.ARRAY(sa.String), nullable=False, server_default=sa.text("ARRAY[]::text[]")),
-        sa.Column("eligible_stages", sa.ARRAY(sa.String), nullable=False, server_default=sa.text("ARRAY[]::text[]")),
-        sa.Column("eligibility_criteria", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column(
+            "eligible_regions",
+            sa.ARRAY(sa.String),
+            nullable=False,
+            server_default=sa.text("ARRAY[]::text[]"),
+        ),
+        sa.Column(
+            "eligible_sectors",
+            sa.ARRAY(sa.String),
+            nullable=False,
+            server_default=sa.text("ARRAY[]::text[]"),
+        ),
+        sa.Column(
+            "eligible_stages",
+            sa.ARRAY(sa.String),
+            nullable=False,
+            server_default=sa.text("ARRAY[]::text[]"),
+        ),
+        sa.Column(
+            "eligibility_criteria", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
         sa.Column("deadline", sa.Date, nullable=True),
         sa.Column("is_rolling", sa.Boolean, nullable=False, server_default=sa.text("false")),
         sa.Column("cycle", sa.String(50), nullable=True),
@@ -157,8 +230,12 @@ def upgrade() -> None:
         sa.Column("source_url", sa.String(2000), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default="active"),
         sa.Column("last_verified", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
     op.execute("ALTER TABLE opportunities ADD COLUMN embedding vector(768)")
 
@@ -176,13 +253,27 @@ def upgrade() -> None:
     # --- Matches ---
     op.create_table(
         "matches",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("profile_id", UUID(as_uuid=True), sa.ForeignKey("startup_profiles.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("opportunity_id", UUID(as_uuid=True), sa.ForeignKey("opportunities.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "profile_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("startup_profiles.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "opportunity_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("opportunities.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("similarity_score", sa.Numeric(5, 4), nullable=False),
         sa.Column("match_reasons", JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column("status", sa.String(20), nullable=False, server_default="new"),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
         sa.UniqueConstraint("profile_id", "opportunity_id", name="uq_match_profile_opp"),
     )
     op.create_index("ix_matches_profile", "matches", ["profile_id"])
@@ -191,20 +282,37 @@ def upgrade() -> None:
     # --- Applications ---
     op.create_table(
         "applications",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("project_id", UUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("opportunity_id", UUID(as_uuid=True), sa.ForeignKey("opportunities.id"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "project_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("projects.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column(
+            "opportunity_id", UUID(as_uuid=True), sa.ForeignKey("opportunities.id"), nullable=False
+        ),
         sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("filled_fields", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("missing_fields", JSONB, nullable=False, server_default=sa.text("'[]'::jsonb")),
         sa.Column("field_confidence", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
-        sa.Column("completion_percentage", sa.Numeric(5, 2), nullable=False, server_default=sa.text("0")),
-        sa.Column("narrative_sections", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
+        sa.Column(
+            "completion_percentage", sa.Numeric(5, 2), nullable=False, server_default=sa.text("0")
+        ),
+        sa.Column(
+            "narrative_sections", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")
+        ),
         sa.Column("quality_scores", JSONB, nullable=False, server_default=sa.text("'{}'::jsonb")),
         sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
         sa.Column("submitted_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
     op.create_index("ix_apps_project", "applications", ["project_id"])
     op.create_index("ix_apps_opportunity", "applications", ["opportunity_id"])
@@ -213,8 +321,15 @@ def upgrade() -> None:
     # --- Certification Jobs ---
     op.create_table(
         "certification_jobs",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("project_id", UUID(as_uuid=True), sa.ForeignKey("projects.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "project_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("projects.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("initiated_by", UUID(as_uuid=True), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("jurisdictions", sa.ARRAY(sa.String), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default="pending"),
@@ -226,7 +341,9 @@ def upgrade() -> None:
         sa.Column("originality_score", sa.Numeric(5, 2), nullable=True),
         sa.Column("completed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
     op.create_index("ix_cert_project", "certification_jobs", ["project_id"])
     op.create_index("ix_cert_status", "certification_jobs", ["status"])
@@ -234,42 +351,74 @@ def upgrade() -> None:
     # --- Subscriptions ---
     op.create_table(
         "subscriptions",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("organization_id", UUID(as_uuid=True), sa.ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "organization_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("organizations.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("stripe_customer_id", sa.String(255), nullable=False),
         sa.Column("stripe_subscription_id", sa.String(255), unique=True, nullable=True),
         sa.Column("plan", sa.String(20), nullable=False, server_default="free"),
         sa.Column("status", sa.String(20), nullable=False, server_default="active"),
         sa.Column("current_period_start", sa.DateTime(timezone=True), nullable=True),
         sa.Column("current_period_end", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
     # --- Refresh Tokens ---
     op.create_table(
         "refresh_tokens",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "user_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
+        ),
         sa.Column("token_hash", sa.String(255), unique=True, nullable=False),
         sa.Column("device_info", sa.String(500), nullable=True),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False, index=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
     # --- API Keys ---
     op.create_table(
         "api_keys",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")),
-        sa.Column("user_id", UUID(as_uuid=True), sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("uuid_generate_v4()")
+        ),
+        sa.Column(
+            "user_id",
+            UUID(as_uuid=True),
+            sa.ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("key_hash", sa.String(255), unique=True, nullable=False),
         sa.Column("key_prefix", sa.String(8), nullable=False),
         sa.Column("name", sa.String(100), nullable=False),
-        sa.Column("scopes", sa.ARRAY(sa.String), nullable=False, server_default=sa.text("ARRAY[]::text[]")),
+        sa.Column(
+            "scopes", sa.ARRAY(sa.String), nullable=False, server_default=sa.text("ARRAY[]::text[]")
+        ),
         sa.Column("is_active", sa.Boolean, nullable=False, server_default=sa.text("true")),
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("last_used_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column(
+            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
+        ),
     )
 
 

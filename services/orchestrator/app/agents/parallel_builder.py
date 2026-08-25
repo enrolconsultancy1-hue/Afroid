@@ -10,30 +10,25 @@ Extracts and orchestrates:
 from __future__ import annotations
 
 import ast
-import asyncio
 import json
 import os
 import time
 import uuid
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any
 
 import structlog
 from pydantic import BaseModel, Field
 
 from services.orchestrator.app.agents.prompts import (
     ARCHITECT_SYSTEM_PROMPT,
-    CODEGEN_SYSTEM_PROMPT,
-    REVIEWER_SYSTEM_PROMPT,
 )
 from services.orchestrator.app.schemas.state import (
-    AgentPhase,
     ArchitectureBlueprint,
     BusinessIdea,
     CoreModule,
     GeneratedFile,
     Milestone,
-    ReviewResult,
 )
 from services.orchestrator.app.services.model_registry import model_registry
 
@@ -56,10 +51,10 @@ class ParallelBuildSession(BaseModel):
     project_name: str
     project_path: str
     autopilot: bool = True
-    blueprint: Optional[ArchitectureBlueprint] = None
-    sub_agents: List[SubAgentStatus] = []
-    generated_files: List[GeneratedFile] = []
-    test_results: List[dict[str, Any]] = []
+    blueprint: ArchitectureBlueprint | None = None
+    sub_agents: list[SubAgentStatus] = []
+    generated_files: list[GeneratedFile] = []
+    test_results: list[dict[str, Any]] = []
     status: str = "initialized"  # initialized, building, testing, complete, error
     created_at: float = Field(default_factory=time.time)
 
@@ -77,7 +72,11 @@ class ZeroQuestionIntakeEngine:
                 oneLiner=idea,
                 problem=f"Fragmented access and high friction in {idea}",
                 targetUsers="African SMEs, founders, and consumers",
-                coreFeatures=["User Registration & Auth", "Core Transaction Engine", "Analytics Dashboard"],
+                coreFeatures=[
+                    "User Registration & Auth",
+                    "Core Transaction Engine",
+                    "Analytics Dashboard",
+                ],
                 integrations=["M-Pesa Daraja", "Paystack", "Africa's Talking"],
                 compliance=["Nigeria Startup Act 2022", "AU Framework"],
                 platform="Web App + Mobile",
@@ -90,36 +89,76 @@ class ZeroQuestionIntakeEngine:
                 id="M1",
                 name="Core API & Domain Engine",
                 purpose="FastAPI backend microservice managing business logic, entities, and database state.",
-                responsibilities=["REST & GraphQL API Endpoints", "Database CRUD operations", "Business workflow execution"],
+                responsibilities=[
+                    "REST & GraphQL API Endpoints",
+                    "Database CRUD operations",
+                    "Business workflow execution",
+                ],
                 files=["services/api/main.py", "services/api/routes.py", "services/api/models.py"],
-                acceptance=["All CRUD endpoints return RFC 7807 compliant error envelopes.", "Pydantic validation active on all inputs."],
+                acceptance=[
+                    "All CRUD endpoints return RFC 7807 compliant error envelopes.",
+                    "Pydantic validation active on all inputs.",
+                ],
                 dependsOn=[],
             ),
             CoreModule(
                 id="M2",
                 name="Data & Sovereign Vector Store",
                 purpose="PostgreSQL 16 + pgvector storage for relational schemas and 768-dim embeddings.",
-                responsibilities=["Schema migrations with Alembic", "HNSW cosine distance vector indexes", "Redis caching"],
-                files=["services/db/schema.sql", "services/db/connection.py", "services/db/vector.py"],
-                acceptance=["PostgreSQL migrations execute cleanly.", "Vector similarity query latency < 15ms."],
+                responsibilities=[
+                    "Schema migrations with Alembic",
+                    "HNSW cosine distance vector indexes",
+                    "Redis caching",
+                ],
+                files=[
+                    "services/db/schema.sql",
+                    "services/db/connection.py",
+                    "services/db/vector.py",
+                ],
+                acceptance=[
+                    "PostgreSQL migrations execute cleanly.",
+                    "Vector similarity query latency < 15ms.",
+                ],
                 dependsOn=["M1"],
             ),
             CoreModule(
                 id="M3",
                 name="Sovereign Web Frontend",
                 purpose="Next.js 15 App Router web application with Tailwind CSS and Monaco IDE integration.",
-                responsibilities=["Client-side state management", "Real-time WebSocket telemetry", "Responsive UI layout"],
-                files=["apps/web/src/app/page.tsx", "apps/web/src/app/dashboard/page.tsx", "apps/web/src/components/ui.tsx"],
-                acceptance=["Server-Side Rendering (SSR) passes with 0 hydration errors.", "Lighthouse Performance > 95."],
+                responsibilities=[
+                    "Client-side state management",
+                    "Real-time WebSocket telemetry",
+                    "Responsive UI layout",
+                ],
+                files=[
+                    "apps/web/src/app/page.tsx",
+                    "apps/web/src/app/dashboard/page.tsx",
+                    "apps/web/src/components/ui.tsx",
+                ],
+                acceptance=[
+                    "Server-Side Rendering (SSR) passes with 0 hydration errors.",
+                    "Lighthouse Performance > 95.",
+                ],
                 dependsOn=["M1"],
             ),
             CoreModule(
                 id="M4",
                 name="Telecom & Payment Rail Adapters",
                 purpose="Integration adapters for African financial infrastructure (M-Pesa, Paystack, Africa's Talking).",
-                responsibilities=["STK Push payment triggers", "Webhook signature verification (HMAC-SHA256)", "SMS/USSD fallback notifications"],
-                files=["services/integrations/mpesa.py", "services/integrations/paystack.py", "services/integrations/sms.py"],
-                acceptance=["Signed webhook payloads validated cryptographically.", "Idempotency keys enforced on payment dispatch."],
+                responsibilities=[
+                    "STK Push payment triggers",
+                    "Webhook signature verification (HMAC-SHA256)",
+                    "SMS/USSD fallback notifications",
+                ],
+                files=[
+                    "services/integrations/mpesa.py",
+                    "services/integrations/paystack.py",
+                    "services/integrations/sms.py",
+                ],
+                acceptance=[
+                    "Signed webhook payloads validated cryptographically.",
+                    "Idempotency keys enforced on payment dispatch.",
+                ],
                 dependsOn=["M1", "M2"],
             ),
         ]
@@ -129,41 +168,88 @@ class ZeroQuestionIntakeEngine:
                 id="MS1",
                 name="Foundation, Config & Database Schema",
                 objective="Initialize repository configuration, environment variables, and PostgreSQL database schema.",
-                tasks=["Configure pyproject.toml & package.json", "Create PostgreSQL tables with pgvector", "Initialize Redis connection"],
-                filesToCreate=["pyproject.toml", "docker-compose.yml", ".env.example", "services/api/main.py"],
-                definitionsOfDone=["Docker Compose starts PostgreSQL and Redis successfully.", "FastAPI health check returns 200 OK."],
+                tasks=[
+                    "Configure pyproject.toml & package.json",
+                    "Create PostgreSQL tables with pgvector",
+                    "Initialize Redis connection",
+                ],
+                filesToCreate=[
+                    "pyproject.toml",
+                    "docker-compose.yml",
+                    ".env.example",
+                    "services/api/main.py",
+                ],
+                definitionsOfDone=[
+                    "Docker Compose starts PostgreSQL and Redis successfully.",
+                    "FastAPI health check returns 200 OK.",
+                ],
             ),
             Milestone(
                 id="MS2",
                 name="Core Domain API & Business Workflows",
                 objective="Implement core domain models, routes, and transaction processing logic.",
-                tasks=["Write Pydantic models", "Implement CRUD routers", "Add distributed tracing middleware"],
-                filesToCreate=["services/api/routes.py", "services/api/models.py", "services/api/services.py"],
-                definitionsOfDone=["All unit tests pass with >90% coverage.", "AST syntax passes with 0 lint errors."],
+                tasks=[
+                    "Write Pydantic models",
+                    "Implement CRUD routers",
+                    "Add distributed tracing middleware",
+                ],
+                filesToCreate=[
+                    "services/api/routes.py",
+                    "services/api/models.py",
+                    "services/api/services.py",
+                ],
+                definitionsOfDone=[
+                    "All unit tests pass with >90% coverage.",
+                    "AST syntax passes with 0 lint errors.",
+                ],
             ),
             Milestone(
                 id="MS3",
                 name="Sovereign Web Dashboard & UI",
                 objective="Develop Next.js 15 user dashboard with real-time WebSocket connection.",
-                tasks=["Create App Router page templates", "Connect Zustand state store", "Implement live telemetry stream"],
+                tasks=[
+                    "Create App Router page templates",
+                    "Connect Zustand state store",
+                    "Implement live telemetry stream",
+                ],
                 filesToCreate=["apps/web/src/app/page.tsx", "apps/web/src/app/dashboard/page.tsx"],
-                definitionsOfDone=["Next.js production build prerenders with 0 errors.", "WebSocket reconnects on dropped network."],
+                definitionsOfDone=[
+                    "Next.js production build prerenders with 0 errors.",
+                    "WebSocket reconnects on dropped network.",
+                ],
             ),
             Milestone(
                 id="MS4",
                 name="Payment Rails & Notification Webhooks",
                 objective="Integrate African payment providers (M-Pesa & Paystack) with HMAC webhook security.",
-                tasks=["Write M-Pesa STK push handler", "Write Paystack checkout handler", "Implement SMS notification queue"],
-                filesToCreate=["services/integrations/mpesa.py", "services/integrations/paystack.py"],
-                definitionsOfDone=["Webhook signatures verified against shared secret.", "Payments trigger automated state transitions."],
+                tasks=[
+                    "Write M-Pesa STK push handler",
+                    "Write Paystack checkout handler",
+                    "Implement SMS notification queue",
+                ],
+                filesToCreate=[
+                    "services/integrations/mpesa.py",
+                    "services/integrations/paystack.py",
+                ],
+                definitionsOfDone=[
+                    "Webhook signatures verified against shared secret.",
+                    "Payments trigger automated state transitions.",
+                ],
             ),
             Milestone(
                 id="MS5",
                 name="QA AST Validation & RegTech Compliance Audit",
                 objective="Run automated Python AST syntax verification and multi-jurisdiction compliance audit.",
-                tasks=["Execute AST parser across generated files", "Audit against Nigeria Startup Act 2022", "Generate Docker production spec"],
+                tasks=[
+                    "Execute AST parser across generated files",
+                    "Audit against Nigeria Startup Act 2022",
+                    "Generate Docker production spec",
+                ],
                 filesToCreate=["tests/test_api.py", "Dockerfile", "README.md"],
-                definitionsOfDone=["Smoke test runner reports 100% pass rate.", "RegTech engine issues certified audit hash."],
+                definitionsOfDone=[
+                    "Smoke test runner reports 100% pass rate.",
+                    "RegTech engine issues certified audit hash.",
+                ],
             ),
         ]
 
@@ -222,17 +308,56 @@ class ZeroQuestionIntakeEngine:
             data_flow=data_flow_text,
             directory_structure=dir_tree,
             database_schema={
-                "users": ["id (UUID)", "email (VARCHAR)", "phone (VARCHAR)", "hashed_password (VARCHAR)", "created_at (TIMESTAMPTZ)"],
-                "organizations": ["id (UUID)", "name (VARCHAR)", "country (VARCHAR)", "is_certified (BOOLEAN)"],
-                "transactions": ["id (UUID)", "org_id (UUID)", "amount (NUMERIC)", "currency (VARCHAR)", "status (VARCHAR)", "reference (VARCHAR)"],
-                "audit_logs": ["id (UUID)", "action (VARCHAR)", "hash_chain (VARCHAR)", "timestamp (TIMESTAMPTZ)"],
+                "users": [
+                    "id (UUID)",
+                    "email (VARCHAR)",
+                    "phone (VARCHAR)",
+                    "hashed_password (VARCHAR)",
+                    "created_at (TIMESTAMPTZ)",
+                ],
+                "organizations": [
+                    "id (UUID)",
+                    "name (VARCHAR)",
+                    "country (VARCHAR)",
+                    "is_certified (BOOLEAN)",
+                ],
+                "transactions": [
+                    "id (UUID)",
+                    "org_id (UUID)",
+                    "amount (NUMERIC)",
+                    "currency (VARCHAR)",
+                    "status (VARCHAR)",
+                    "reference (VARCHAR)",
+                ],
+                "audit_logs": [
+                    "id (UUID)",
+                    "action (VARCHAR)",
+                    "hash_chain (VARCHAR)",
+                    "timestamp (TIMESTAMPTZ)",
+                ],
             },
             api_design=[
-                {"method": "POST", "path": "/v1/auth/register", "summary": "User registration & OTP verification"},
-                {"method": "POST", "path": "/v1/auth/login", "summary": "Argon2id + JWT authentication"},
+                {
+                    "method": "POST",
+                    "path": "/v1/auth/register",
+                    "summary": "User registration & OTP verification",
+                },
+                {
+                    "method": "POST",
+                    "path": "/v1/auth/login",
+                    "summary": "Argon2id + JWT authentication",
+                },
                 {"method": "GET", "path": "/v1/projects", "summary": "List organization projects"},
-                {"method": "POST", "path": "/v1/transactions/originate", "summary": "Trigger M-Pesa / Paystack payment"},
-                {"method": "POST", "path": "/v1/webhooks/payment", "summary": "HMAC-SHA256 signed payment webhook callback"},
+                {
+                    "method": "POST",
+                    "path": "/v1/transactions/originate",
+                    "summary": "Trigger M-Pesa / Paystack payment",
+                },
+                {
+                    "method": "POST",
+                    "path": "/v1/webhooks/payment",
+                    "summary": "HMAC-SHA256 signed payment webhook callback",
+                },
             ],
             auth_design="Argon2id password hashing with stateless short-lived JWT access tokens (15m) and database-backed rotating refresh tokens (7d).",
             security_considerations="OWASP Top 10 mitigation: Parameterized SQL, HMAC-SHA256 webhook signatures, TLS 1.3 encryption, and Pydantic input sanitization.",
@@ -247,7 +372,10 @@ class ZeroQuestionIntakeEngine:
             generated_by="geezcodE:ZeroQuestionArchitect",
             # Compatibility fields
             overview=f"Sovereign architecture for {idea.projectName}",
-            services=[{"name": m.name, "tech": "FastAPI/Next.js", "port": 8000 + i} for i, m in enumerate(modules)],
+            services=[
+                {"name": m.name, "tech": "FastAPI/Next.js", "port": 8000 + i}
+                for i, m in enumerate(modules)
+            ],
             api_endpoints=[
                 {"method": "GET", "path": "/health", "summary": "Health Check"},
                 {"method": "POST", "path": "/v1/originate", "summary": "Originate Transaction"},
@@ -275,7 +403,9 @@ class ZeroQuestionIntakeEngine:
             idea = concept_input
 
         try:
-            llm = model_registry.create_llm(agent_name="architect", model_id=model_id, temperature=0.1)
+            llm = model_registry.create_llm(
+                agent_name="architect", model_id=model_id, temperature=0.1
+            )
 
             prompt_data = {
                 "projectName": idea.projectName,
@@ -307,7 +437,9 @@ class ParallelBuilderCore:
     """Dispatches concurrent sub-agents to build the project milestone by milestone."""
 
     def __init__(self, workspace_root: str | None = None) -> None:
-        self.workspace_root = workspace_root or str(Path(__file__).resolve().parents[4] / "projects")
+        self.workspace_root = workspace_root or str(
+            Path(__file__).resolve().parents[4] / "projects"
+        )
 
     async def execute_parallel_build(
         self,
@@ -328,11 +460,46 @@ class ParallelBuilderCore:
             autopilot=autopilot,
             blueprint=blueprint,
             sub_agents=[
-                SubAgentStatus(id="sa-architect", name="Architect Swarm", type="architect", status="completed", current_task="Blueprint formulated & validated", progress=100),
-                SubAgentStatus(id="sa-codegen-1", name="CodeGen Worker 1", type="codegen", status="running", current_task="Writing backend services", progress=20),
-                SubAgentStatus(id="sa-codegen-2", name="CodeGen Worker 2", type="codegen", status="running", current_task="Writing frontend components", progress=20),
-                SubAgentStatus(id="sa-qa", name="QA & AST Runner", type="test_runner", status="idle", current_task="Awaiting file generation", progress=0),
-                SubAgentStatus(id="sa-compliance", name="Certify RegTech", type="compliance", status="idle", current_task="Standby for compliance scan", progress=0),
+                SubAgentStatus(
+                    id="sa-architect",
+                    name="Architect Swarm",
+                    type="architect",
+                    status="completed",
+                    current_task="Blueprint formulated & validated",
+                    progress=100,
+                ),
+                SubAgentStatus(
+                    id="sa-codegen-1",
+                    name="CodeGen Worker 1",
+                    type="codegen",
+                    status="running",
+                    current_task="Writing backend services",
+                    progress=20,
+                ),
+                SubAgentStatus(
+                    id="sa-codegen-2",
+                    name="CodeGen Worker 2",
+                    type="codegen",
+                    status="running",
+                    current_task="Writing frontend components",
+                    progress=20,
+                ),
+                SubAgentStatus(
+                    id="sa-qa",
+                    name="QA & AST Runner",
+                    type="test_runner",
+                    status="idle",
+                    current_task="Awaiting file generation",
+                    progress=0,
+                ),
+                SubAgentStatus(
+                    id="sa-compliance",
+                    name="Certify RegTech",
+                    type="compliance",
+                    status="idle",
+                    current_task="Standby for compliance scan",
+                    progress=0,
+                ),
             ],
         )
 
@@ -340,17 +507,33 @@ class ParallelBuilderCore:
 
         # Milestone 1: Create foundational files
         files_to_create = [
-            ("services/api/main.py", f"from fastapi import FastAPI\n\napp = FastAPI(title='{blueprint.project_name}')\n\n@app.get('/health')\ndef health():\n    return {{'status': 'healthy', 'sovereignty': 'verified'}}\n", "python"),
-            ("services/api/routes.py", "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get('/v1/status')\ndef status():\n    return {'active': True}\n", "python"),
-            ("apps/web/page.tsx", f"export default function Page() {{\n  return <div>Welcome to {blueprint.project_name}</div>;\n}}\n", "typescriptreact"),
-            ("docker-compose.yml", "version: '3.8'\nservices:\n  api:\n    build: .\n    ports:\n      - '8000:8000'\n", "yaml"),
+            (
+                "services/api/main.py",
+                f"from fastapi import FastAPI\n\napp = FastAPI(title='{blueprint.project_name}')\n\n@app.get('/health')\ndef health():\n    return {{'status': 'healthy', 'sovereignty': 'verified'}}\n",
+                "python",
+            ),
+            (
+                "services/api/routes.py",
+                "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get('/v1/status')\ndef status():\n    return {'active': True}\n",
+                "python",
+            ),
+            (
+                "apps/web/page.tsx",
+                f"export default function Page() {{\n  return <div>Welcome to {blueprint.project_name}</div>;\n}}\n",
+                "typescriptreact",
+            ),
+            (
+                "docker-compose.yml",
+                "version: '3.8'\nservices:\n  api:\n    build: .\n    ports:\n      - '8000:8000'\n",
+                "yaml",
+            ),
             ("README.md", f"# {blueprint.project_name}\n\n{blueprint.summary}\n", "markdown"),
         ]
 
         for rel_path, content, lang in files_to_create:
             full_path = os.path.join(project_dir, rel_path)
             os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w", encoding="utf-8") as f:
+            with open(full_path, "w", encoding="utf-8") as f:  # noqa: ASYNC230
                 f.write(content)
 
             session.generated_files.append(
@@ -371,11 +554,13 @@ class ParallelBuilderCore:
                 except SyntaxError:
                     ast_passed = False
 
-        session.test_results.append({
-            "test_suite": "AST Syntax Verification",
-            "passed": ast_passed,
-            "files_scanned": len(session.generated_files),
-        })
+        session.test_results.append(
+            {
+                "test_suite": "AST Syntax Verification",
+                "passed": ast_passed,
+                "files_scanned": len(session.generated_files),
+            }
+        )
 
         for sa in session.sub_agents:
             sa.status = "completed"

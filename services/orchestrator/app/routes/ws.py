@@ -5,8 +5,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 import structlog
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 logger = structlog.get_logger()
 
@@ -25,7 +25,11 @@ class ConnectionManager:
         if session_id not in self.active_connections:
             self.active_connections[session_id] = []
         self.active_connections[session_id].append(websocket)
-        logger.info("websocket_connected", session_id=session_id, total_clients=len(self.active_connections[session_id]))
+        logger.info(
+            "websocket_connected",
+            session_id=session_id,
+            total_clients=len(self.active_connections[session_id]),
+        )
 
     def disconnect(self, session_id: str, websocket: WebSocket) -> None:
         """Unregister connection upon disconnect."""
@@ -60,14 +64,16 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
     await manager.connect(session_id, websocket)
 
     # Send initial connection confirmation
-    await websocket.send_json({
-        "type": "connection_established",
-        "payload": {
-            "session_id": session_id,
-            "status": "connected",
-            "message": "Connected to Afroid multi-agent streaming pipeline",
-        },
-    })
+    await websocket.send_json(
+        {
+            "type": "connection_established",
+            "payload": {
+                "session_id": session_id,
+                "status": "connected",
+                "message": "Connected to Afroid multi-agent streaming pipeline",
+            },
+        }
+    )
 
     try:
         while True:
@@ -79,15 +85,22 @@ async def websocket_endpoint(websocket: WebSocket, session_id: str) -> None:
 
                 # Handle user feedback / approval messages from client
                 if msg_type == "blueprint_approval":
-                    logger.info("blueprint_approval_received", session_id=session_id, approved=payload.get("approved"))
-                    await manager.broadcast_to_session(session_id, {
-                        "type": "agent_action",
-                        "payload": {
-                            "agentName": "Architect",
-                            "title": "Approval Recorded",
-                            "detail": "Blueprint approved by user. Proceeding to CodeGen stage.",
+                    logger.info(
+                        "blueprint_approval_received",
+                        session_id=session_id,
+                        approved=payload.get("approved"),
+                    )
+                    await manager.broadcast_to_session(
+                        session_id,
+                        {
+                            "type": "agent_action",
+                            "payload": {
+                                "agentName": "Architect",
+                                "title": "Approval Recorded",
+                                "detail": "Blueprint approved by user. Proceeding to CodeGen stage.",
+                            },
                         },
-                    })
+                    )
                 elif msg_type == "ping":
                     await websocket.send_json({"type": "pong"})
             except json.JSONDecodeError:

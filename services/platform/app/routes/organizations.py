@@ -16,8 +16,8 @@ from services.platform.app.models.platform import Organization, OrganizationMemb
 from services.platform.app.schemas.platform import (
     AddMemberRequest,
     CreateOrganizationRequest,
-    OrgMemberResponse,
     OrganizationResponse,
+    OrgMemberResponse,
     UpdateOrganizationRequest,
 )
 from services.shared.exceptions import ConflictError, ForbiddenError, NotFoundError

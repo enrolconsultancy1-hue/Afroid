@@ -35,7 +35,7 @@ class IPVerifier:
         text = self._normalize(text)
         if len(text) < self.shingle_size:
             return {text}
-        return {text[i:i + self.shingle_size] for i in range(len(text) - self.shingle_size + 1)}
+        return {text[i : i + self.shingle_size] for i in range(len(text) - self.shingle_size + 1)}
 
     def _jaccard_similarity(self, set_a: set[str], set_b: set[str]) -> float:
         """Compute Jaccard similarity between two shingle sets."""
@@ -98,11 +98,13 @@ class IPVerifier:
         for doc in corpus:
             similarity = self._minhash_similarity(text, doc.get("text", ""))
             if similarity > 0.3:
-                matches.append({
-                    "doc_id": doc.get("id", "unknown"),
-                    "similarity": round(similarity, 4),
-                    "source": doc.get("source", "corpus"),
-                })
+                matches.append(
+                    {
+                        "doc_id": doc.get("id", "unknown"),
+                        "similarity": round(similarity, 4),
+                        "source": doc.get("source", "corpus"),
+                    }
+                )
             max_similarity = max(max_similarity, similarity)
 
         originality_score = round(1.0 - max_similarity, 4)
@@ -157,5 +159,9 @@ class IPVerifier:
             "overall_score": round(avg_score, 4),
             "fields_checked": count,
             "field_results": results,
-            "verdict": "original" if avg_score >= 0.8 else "needs_review" if avg_score >= 0.5 else "flagged",
+            "verdict": "original"
+            if avg_score >= 0.8
+            else "needs_review"
+            if avg_score >= 0.5
+            else "flagged",
         }

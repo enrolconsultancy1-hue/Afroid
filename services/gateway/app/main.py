@@ -8,8 +8,8 @@ uses Kong / Cloud Endpoints; this gateway exists for local, end-to-end runs.
 from __future__ import annotations
 
 import os
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 import httpx
 from fastapi import FastAPI, Request, Response
@@ -82,7 +82,9 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=_env("CORS_ORIGINS", "http://localhost:3000,https://app.afroid.io").split(","),
+        allow_origins=_env("CORS_ORIGINS", "http://localhost:3000,https://app.afroid.io").split(
+            ","
+        ),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -122,14 +124,20 @@ def create_app() -> FastAPI:
         try:
             resp = await app.state.client.send(req, stream=True)
         except httpx.ConnectError:
-            return JSONResponse({"detail": f"Upstream service '{service}' is unreachable"}, status_code=502)
+            return JSONResponse(
+                {"detail": f"Upstream service '{service}' is unreachable"}, status_code=502
+            )
         except httpx.TimeoutException:
-            return JSONResponse({"detail": f"Upstream service '{service}' timed out"}, status_code=504)
+            return JSONResponse(
+                {"detail": f"Upstream service '{service}' timed out"}, status_code=504
+            )
 
         content = await resp.aread()
         media_type = resp.headers.get("content-type")
         resp_headers = {
-            k: v for k, v in resp.headers.items() if k.lower() not in _HOP_BY_HOP and k.lower() != "content-type"
+            k: v
+            for k, v in resp.headers.items()
+            if k.lower() not in _HOP_BY_HOP and k.lower() != "content-type"
         }
         return Response(
             content=content,

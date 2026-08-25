@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # --- Opportunity Schemas ---
+
 
 class OpportunityFilterParams(BaseModel):
     """Query parameters for filtering opportunities."""
+
     funding_type: str | None = None
     country: str | None = None
     sector: str | None = None
@@ -48,6 +49,7 @@ class OpportunityResponse(BaseModel):
 
 # --- Match Schemas ---
 
+
 class MatchRequest(BaseModel):
     project_id: uuid.UUID
     top_k: int = Field(default=10, ge=1, le=50)
@@ -70,6 +72,7 @@ class MatchResponse(BaseModel):
 
 
 # --- Autofill & Application Schemas ---
+
 
 class AutofillField(BaseModel):
     field_name: str
@@ -101,6 +104,7 @@ class AutofillResponse(BaseModel):
 
 
 # --- Grant Writing Schemas ---
+
 
 class GrantSectionPrompt(BaseModel):
     project_id: uuid.UUID

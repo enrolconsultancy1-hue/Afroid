@@ -27,7 +27,7 @@ class MatchingEngine:
         """Compute cosine similarity between two vector embeddings."""
         if not vec_a or not vec_b or len(vec_a) != len(vec_b):
             return 0.0
-        dot_product = sum(a * b for a, b in zip(vec_a, vec_b))
+        dot_product = sum(a * b for a, b in zip(vec_a, vec_b, strict=True))
         norm_a = math.sqrt(sum(a * a for a in vec_a))
         norm_b = math.sqrt(sum(b * b for b in vec_b))
         if norm_a == 0.0 or norm_b == 0.0:
@@ -59,7 +59,9 @@ class MatchingEngine:
             if country_match:
                 strengths.append(f"Geographic alignment: Operating in {profile_country.title()}")
             else:
-                gaps.append(f"Location constraint: Opportunity targets {', '.join(opportunity.get('eligible_regions', []))}")
+                gaps.append(
+                    f"Location constraint: Opportunity targets {', '.join(opportunity.get('eligible_regions', []))}"
+                )
                 eligible = False
         else:
             strengths.append("Broad geographic eligibility (Pan-African / Global)")
@@ -72,7 +74,9 @@ class MatchingEngine:
             if any(s in profile_industry or profile_industry in s for s in opp_sectors):
                 strengths.append(f"Sector match: {profile_industry.title()} is directly aligned")
             else:
-                gaps.append(f"Sector preference: Opportunity focuses on {', '.join(opportunity.get('eligible_sectors', []))}")
+                gaps.append(
+                    f"Sector preference: Opportunity focuses on {', '.join(opportunity.get('eligible_sectors', []))}"
+                )
                 # Soft filter for sector, doesn't hard-fail
         else:
             strengths.append("Sector-agnostic grant program")
@@ -83,15 +87,23 @@ class MatchingEngine:
 
         if opp_stages and "all" not in opp_stages:
             if profile_stage in opp_stages:
-                strengths.append(f"Stage readiness: Startup is at the {profile_stage.upper()} stage")
+                strengths.append(
+                    f"Stage readiness: Startup is at the {profile_stage.upper()} stage"
+                )
             else:
-                gaps.append(f"Target stage mismatch: Opportunity targets {', '.join(opportunity.get('eligible_stages', []))}")
+                gaps.append(
+                    f"Target stage mismatch: Opportunity targets {', '.join(opportunity.get('eligible_stages', []))}"
+                )
 
         # Summary reason
         if eligible:
-            reasons.append(f"Strong fit for {opportunity.get('funding_type', 'Grant')} funding from {opportunity.get('funder', 'funder')}")
+            reasons.append(
+                f"Strong fit for {opportunity.get('funding_type', 'Grant')} funding from {opportunity.get('funder', 'funder')}"
+            )
         else:
-            reasons.append(f"Partial fit — review eligibility criteria for {opportunity.get('funder', 'funder')}")
+            reasons.append(
+                f"Partial fit — review eligibility criteria for {opportunity.get('funder', 'funder')}"
+            )
 
         return eligible, reasons, strengths, gaps
 

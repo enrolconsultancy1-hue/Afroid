@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from contextlib import asynccontextmanager
 from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from services.platform.app.config import settings
-from services.platform.app.routes.projects import router as projects_router
 from services.platform.app.routes.billing import router as billing_router
 from services.platform.app.routes.organizations import router as orgs_router
+from services.platform.app.routes.projects import router as projects_router
 from services.shared.database import create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging

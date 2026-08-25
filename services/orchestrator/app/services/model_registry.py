@@ -129,7 +129,9 @@ class ModelRegistry:
         for m in builtins:
             self._models[m.id] = m
 
-    async def scan_and_sync_available_models(self, api_key: str | None = None) -> list[ModelDescriptor]:
+    async def scan_and_sync_available_models(
+        self, api_key: str | None = None
+    ) -> list[ModelDescriptor]:
         """Scan available Gemini models via Google GenAI SDK and sync the registry.
 
         Discovers new Gemini releases (e.g. Gemini 3.x, preview models) automatically.
@@ -154,15 +156,22 @@ class ModelRegistry:
                             provider="google",
                             context_window=getattr(m, "input_token_limit", None) or 1048576,
                             max_output_tokens=getattr(m, "output_token_limit", None) or 65536,
-                            description=getattr(m, "description", None) or f"Discovered Google Gemini model ({clean_id})",
+                            description=getattr(m, "description", None)
+                            or f"Discovered Google Gemini model ({clean_id})",
                         )
                         self._models[clean_id] = new_descriptor
                         discovered_count += 1
                         logger.info("gemini_model_discovered", model_id=clean_id)
         except Exception as e:
-            logger.warning("model_sync_partial_failure", error=str(e), msg="Using registered catalog.")
+            logger.warning(
+                "model_sync_partial_failure", error=str(e), msg="Using registered catalog."
+            )
 
-        logger.info("model_scan_completed", total_registered=len(self._models), new_discovered=discovered_count)
+        logger.info(
+            "model_scan_completed",
+            total_registered=len(self._models),
+            new_discovered=discovered_count,
+        )
         return self.list_models()
 
     def register_custom_model(self, custom: CustomModelRegistration) -> ModelDescriptor:
@@ -194,7 +203,7 @@ class ModelRegistry:
         if model_id not in self._models:
             raise ValueError(f"Model '{model_id}' is not in the registry.")
         for m in self._models.values():
-            m.is_default = (m.id == model_id)
+            m.is_default = m.id == model_id
         self._default_model_id = model_id
 
     def set_agent_model(self, agent_name: str, model_id: str) -> None:
@@ -240,7 +249,9 @@ class ModelRegistry:
         state_config: dict[str, Any] | None = None,
     ) -> Any:
         """Instantiate a LangChain chat model with dynamic resolution."""
-        target_model_id = model_id or self.resolve_model_id(agent_name=agent_name, state_config=state_config)
+        target_model_id = model_id or self.resolve_model_id(
+            agent_name=agent_name, state_config=state_config
+        )
         descriptor = self._models.get(target_model_id)
 
         tokens = max_output_tokens or (descriptor.max_output_tokens if descriptor else 65536)
@@ -249,6 +260,7 @@ class ModelRegistry:
         if descriptor and descriptor.is_custom and descriptor.endpoint_url:
             try:
                 from langchain_openai import ChatOpenAI
+
                 return ChatOpenAI(
                     model=descriptor.id,
                     base_url=descriptor.endpoint_url,
@@ -261,6 +273,7 @@ class ModelRegistry:
         # Standard Google Generative AI / Vertex AI instantiation
         try:
             from langchain_google_genai import ChatGoogleGenerativeAI
+
             return ChatGoogleGenerativeAI(
                 model=target_model_id,
                 temperature=temperature,
@@ -268,11 +281,15 @@ class ModelRegistry:
             )
         except ImportError:
             # Fallback mock for testing or offline runner
-            return type("MockLLM", (), {
-                "model": target_model_id,
-                "temperature": temperature,
-                "ainvoke": lambda *args, **kwargs: type("Res", (), {"content": "{}"})(),
-            })()
+            return type(
+                "MockLLM",
+                (),
+                {
+                    "model": target_model_id,
+                    "temperature": temperature,
+                    "ainvoke": lambda *args, **kwargs: type("Res", (), {"content": "{}"})(),
+                },
+            )()
 
 
 # Global singleton instance

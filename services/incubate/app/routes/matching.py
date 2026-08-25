@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import uuid
-from typing import Any
-
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +21,7 @@ from services.incubate.app.schemas.incubate import (
     OpportunityMatchItem,
     OpportunityResponse,
 )
-from services.platform.app.models.platform import Opportunity, Project, StartupProfile
+from services.platform.app.models.platform import Opportunity, StartupProfile
 from services.shared.exceptions import NotFoundError
 
 router = APIRouter(tags=["matching_and_writing"])

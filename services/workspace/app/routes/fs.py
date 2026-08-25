@@ -17,8 +17,24 @@ router = APIRouter(tags=["filesystem"])
 
 MAX_FILE_BYTES = 512 * 1024  # 512 KB
 EXCLUDED_FILE_SUFFIXES = {
-    ".pyc", ".pyo", ".tsbuildinfo", ".lock", ".log", ".png", ".jpg", ".jpeg", ".gif",
-    ".ico", ".woff", ".woff2", ".ttf", ".eot", ".svg", ".zip", ".exe", ".dll",
+    ".pyc",
+    ".pyo",
+    ".tsbuildinfo",
+    ".lock",
+    ".log",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".ico",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".eot",
+    ".svg",
+    ".zip",
+    ".exe",
+    ".dll",
 }
 
 
@@ -43,22 +59,26 @@ def _walk(directory: Path, depth: int = 0, max_depth: int = 6) -> list[dict[str,
         try:
             if entry.is_dir():
                 children = _walk(entry, depth + 1, max_depth) if depth < max_depth else []
-                nodes.append({
-                    "name": name,
-                    "path": str(entry.relative_to(WORKSPACE_ROOT)),
-                    "type": "directory",
-                    "children": children,
-                })
+                nodes.append(
+                    {
+                        "name": name,
+                        "path": str(entry.relative_to(WORKSPACE_ROOT)),
+                        "type": "directory",
+                        "children": children,
+                    }
+                )
             else:
                 if entry.suffix in EXCLUDED_FILE_SUFFIXES:
                     continue
                 if entry.stat().st_size > MAX_FILE_BYTES:
                     continue
-                nodes.append({
-                    "name": name,
-                    "path": str(entry.relative_to(WORKSPACE_ROOT)),
-                    "type": "file",
-                })
+                nodes.append(
+                    {
+                        "name": name,
+                        "path": str(entry.relative_to(WORKSPACE_ROOT)),
+                        "type": "file",
+                    }
+                )
         except (PermissionError, OSError):
             continue
     return nodes
@@ -70,12 +90,17 @@ async def get_tree(current_user: User = Depends(get_current_user)) -> dict[str, 
 
 
 @router.get("/file")
-async def get_file(current_user: User = Depends(get_current_user), path: str = Query(..., description="Relative path inside the workspace")) -> dict[str, Any]:
+async def get_file(
+    current_user: User = Depends(get_current_user),
+    path: str = Query(..., description="Relative path inside the workspace"),
+) -> dict[str, Any]:
     p = _safe_resolve(path)
     if not p.is_file():
         raise HTTPException(status_code=404, detail="File not found")
     content = p.read_text(encoding="utf-8", errors="replace")
-    return {"data": {"path": path, "name": p.name, "content": content, "language": p.suffix.lstrip(".")}}
+    return {
+        "data": {"path": path, "name": p.name, "content": content, "language": p.suffix.lstrip(".")}
+    }
 
 
 class WriteFileBody(BaseModel):
@@ -84,7 +109,9 @@ class WriteFileBody(BaseModel):
 
 
 @router.post("/file")
-async def write_file(body: WriteFileBody, current_user: User = Depends(get_current_user)) -> dict[str, Any]:
+async def write_file(
+    body: WriteFileBody, current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
     p = _safe_resolve(body.path)
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(body.content, encoding="utf-8")
@@ -101,7 +128,8 @@ async def search(
     needle = q.lower()
     for dirpath, dirnames, filenames in os.walk(WORKSPACE_ROOT):
         dirnames[:] = [
-            d for d in dirnames
+            d
+            for d in dirnames
             if d not in EXCLUDED_DIRS and not d.startswith(".") and not d.endswith(".egg-info")
         ]
         for fn in filenames:
@@ -116,11 +144,13 @@ async def search(
                 continue
             for i, line in enumerate(text.splitlines(), 1):
                 if needle in line.lower():
-                    results.append({
-                        "file": str(fp.relative_to(WORKSPACE_ROOT)),
-                        "line": i,
-                        "text": line.strip()[:200],
-                    })
+                    results.append(
+                        {
+                            "file": str(fp.relative_to(WORKSPACE_ROOT)),
+                            "line": i,
+                            "text": line.strip()[:200],
+                        }
+                    )
                     if len(results) >= max_results:
                         return {"data": results}
     return {"data": results}

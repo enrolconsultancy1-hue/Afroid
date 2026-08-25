@@ -6,19 +6,20 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, Field, field_validator
-from slugify import slugify
-
+from pydantic import BaseModel, Field
 
 # --- Organizations ---
 
+
 class CreateOrganizationRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
+
 
 class UpdateOrganizationRequest(BaseModel):
     name: str | None = None
     logo_url: str | None = None
     settings: dict | None = None
+
 
 class OrganizationResponse(BaseModel):
     id: uuid.UUID
@@ -29,12 +30,14 @@ class OrganizationResponse(BaseModel):
     created_at: datetime
     model_config = {"from_attributes": True}
 
+
 class OrgMemberResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
     role: str
     joined_at: datetime
     model_config = {"from_attributes": True}
+
 
 class AddMemberRequest(BaseModel):
     user_id: uuid.UUID
@@ -43,16 +46,19 @@ class AddMemberRequest(BaseModel):
 
 # --- Projects ---
 
+
 class CreateProjectRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=255)
     description: str | None = None
     organization_id: uuid.UUID | None = None
+
 
 class UpdateProjectRequest(BaseModel):
     name: str | None = None
     description: str | None = None
     status: str | None = None
     settings: dict | None = None
+
 
 class ProjectResponse(BaseModel):
     id: uuid.UUID
@@ -66,6 +72,7 @@ class ProjectResponse(BaseModel):
     updated_at: datetime
     model_config = {"from_attributes": True}
 
+
 class ProjectDetailResponse(ProjectResponse):
     settings: dict = {}
     ide_metadata: dict = {}
@@ -73,6 +80,7 @@ class ProjectDetailResponse(ProjectResponse):
 
 
 # --- Startup Profiles ---
+
 
 class CreateStartupProfileRequest(BaseModel):
     company_name: str = Field(..., min_length=2, max_length=255)
@@ -86,6 +94,7 @@ class CreateStartupProfileRequest(BaseModel):
     technologies: list[str] = []
     impact_statement: str | None = None
     target_markets: list[str] = []
+
 
 class UpdateStartupProfileRequest(BaseModel):
     company_name: str | None = None
@@ -106,6 +115,7 @@ class UpdateStartupProfileRequest(BaseModel):
     jobs_created: int | None = None
     website: str | None = None
     founded_year: int | None = None
+
 
 class StartupProfileResponse(BaseModel):
     id: uuid.UUID

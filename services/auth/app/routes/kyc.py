@@ -12,16 +12,12 @@ from __future__ import annotations
 import hashlib
 import time
 import uuid
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, Request, status
-from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
-from services.auth.app.models.user import KycVerification, User
+from fastapi import APIRouter
+from pydantic import BaseModel
 
 logger = structlog.get_logger()
 
@@ -29,7 +25,7 @@ router = APIRouter(prefix="/kyc", tags=["kyc"])
 
 
 class CreateSessionPayload(BaseModel):
-    user_id: Optional[str] = None
+    user_id: str | None = None
     country: str = "Nigeria"
     id_type: str = "National ID / NIN"
 
@@ -52,7 +48,7 @@ _SESSIONS_CACHE: dict[str, dict[str, Any]] = {}
 async def create_kyc_session(payload: CreateSessionPayload) -> dict[str, Any]:
     """Create a new KYC QR Code session for the Python Mobile App."""
     session_id = f"kyc_sess_{uuid.uuid4().hex[:12]}"
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+    expires_at = datetime.now(UTC) + timedelta(minutes=15)
 
     qr_payload = {
         "action": "AFROID_KYC_VERIFY",
@@ -73,7 +69,7 @@ async def create_kyc_session(payload: CreateSessionPayload) -> dict[str, Any]:
         "liveness_score": None,
         "audit_hash": None,
         "id_number_masked": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(UTC).isoformat(),
         "expires_at": expires_at.isoformat(),
     }
 
@@ -115,10 +111,7 @@ async def submit_mobile_kyc(payload: MobileVerifyPayload) -> dict[str, Any]:
 
     # Mask ID number (e.g. 23412345678 -> 234****5678)
     clean_id = payload.id_number.strip()
-    if len(clean_id) > 6:
-        masked_id = clean_id[:3] + "****" + clean_id[-4:]
-    else:
-        masked_id = "***"
+    masked_id = clean_id[:3] + "****" + clean_id[-4:] if len(clean_id) > 6 else "***"
 
     # Generate Cryptographic SHA-256 Audit Chain Hash
     raw_proof = f"{session_id}:{payload.country}:{payload.id_type}:{clean_id}:{time.time()}"
@@ -134,8 +127,11 @@ async def submit_mobile_kyc(payload: MobileVerifyPayload) -> dict[str, Any]:
         "face_match_score": 0.985,
         "liveness_score": 0.992,
         "audit_hash": audit_hash,
-        "device_info": {"model": payload.device_model, "verified_at": datetime.now(timezone.utc).isoformat()},
-        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "device_info": {
+            "model": payload.device_model,
+            "verified_at": datetime.now(UTC).isoformat(),
+        },
+        "verified_at": datetime.now(UTC).isoformat(),
     }
 
     _SESSIONS_CACHE[session_id] = verified_data
@@ -173,7 +169,7 @@ async def simulate_kyc_flow(body: dict[str, Any]) -> dict[str, Any]:
         "face_match_score": 0.991,
         "liveness_score": 0.988,
         "audit_hash": audit_hash,
-        "verified_at": datetime.now(timezone.utc).isoformat(),
+        "verified_at": datetime.now(UTC).isoformat(),
         "device_info": {"model": "Afroid KYC Python Mobile Client v1.0", "simulated": True},
     }
 

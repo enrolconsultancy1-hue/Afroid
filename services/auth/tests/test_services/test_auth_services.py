@@ -15,7 +15,7 @@ class TestPasswordService:
 
     def test_hash_password(self) -> None:
         """Hashing produces a non-empty hash different from the input."""
-        password = "SecurePass123"
+        password = "SecurePass123"  # noqa: S105
         hashed = PasswordService.hash_password(password)
         assert hashed
         assert hashed != password
@@ -23,7 +23,7 @@ class TestPasswordService:
 
     def test_verify_correct_password(self) -> None:
         """Correct password verifies successfully."""
-        password = "SecurePass123"
+        password = "SecurePass123"  # noqa: S105
         hashed = PasswordService.hash_password(password)
         assert PasswordService.verify_password(password, hashed) is True
 
@@ -34,7 +34,7 @@ class TestPasswordService:
 
     def test_different_hashes_for_same_password(self) -> None:
         """Same password produces different hashes (random salt)."""
-        password = "SecurePass123"
+        password = "SecurePass123"  # noqa: S105
         hash1 = PasswordService.hash_password(password)
         hash2 = PasswordService.hash_password(password)
         assert hash1 != hash2

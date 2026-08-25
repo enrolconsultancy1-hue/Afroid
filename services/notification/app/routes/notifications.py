@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends
 
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import User
@@ -60,7 +60,7 @@ async def dispatch_webhook(
     current_user: User = Depends(get_current_user),
 ) -> NotificationResponse:
     """Dispatch signed webhook event to an external URL."""
-    success, status_code, _ = await dispatcher.dispatch_webhook(
+    success, _, _ = await dispatcher.dispatch_webhook(
         target_url=body.target_url,
         event_type=body.event_type,
         payload=body.payload,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
@@ -33,7 +32,11 @@ async def list_opportunities(
 ) -> list[OpportunityResponse]:
     """List and filter active funding opportunities."""
     session = _get_session(request)
-    query = select(Opportunity).where(Opportunity.status == "active").order_by(Opportunity.created_at.desc())
+    query = (
+        select(Opportunity)
+        .where(Opportunity.status == "active")
+        .order_by(Opportunity.created_at.desc())
+    )
 
     if funding_type:
         query = query.where(Opportunity.funding_type == funding_type)

@@ -9,10 +9,8 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
-from services.orchestrator.app.schemas.state import ConceptInput, OrchestrationState
-from services.orchestrator.app.services.model_registry import (
+from services.orchestrator.app.services.model_registry import (  # noqa: E402
     CustomModelRegistration,
-    ModelDescriptor,
     ModelRegistry,
 )
 
@@ -60,9 +58,18 @@ class TestModelRegistry:
                 "reviewer": "gemini-2.5-flash",
             }
         }
-        assert registry.resolve_model_id(agent_name="analyst", state_config=job_config) == "gemini-1.5-pro"
-        assert registry.resolve_model_id(agent_name="codegen", state_config=job_config) == "gemini-2.5-pro"
-        assert registry.resolve_model_id(agent_name="reviewer", state_config=job_config) == "gemini-2.5-flash"
+        assert (
+            registry.resolve_model_id(agent_name="analyst", state_config=job_config)
+            == "gemini-1.5-pro"
+        )
+        assert (
+            registry.resolve_model_id(agent_name="codegen", state_config=job_config)
+            == "gemini-2.5-pro"
+        )
+        assert (
+            registry.resolve_model_id(agent_name="reviewer", state_config=job_config)
+            == "gemini-2.5-flash"
+        )
 
     def test_custom_model_resolution(self, registry: ModelRegistry) -> None:
         registry.register_custom_model(
@@ -73,7 +80,10 @@ class TestModelRegistry:
             )
         )
         job_config = {"model": "gemini-3.7-flash-preview"}
-        assert registry.resolve_model_id(agent_name="architect", state_config=job_config) == "gemini-3.7-flash-preview"
+        assert (
+            registry.resolve_model_id(agent_name="architect", state_config=job_config)
+            == "gemini-3.7-flash-preview"
+        )
 
     def test_llm_factory_instantiation(self, registry: ModelRegistry) -> None:
         llm = registry.create_llm(agent_name="analyst", temperature=0.2)

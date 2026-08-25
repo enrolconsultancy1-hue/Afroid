@@ -6,7 +6,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Request
 from slugify import slugify
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -33,9 +33,7 @@ def _get_session(request: Request) -> AsyncSession:
 
 async def _get_project_or_404(session: AsyncSession, project_id: uuid.UUID) -> Project:
     result = await session.execute(
-        select(Project)
-        .options(selectinload(Project.profile))
-        .where(Project.id == project_id)
+        select(Project).options(selectinload(Project.profile)).where(Project.id == project_id)
     )
     project = result.scalar_one_or_none()
     if project is None:
@@ -49,6 +47,7 @@ def _check_project_access(project: Project, user: User) -> None:
 
 
 # --- CRUD ---
+
 
 @router.post("", response_model=ProjectResponse, status_code=201)
 async def create_project(
@@ -86,7 +85,11 @@ async def list_projects(
     offset: int = 0,
 ) -> list[ProjectResponse]:
     session = _get_session(request)
-    query = select(Project).where(Project.owner_id == current_user.id).order_by(Project.created_at.desc())
+    query = (
+        select(Project)
+        .where(Project.owner_id == current_user.id)
+        .order_by(Project.created_at.desc())
+    )
     if status:
         query = query.where(Project.status == status)
     query = query.limit(min(limit, 100)).offset(offset)
@@ -140,6 +143,7 @@ async def delete_project(
 
 
 # --- Startup Profile ---
+
 
 @router.post("/{project_id}/profile", response_model=StartupProfileResponse, status_code=201)
 async def create_startup_profile(

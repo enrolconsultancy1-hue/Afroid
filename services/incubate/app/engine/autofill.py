@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 import structlog
 
@@ -16,19 +16,42 @@ class AutofillEngine:
     """
 
     # Field alias mappings for common grant application questions
-    FIELD_MAPPINGS: dict[str, list[str]] = {
-        "company_name": ["company_name", "startup_name", "business_name", "organization_name", "applicant_name"],
+    FIELD_MAPPINGS: ClassVar[dict[str, list[str]]] = {
+        "company_name": [
+            "company_name",
+            "startup_name",
+            "business_name",
+            "organization_name",
+            "applicant_name",
+        ],
         "legal_name": ["legal_name", "registered_entity_name", "corporate_name"],
         "industry": ["industry", "sector", "domain", "vertical", "market_sector"],
         "country": ["country", "headquarters_country", "country_of_operation", "nationality"],
         "stage": ["stage", "current_stage", "maturity_level", "development_stage"],
         "team_size": ["team_size", "number_of_employees", "headcount", "full_time_staff"],
-        "problem_statement": ["problem_statement", "problem", "challenge_addressed", "need", "problem_description"],
-        "solution_description": ["solution_description", "solution", "product_description", "proposed_solution", "value_proposition"],
+        "problem_statement": [
+            "problem_statement",
+            "problem",
+            "challenge_addressed",
+            "need",
+            "problem_description",
+        ],
+        "solution_description": [
+            "solution_description",
+            "solution",
+            "product_description",
+            "proposed_solution",
+            "value_proposition",
+        ],
         "annual_revenue": ["annual_revenue", "revenue", "arr", "annual_turnover"],
         "jobs_created": ["jobs_created", "employment_impact", "jobs_supported"],
         "website": ["website", "url", "company_website", "web_link"],
-        "impact_statement": ["impact_statement", "social_impact", "development_impact", "sustainability_impact"],
+        "impact_statement": [
+            "impact_statement",
+            "social_impact",
+            "development_impact",
+            "sustainability_impact",
+        ],
         "technologies": ["technologies", "tech_stack", "core_technology", "innovation_type"],
     }
 
@@ -54,12 +77,15 @@ class AutofillEngine:
 
             # 1. Exact or Alias match
             for canonical_key, aliases in self.FIELD_MAPPINGS.items():
-                if norm_name in aliases or any(alias in norm_name for alias in aliases):
-                    if canonical_key in profile and profile[canonical_key] is not None:
-                        matched_val = profile[canonical_key]
-                        source_field = canonical_key
-                        confidence = 0.98 if norm_name == canonical_key else 0.92
-                        break
+                if (
+                    (norm_name in aliases or any(alias in norm_name for alias in aliases))
+                    and canonical_key in profile
+                    and profile[canonical_key] is not None
+                ):
+                    matched_val = profile[canonical_key]
+                    source_field = canonical_key
+                    confidence = 0.98 if norm_name == canonical_key else 0.92
+                    break
 
             # 2. Direct key lookup fallback
             if matched_val is None and norm_name in profile:
@@ -70,13 +96,15 @@ class AutofillEngine:
             # 3. Handle result
             if matched_val is not None and str(matched_val).strip() != "":
                 needs_review = confidence < 0.85
-                filled.append({
-                    "field_name": raw_name,
-                    "value": matched_val,
-                    "confidence": confidence,
-                    "source_field": source_field,
-                    "needs_review": needs_review,
-                })
+                filled.append(
+                    {
+                        "field_name": raw_name,
+                        "value": matched_val,
+                        "confidence": confidence,
+                        "source_field": source_field,
+                        "needs_review": needs_review,
+                    }
+                )
                 confidences.append(confidence)
             else:
                 missing.append(raw_name)

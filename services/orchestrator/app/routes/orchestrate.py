@@ -10,10 +10,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import User
-from services.orchestrator.app.schemas.state import ConceptInput, OrchestrationState, AgentPhase
+from services.orchestrator.app.schemas.state import ConceptInput, OrchestrationState
 from services.orchestrator.app.services.model_registry import (
     CustomModelRegistration,
-    ModelDescriptor,
     model_registry,
 )
 
@@ -25,6 +24,7 @@ def _get_session(request: Request) -> AsyncSession:
 
 
 # --- Model Management & Discovery Routes ---
+
 
 @router.get("/models", response_model=dict[str, Any])
 async def list_models(
@@ -147,7 +147,6 @@ async def approve_architecture(
 ) -> dict[str, Any]:
     """Approve or reject the generated architecture."""
     approved = body.get("approved", False)
-    feedback = body.get("feedback", "")
 
     return {
         "data": {

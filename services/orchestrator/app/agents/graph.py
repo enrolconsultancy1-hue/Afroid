@@ -4,16 +4,14 @@ from __future__ import annotations
 
 import json
 import time
-from typing import Any
 
 import structlog
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 from services.orchestrator.app.agents.prompts import (
     ARCHITECT_SYSTEM_PROMPT,
     CODEGEN_SYSTEM_PROMPT,
-    DEPLOYER_SYSTEM_PROMPT,
     REVIEWER_SYSTEM_PROMPT,
 )
 from services.orchestrator.app.schemas.state import (
@@ -23,7 +21,6 @@ from services.orchestrator.app.schemas.state import (
     OrchestrationState,
     ReviewResult,
 )
-
 from services.orchestrator.app.services.model_registry import model_registry
 
 logger = structlog.get_logger()
@@ -49,17 +46,20 @@ def _create_llm(
 
 def _log_agent_event(state: OrchestrationState, agent: str, action: str, detail: str = "") -> None:
     """Append an event to the agent history."""
-    state.agent_history.append({
-        "agent": agent,
-        "action": action,
-        "detail": detail,
-        "timestamp": time.time(),
-    })
+    state.agent_history.append(
+        {
+            "agent": agent,
+            "action": action,
+            "detail": detail,
+            "timestamp": time.time(),
+        }
+    )
 
 
 # ============================================
 # Node: Analyze Concept
 # ============================================
+
 
 async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
     """Node 1: Analyze the user's business concept."""
@@ -70,11 +70,13 @@ async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
 
     llm = _create_llm("analyst", state, temperature=0.2)
     messages = [
-        SystemMessage(content=(
-            "Analyze this business concept and extract: domain, target users, "
-            "core features, technical requirements, scale considerations, and "
-            "competitive advantages. Output valid JSON."
-        )),
+        SystemMessage(
+            content=(
+                "Analyze this business concept and extract: domain, target users, "
+                "core features, technical requirements, scale considerations, and "
+                "competitive advantages. Output valid JSON."
+            )
+        ),
         HumanMessage(content=json.dumps(state.concept.model_dump())),
     ]
 
@@ -93,6 +95,7 @@ async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
 # Node: Generate Architecture
 # ============================================
 
+
 async def generate_architecture(state: OrchestrationState) -> OrchestrationState:
     """Node 2: Generate a full architecture blueprint from the analysis."""
     state.phase = AgentPhase.ARCHITECTING
@@ -103,10 +106,14 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
     llm = _create_llm("architect", state, temperature=0.1)
     messages = [
         SystemMessage(content=ARCHITECT_SYSTEM_PROMPT),
-        HumanMessage(content=json.dumps({
-            "concept": state.concept.model_dump(),
-            "analysis": state.analysis,
-        })),
+        HumanMessage(
+            content=json.dumps(
+                {
+                    "concept": state.concept.model_dump(),
+                    "analysis": state.analysis,
+                }
+            )
+        ),
     ]
 
     response = await llm.ainvoke(messages)
@@ -126,14 +133,19 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
             deployment={},
         )
 
-    _log_agent_event(state, "architect", "completed", f"Blueprint: {state.architecture.project_name}")
-    logger.info("architecture_generated", job_id=state.job_id, project=state.architecture.project_name)
+    _log_agent_event(
+        state, "architect", "completed", f"Blueprint: {state.architecture.project_name}"
+    )
+    logger.info(
+        "architecture_generated", job_id=state.job_id, project=state.architecture.project_name
+    )
     return state
 
 
 # ============================================
 # Node: Generate Code
 # ============================================
+
 
 async def generate_code(state: OrchestrationState) -> OrchestrationState:
     """Node 3: Generate source code files from the architecture."""
@@ -157,11 +169,15 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
 
         messages = [
             SystemMessage(content=CODEGEN_SYSTEM_PROMPT),
-            HumanMessage(content=json.dumps({
-                "architecture": state.architecture.model_dump(),
-                "files_to_generate": file_paths,
-                "module": group_name,
-            })),
+            HumanMessage(
+                content=json.dumps(
+                    {
+                        "architecture": state.architecture.model_dump(),
+                        "files_to_generate": file_paths,
+                        "module": group_name,
+                    }
+                )
+            ),
         ]
 
         response = await llm.ainvoke(messages)
@@ -169,12 +185,14 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
             files_data = json.loads(response.content)
             if isinstance(files_data, list):
                 for fd in files_data:
-                    state.generated_files.append(GeneratedFile(
-                        path=fd.get("path", "unknown"),
-                        content=fd.get("content", ""),
-                        language=fd.get("language", "text"),
-                        size_bytes=len(fd.get("content", "").encode()),
-                    ))
+                    state.generated_files.append(
+                        GeneratedFile(
+                            path=fd.get("path", "unknown"),
+                            content=fd.get("content", ""),
+                            language=fd.get("language", "text"),
+                            size_bytes=len(fd.get("content", "").encode()),
+                        )
+                    )
         except json.JSONDecodeError:
             logger.warning("codegen_parse_warning", group=group_name, job_id=state.job_id)
 
@@ -186,6 +204,7 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
 # ============================================
 # Node: Review Code
 # ============================================
+
 
 async def review_code(state: OrchestrationState) -> OrchestrationState:
     """Node 4: Review generated code for quality and security."""
@@ -199,13 +218,14 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
     # Review in batches of 5 files
     batch_size = 5
     for i in range(0, len(state.generated_files), batch_size):
-        batch = state.generated_files[i:i + batch_size]
+        batch = state.generated_files[i : i + batch_size]
         messages = [
             SystemMessage(content=REVIEWER_SYSTEM_PROMPT),
-            HumanMessage(content=json.dumps([
-                {"path": f.path, "content": f.content, "language": f.language}
-                for f in batch
-            ])),
+            HumanMessage(
+                content=json.dumps(
+                    [{"path": f.path, "content": f.content, "language": f.language} for f in batch]
+                )
+            ),
         ]
 
         response = await llm.ainvoke(messages)
@@ -213,13 +233,15 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
             reviews = json.loads(response.content)
             if isinstance(reviews, list):
                 for r in reviews:
-                    state.review_results.append(ReviewResult(
-                        file_path=r.get("file_path", "unknown"),
-                        passed=r.get("passed", True),
-                        issues=r.get("issues", []),
-                        suggestions=r.get("suggestions", []),
-                        quality_score=r.get("quality_score", 0.8),
-                    ))
+                    state.review_results.append(
+                        ReviewResult(
+                            file_path=r.get("file_path", "unknown"),
+                            passed=r.get("passed", True),
+                            issues=r.get("issues", []),
+                            suggestions=r.get("suggestions", []),
+                            quality_score=r.get("quality_score", 0.8),
+                        )
+                    )
         except json.JSONDecodeError:
             logger.warning("review_parse_warning", batch=i, job_id=state.job_id)
 
@@ -233,6 +255,7 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
 # ============================================
 # Helpers
 # ============================================
+
 
 def _group_files_by_directory(file_paths: list[str]) -> dict[str, list[str]]:
     """Group file paths by their top-level directory."""
@@ -248,13 +271,14 @@ def _group_files_by_directory(file_paths: list[str]) -> dict[str, list[str]]:
 # Graph Builder
 # ============================================
 
+
 def build_orchestration_graph():
     """Build the LangGraph state machine for code generation.
 
     Pipeline: analyze → architect → [approval gate] → codegen → review → complete
     """
     try:
-        from langgraph.graph import StateGraph, END
+        from langgraph.graph import END, StateGraph
 
         workflow = StateGraph(OrchestrationState)
 
@@ -273,7 +297,9 @@ def build_orchestration_graph():
                 return END
             return "codegen"
 
-        workflow.add_conditional_edges("architect", should_generate, {"codegen": "codegen", END: END})
+        workflow.add_conditional_edges(
+            "architect", should_generate, {"codegen": "codegen", END: END}
+        )
         workflow.add_edge("codegen", "review")
         workflow.add_edge("review", END)
 

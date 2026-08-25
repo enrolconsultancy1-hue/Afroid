@@ -9,7 +9,7 @@ Implements subscription monetization for the `subscriptions` table:
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import stripe
@@ -44,6 +44,7 @@ PLAN_PRICE_IDS: dict[str, str] = {
 
 # --- Schemas ---
 
+
 class CheckoutRequest(BaseModel):
     organization_id: uuid.UUID
     plan: Literal["starter", "pro", "enterprise"] = Field(..., description="Subscription tier.")
@@ -66,6 +67,7 @@ class SubscriptionResponse(BaseModel):
 
 # --- Helpers ---
 
+
 def _get_session(request: Request) -> AsyncSession:
     return request.state.db_session
 
@@ -78,7 +80,9 @@ async def _get_org_or_404(session: AsyncSession, org_id: uuid.UUID) -> Organizat
     return org
 
 
-async def _get_member_role(session: AsyncSession, org_id: uuid.UUID, user_id: uuid.UUID) -> str | None:
+async def _get_member_role(
+    session: AsyncSession, org_id: uuid.UUID, user_id: uuid.UUID
+) -> str | None:
     result = await session.execute(
         select(OrganizationMember).where(
             OrganizationMember.organization_id == org_id,
@@ -102,11 +106,15 @@ def _price_id_for_plan(plan: str) -> str:
 
 
 async def _find_subscription(session: AsyncSession, org_id: uuid.UUID) -> Subscription | None:
-    result = await session.execute(select(Subscription).where(Subscription.organization_id == org_id))
+    result = await session.execute(
+        select(Subscription).where(Subscription.organization_id == org_id)
+    )
     return result.scalar_one_or_none()
 
 
-async def _find_subscription_by_stripe(session: AsyncSession, stripe_sub_id: str) -> Subscription | None:
+async def _find_subscription_by_stripe(
+    session: AsyncSession, stripe_sub_id: str
+) -> Subscription | None:
     result = await session.execute(
         select(Subscription).where(Subscription.stripe_subscription_id == stripe_sub_id)
     )
@@ -114,6 +122,7 @@ async def _find_subscription_by_stripe(session: AsyncSession, stripe_sub_id: str
 
 
 # --- Checkout ---
+
 
 @router.post("/checkout", response_model=CheckoutResponse)
 async def create_checkout_session(
@@ -123,7 +132,9 @@ async def create_checkout_session(
 ) -> CheckoutResponse:
     """Create a Stripe Checkout Session for the given plan and return its URL."""
     if not settings.stripe_secret_key:
-        raise ServiceUnavailableError(detail="Stripe billing is not configured (STRIPE_SECRET_KEY missing).")
+        raise ServiceUnavailableError(
+            detail="Stripe billing is not configured (STRIPE_SECRET_KEY missing)."
+        )
 
     price_id = _price_id_for_plan(body.plan)
     if not price_id:
@@ -165,6 +176,7 @@ async def create_checkout_session(
 
 # --- Subscription lookup ---
 
+
 @router.get("/subscription/{organization_id}", response_model=SubscriptionResponse)
 async def get_subscription(
     request: Request,
@@ -187,11 +199,14 @@ async def get_subscription(
 
 # --- Webhook ---
 
+
 @router.post("/webhook")
 async def stripe_webhook(request: Request) -> dict[str, Any]:
     """Receive and verify Stripe webhook events (no auth; signature-verified)."""
     if not settings.stripe_webhook_secret:
-        raise ServiceUnavailableError(detail="Stripe webhook secret is not configured (STRIPE_WEBHOOK_SECRET missing).")
+        raise ServiceUnavailableError(
+            detail="Stripe webhook secret is not configured (STRIPE_WEBHOOK_SECRET missing)."
+        )
 
     payload = await request.body()
     signature = request.headers.get("stripe-signature", "")
@@ -224,7 +239,9 @@ async def _handle_checkout_completed(session: AsyncSession, checkout: dict[str, 
 
     ref_id = checkout.get("client_reference_id")
     if ref_id:
-        result = await session.execute(select(Subscription).where(Subscription.id == uuid.UUID(ref_id)))
+        result = await session.execute(
+            select(Subscription).where(Subscription.id == uuid.UUID(ref_id))
+        )
         subscription = result.scalar_one_or_none()
 
     if subscription is None and metadata.get("organization_id"):
@@ -233,7 +250,9 @@ async def _handle_checkout_completed(session: AsyncSession, checkout: dict[str, 
     if subscription is None:
         return
 
-    subscription.stripe_subscription_id = checkout.get("subscription") or subscription.stripe_subscription_id
+    subscription.stripe_subscription_id = (
+        checkout.get("subscription") or subscription.stripe_subscription_id
+    )
     if checkout.get("customer"):
         subscription.stripe_customer_id = checkout["customer"]
     plan = metadata.get("plan")
@@ -250,9 +269,13 @@ async def _handle_subscription_updated(session: AsyncSession, sub_obj: dict[str,
     if sub_obj.get("status"):
         subscription.status = sub_obj["status"]
     if sub_obj.get("current_period_start"):
-        subscription.current_period_start = datetime.fromtimestamp(sub_obj["current_period_start"], tz=timezone.utc)
+        subscription.current_period_start = datetime.fromtimestamp(
+            sub_obj["current_period_start"], tz=UTC
+        )
     if sub_obj.get("current_period_end"):
-        subscription.current_period_end = datetime.fromtimestamp(sub_obj["current_period_end"], tz=timezone.utc)
+        subscription.current_period_end = datetime.fromtimestamp(
+            sub_obj["current_period_end"], tz=UTC
+        )
 
 
 async def _handle_subscription_deleted(session: AsyncSession, sub_obj: dict[str, Any]) -> None:

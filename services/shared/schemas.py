@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, Field
-
-T = TypeVar("T")
-
 
 # --- Pagination ---
 
@@ -19,7 +16,7 @@ class PaginationParams(BaseModel):
     limit: int = Field(default=20, ge=1, le=100)
 
 
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     """Standard paginated response envelope."""
 
     data: list[T]
@@ -71,7 +68,7 @@ class HealthCheck(BaseModel):
 # --- Generic API Response ---
 
 
-class ApiResponse(BaseModel, Generic[T]):
+class ApiResponse[T](BaseModel):
     """Standard API response envelope."""
 
     data: T

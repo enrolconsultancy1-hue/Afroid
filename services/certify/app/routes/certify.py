@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import User
-from services.certify.app.engine.compliance import ComplianceEngine, AuditTrail
+from services.certify.app.engine.compliance import AuditTrail, ComplianceEngine
 from services.certify.app.engine.ip_verifier import IPVerifier
 
 router = APIRouter(prefix="/certify", tags=["certification"])
@@ -62,6 +60,4 @@ async def check_ip_originality(
 
     report = ip_verifier.batch_check(texts, corpus)
 
-    return {
-        "data": report
-    }
+    return {"data": report}

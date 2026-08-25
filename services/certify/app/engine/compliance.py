@@ -16,7 +16,7 @@ logger = structlog.get_logger()
 class RuleResult:
     """Result of a single compliance rule check."""
 
-    __slots__ = ("rule_id", "rule_name", "status", "detail", "severity", "evidence")
+    __slots__ = ("detail", "evidence", "rule_id", "rule_name", "severity", "status")
 
     def __init__(
         self,
@@ -123,44 +123,129 @@ class ComplianceEngine:
     def _check_business_registration(self, profile: dict, jurisdiction: str) -> RuleResult:
         legal_name = profile.get("legal_name")
         if legal_name and len(legal_name) >= 3:
-            return RuleResult("REG-001", "Business Registration", "passed", "Legal entity name verified.", evidence={"legal_name": legal_name})
-        return RuleResult("REG-001", "Business Registration", "failed", "Legal entity name not provided.", severity="required")
+            return RuleResult(
+                "REG-001",
+                "Business Registration",
+                "passed",
+                "Legal entity name verified.",
+                evidence={"legal_name": legal_name},
+            )
+        return RuleResult(
+            "REG-001",
+            "Business Registration",
+            "failed",
+            "Legal entity name not provided.",
+            severity="required",
+        )
 
     def _check_data_residency(self, profile: dict, jurisdiction: str) -> RuleResult:
         country = profile.get("country", "").lower()
-        region_map = {"nigeria": ["nigeria"], "kenya": ["kenya"], "ethiopia": ["ethiopia"], "au": ["nigeria", "kenya", "ethiopia", "south africa", "ghana", "egypt", "morocco", "tanzania", "rwanda", "senegal"]}
+        region_map = {
+            "nigeria": ["nigeria"],
+            "kenya": ["kenya"],
+            "ethiopia": ["ethiopia"],
+            "au": [
+                "nigeria",
+                "kenya",
+                "ethiopia",
+                "south africa",
+                "ghana",
+                "egypt",
+                "morocco",
+                "tanzania",
+                "rwanda",
+                "senegal",
+            ],
+        }
         valid_regions = region_map.get(jurisdiction, [])
         if country in valid_regions:
-            return RuleResult("DATA-001", "Data Residency", "passed", f"Operations based in {country.title()}.", evidence={"country": country})
-        return RuleResult("DATA-001", "Data Residency", "conditional", f"Country '{country}' may require data residency review.", severity="recommended")
+            return RuleResult(
+                "DATA-001",
+                "Data Residency",
+                "passed",
+                f"Operations based in {country.title()}.",
+                evidence={"country": country},
+            )
+        return RuleResult(
+            "DATA-001",
+            "Data Residency",
+            "conditional",
+            f"Country '{country}' may require data residency review.",
+            severity="recommended",
+        )
 
     def _check_tax_compliance(self, profile: dict, jurisdiction: str) -> RuleResult:
         documents = profile.get("documents", {})
         if documents.get("tax_id") or documents.get("tin"):
-            return RuleResult("TAX-001", "Tax Compliance", "passed", "Tax identification document found.")
-        return RuleResult("TAX-001", "Tax Compliance", "conditional", "Tax ID not provided. Required for certification.", severity="required")
+            return RuleResult(
+                "TAX-001", "Tax Compliance", "passed", "Tax identification document found."
+            )
+        return RuleResult(
+            "TAX-001",
+            "Tax Compliance",
+            "conditional",
+            "Tax ID not provided. Required for certification.",
+            severity="required",
+        )
 
     def _check_local_ownership(self, profile: dict, jurisdiction: str) -> RuleResult:
         country = profile.get("country", "").lower()
         region_map = {"nigeria": ["nigeria"], "kenya": ["kenya"], "ethiopia": ["ethiopia"]}
         valid = region_map.get(jurisdiction, [])
         if country in valid:
-            return RuleResult("OWN-001", "Local Ownership", "passed", "Founders based in jurisdiction.")
-        return RuleResult("OWN-001", "Local Ownership", "conditional", "Founder location may need verification.", severity="recommended")
+            return RuleResult(
+                "OWN-001", "Local Ownership", "passed", "Founders based in jurisdiction."
+            )
+        return RuleResult(
+            "OWN-001",
+            "Local Ownership",
+            "conditional",
+            "Founder location may need verification.",
+            severity="recommended",
+        )
 
     def _check_innovation_criteria(self, profile: dict, jurisdiction: str) -> RuleResult:
         tech = profile.get("technologies", [])
         if len(tech) >= 1:
-            return RuleResult("INNOV-001", "Innovation Criteria", "passed", f"Technology stack: {', '.join(tech[:5])}.", evidence={"technologies": tech})
-        return RuleResult("INNOV-001", "Innovation Criteria", "conditional", "Technology stack not detailed.", severity="recommended")
+            return RuleResult(
+                "INNOV-001",
+                "Innovation Criteria",
+                "passed",
+                f"Technology stack: {', '.join(tech[:5])}.",
+                evidence={"technologies": tech},
+            )
+        return RuleResult(
+            "INNOV-001",
+            "Innovation Criteria",
+            "conditional",
+            "Technology stack not detailed.",
+            severity="recommended",
+        )
 
     def _check_job_creation(self, profile: dict, jurisdiction: str) -> RuleResult:
         jobs = profile.get("jobs_created", 0)
         if jobs >= 5:
-            return RuleResult("JOBS-001", "Job Creation", "passed", f"{jobs} jobs created.", evidence={"jobs_created": jobs})
+            return RuleResult(
+                "JOBS-001",
+                "Job Creation",
+                "passed",
+                f"{jobs} jobs created.",
+                evidence={"jobs_created": jobs},
+            )
         if jobs >= 1:
-            return RuleResult("JOBS-001", "Job Creation", "conditional", f"Only {jobs} jobs created. Minimum 5 recommended.")
-        return RuleResult("JOBS-001", "Job Creation", "conditional", "No jobs reported yet.", severity="recommended")
+            return RuleResult(
+                "JOBS-001",
+                "Job Creation",
+                "conditional",
+                f"Only {jobs} jobs created. Minimum 5 recommended.",
+            )
+        return RuleResult(
+            "JOBS-001",
+            "Job Creation",
+            "conditional",
+            "No jobs reported yet.",
+            severity="recommended",
+        )
 
 
 class AuditTrail:

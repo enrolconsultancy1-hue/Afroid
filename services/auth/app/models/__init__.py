@@ -2,4 +2,4 @@
 
 from services.auth.app.models.user import KycVerification, RefreshToken, User
 
-__all__ = ["User", "RefreshToken", "KycVerification"]
+__all__ = ["KycVerification", "RefreshToken", "User"]

@@ -6,7 +6,8 @@ Provides asynchronous event publishing and subscription wrappers for inter-servi
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Coroutine, Optional
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 import structlog
 
@@ -16,7 +17,7 @@ logger = structlog.get_logger()
 class EventBusClient:
     """Google Pub/Sub Async Event Bus Client with local fallback for development."""
 
-    def __init__(self, project_id: str = "afroid-dev", emulator_host: Optional[str] = None) -> None:
+    def __init__(self, project_id: str = "afroid-dev", emulator_host: str | None = None) -> None:
         self.project_id = project_id
         self.emulator_host = emulator_host
         self._subscribers: dict[str, list[Callable[..., Coroutine[Any, Any, None]]]] = {}
@@ -26,7 +27,9 @@ class EventBusClient:
         """Initialize Pub/Sub client connections."""
         if self._initialized:
             return
-        logger.info("event_bus_initialized", project_id=self.project_id, emulator=self.emulator_host)
+        logger.info(
+            "event_bus_initialized", project_id=self.project_id, emulator=self.emulator_host
+        )
         self._initialized = True
 
     async def publish(self, topic_name: str, event_type: str, payload: dict[str, Any]) -> str:
@@ -35,11 +38,15 @@ class EventBusClient:
         envelope = {
             "event_type": event_type,
             "message_id": message_id,
-            "timestamp": __import__('datetime').datetime.now(__import__('datetime').timezone.utc).isoformat(),
+            "timestamp": __import__("datetime")
+            .datetime.now(__import__("datetime").timezone.utc)
+            .isoformat(),
             "payload": payload,
         }
 
-        logger.info("event_published", topic=topic_name, event_type=event_type, message_id=message_id)
+        logger.info(
+            "event_published", topic=topic_name, event_type=event_type, message_id=message_id
+        )
 
         # Dispatch locally to registered subscribers in development/fallback mode
         if topic_name in self._subscribers:
@@ -51,7 +58,9 @@ class EventBusClient:
 
         return message_id
 
-    def subscribe(self, topic_name: str, callback: Callable[..., Coroutine[Any, Any, None]]) -> None:
+    def subscribe(
+        self, topic_name: str, callback: Callable[..., Coroutine[Any, Any, None]]
+    ) -> None:
         """Register an async callback for a given topic."""
         if topic_name not in self._subscribers:
             self._subscribers[topic_name] = []

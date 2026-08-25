@@ -54,8 +54,28 @@ ignore = [
     "ANN101",  # Missing type annotation for self
     "ANN102",  # Missing type annotation for cls
     "S101",    # Use of assert (needed in tests)
+    "E501",    # line-too-long (handled by ruff format)
+    "ANN001",  # missing-type-function-argument (partial annotations)
+    "ANN201",  # missing-return-type-undocumented-public-function
+    "ANN401",  # any-type
+    "N815",    # mixed-case-variable-in-class-scope (Pydantic camelCase API fields)
+    "N818",    # error-suffix-on-exception-name
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Header",
+    "fastapi.Body",
+    "fastapi.Path",
+    "fastapi.Form",
+    "fastapi.File",
+    "fastapi.Cookie",
+]
+[tool.ruff.lint.per-file-ignores]
+# table_name is validated against ALLOWED_TABLES whitelist (identifiers cannot be parameterized)
+"services/vector-store/app/services/search_service.py" = ["S608"]
 [tool.ruff.lint.isort]
 known-first-party = ["services"]
 

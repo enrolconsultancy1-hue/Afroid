@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+
 import pytest
 
 from services.notification.app.services.dispatcher import NotificationDispatcher
@@ -18,7 +19,7 @@ class TestNotificationDispatcher:
     def test_webhook_hmac_signing(self, dispatcher: NotificationDispatcher) -> None:
         payload = {"event": "startup.certified", "project_id": "proj-123"}
         payload_bytes = json.dumps(payload, sort_keys=True).encode("utf-8")
-        secret = "super-secret-key"
+        secret = "super-secret-key"  # noqa: S105
 
         sig1 = dispatcher.sign_webhook_payload(payload_bytes, secret)
         sig2 = dispatcher.sign_webhook_payload(payload_bytes, secret)

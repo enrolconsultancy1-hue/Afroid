@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from services.certify.app.engine.compliance import ComplianceEngine, AuditTrail
+from services.certify.app.engine.compliance import AuditTrail, ComplianceEngine
 from services.certify.app.engine.ip_verifier import IPVerifier
 
 
@@ -25,21 +25,27 @@ class TestComplianceEngine:
             "documents": {"tax_id": "TIN-987654321"},
         }
 
-    def test_nigeria_compliance_pass(self, engine: ComplianceEngine, valid_nigerian_profile: dict) -> None:
+    def test_nigeria_compliance_pass(
+        self, engine: ComplianceEngine, valid_nigerian_profile: dict
+    ) -> None:
         result = engine.run_certification("nigeria", valid_nigerian_profile)
         assert result["jurisdiction"] == "nigeria"
         assert result["status"] == "passed"
         assert result["score"] == 100.0
         assert len(result["rules"]) == 6
 
-    def test_missing_legal_name_fails(self, engine: ComplianceEngine, valid_nigerian_profile: dict) -> None:
+    def test_missing_legal_name_fails(
+        self, engine: ComplianceEngine, valid_nigerian_profile: dict
+    ) -> None:
         valid_nigerian_profile["legal_name"] = ""
         result = engine.run_certification("nigeria", valid_nigerian_profile)
         assert result["status"] == "failed"
         failed_rules = [r for r in result["rules"] if r["status"] == "failed"]
         assert any(r["rule_id"] == "REG-001" for r in failed_rules)
 
-    def test_missing_tax_id_conditional(self, engine: ComplianceEngine, valid_nigerian_profile: dict) -> None:
+    def test_missing_tax_id_conditional(
+        self, engine: ComplianceEngine, valid_nigerian_profile: dict
+    ) -> None:
         valid_nigerian_profile["documents"] = {}
         result = engine.run_certification("nigeria", valid_nigerian_profile)
         assert result["status"] == "conditional"
@@ -68,7 +74,9 @@ class TestIPVerifier:
 
     def test_unique_text_high_originality(self, verifier: IPVerifier) -> None:
         text = "Unique novel decentralized solar powered agricultural irrigation network in the Sahel region."
-        corpus = [{"id": "doc-1", "text": "Cryptocurrency exchange platform for trading digital coins."}]
+        corpus = [
+            {"id": "doc-1", "text": "Cryptocurrency exchange platform for trading digital coins."}
+        ]
 
         result = verifier.check_originality(text, corpus)
         assert result["originality_score"] >= 0.8
