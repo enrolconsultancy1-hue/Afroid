@@ -42,6 +42,13 @@ import { QrCodeView } from "@/components/qr-code";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAgentStream } from "@/hooks/use-agent-stream";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
+
+const authHeaders = (): Record<string, string> => {
+  const token = typeof window !== "undefined" ? localStorage.getItem("afroid_access_token") : null;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
 
 interface FileNode {
@@ -137,8 +144,8 @@ interface PendingReviewFile {
 }
 
 function FileTypeIcon({ name }: { name: string }) {
-  if (name.endsWith(".py")) return <FileCode2 className="h-3.5 w-3.5 text-blue-400" />;
-  if (name.endsWith(".tsx") || name.endsWith(".ts")) return <FileCode2 className="h-3.5 w-3.5 text-sky-400" />;
+  if (name.endsWith(".py")) return <FileCode2 className="h-3.5 w-3.5 text-brand-400" />;
+  if (name.endsWith(".tsx") || name.endsWith(".ts")) return <FileCode2 className="h-3.5 w-3.5 text-brand-400" />;
   if (name.endsWith(".json")) return <FileCode2 className="h-3.5 w-3.5 text-surface-400" />;
   if (name.endsWith(".yml") || name.endsWith(".yaml")) return <FileText className="h-3.5 w-3.5 text-amber-500/80" />;
   if (name.endsWith(".md")) return <FileText className="h-3.5 w-3.5 text-surface-400" />;
@@ -324,6 +331,9 @@ export default function GeezCodeIDE() {
 
   const [grantSearch, setGrantSearch] = useState("");
   const [selectedGrant, setSelectedGrant] = useState<any>(null);
+  const [opportunities, setOpportunities] = useState<any[]>([]);
+  const [grantsLoading, setGrantsLoading] = useState(false);
+  const [grantsError, setGrantsError] = useState<string | null>(null);
 
   const [editorFontSize, setEditorFontSize] = useState(14);
   const [editorMinimap, setEditorMinimap] = useState(true);
@@ -387,7 +397,7 @@ export default function GeezCodeIDE() {
     setKycStatus("pending_scan");
     setKycAuditHash(null);
     try {
-      const res = await fetch("http://localhost:8001/v1/kyc/session/create", {
+      const res = await fetch(`${API_BASE}/v1/kyc/session/create`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ country: kycCountry, id_type: kycIdType }),
@@ -406,7 +416,7 @@ export default function GeezCodeIDE() {
     setKycStatus("scanned");
     setTimeout(async () => {
       try {
-        const res = await fetch("http://localhost:8001/v1/kyc/simulate", {
+        const res = await fetch(`${API_BASE}/v1/kyc/simulate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: kycSessionId, country: kycCountry, id_type: kycIdType }),
@@ -580,7 +590,7 @@ export default function GeezCodeIDE() {
       const payload = fromForm
         ? { idea: ideaForm, model_id: selectedModel }
         : { concept: ideaForm.oneLiner, model_id: selectedModel };
-      const res = await fetch("http://localhost:8002/v1/builder/intake", {
+      const res = await fetch(`${API_BASE}/v1/builder/intake`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -746,18 +756,58 @@ export default function GeezCodeIDE() {
 
   const handleRunCertifyAudit = async () => {
     setCertifying(true);
-    await new Promise((r) => setTimeout(r, 800));
-    setCertifyResult({
-      jurisdiction: certifyCountry.toUpperCase(),
-      status: "ELIGIBLE",
-      score: "100%",
-      taxHolidayYears: 5,
-      ipOriginality: "100% (MinHash verified)",
-      sha256Chain: "0x88f21a99c4b12de09e22384a...",
-      framework: certifyCountry === "nigeria" ? "Nigeria Startup Act 2022 (Sec 24)" : "Kenya Startup Bill 2024 (Part IV)",
-    });
-    setCertifying(false);
+    try {
+      const res = await fetch(`${API_BASE}/v1/certify/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          jurisdictions: [certifyCountry],
+          profile: {
+            legal_name: user?.full_name || "Afroid Founder",
+            country: certifyCountry,
+            documents: { tax_id: "TIN-000-000-0000" },
+            technologies: ["FastAPI", "Next.js", "PostgreSQL"],
+            jobs_created: 0,
+          },
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setCertifyResult(json.data || json);
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setCertifyResult({ error: err.detail || `Audit request failed (${res.status})` });
+      }
+    } catch {
+      setCertifyResult({ error: "Certify service unreachable - is the gateway running?" });
+    } finally {
+      setCertifying(false);
+    }
   };
+
+  const fetchOpportunities = useCallback(async () => {
+    setGrantsLoading(true);
+    setGrantsError(null);
+    try {
+      const res = await fetch(`${API_BASE}/v1/opportunities?limit=100`, {
+        headers: { ...authHeaders() },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOpportunities(Array.isArray(data) ? data : []);
+      } else {
+        setGrantsError("Failed to load funding opportunities.");
+      }
+    } catch {
+      setGrantsError("Incubate service unreachable - is the gateway running?");
+    } finally {
+      setGrantsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [fetchOpportunities]);
 
   const getLanguage = (filename: string): string => {
     const ext = filename.split(".").pop() || "";
@@ -1120,16 +1170,32 @@ export default function GeezCodeIDE() {
                       {certifying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                       Run Audit
                     </button>
-                    {certifyResult && (
-                      <div className="rounded border border-emerald-500/30 bg-emerald-500/5 p-3">
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-400">
-                          <CheckCircle2 className="h-3.5 w-3.5" /> {certifyResult.status} — {certifyResult.score}
-                        </div>
-                        <dl className="mt-2 space-y-1 text-[11px] text-surface-400">
-                          <div><span className="text-surface-500">Framework:</span> {certifyResult.framework}</div>
-                          <div><span className="text-surface-500">IP Originality:</span> {certifyResult.ipOriginality}</div>
-                          <div><span className="text-surface-500">Audit Chain:</span> <span className="font-mono">{certifyResult.sha256Chain}</span></div>
-                        </dl>
+                    {certifyResult?.error && (
+                      <div className="rounded border border-red-500/30 bg-red-500/5 p-3 text-xs text-red-400">{certifyResult.error}</div>
+                    )}
+                    {certifyResult?.results && (
+                      <div className="space-y-2">
+                        {certifyResult.results.map((r: any) => (
+                          <div key={r.jurisdiction} className={`rounded border p-3 ${r.status === "passed" ? "border-emerald-500/30 bg-emerald-500/5" : r.status === "failed" ? "border-red-500/30 bg-red-500/5" : "border-amber-500/30 bg-amber-500/5"}`}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium uppercase text-surface-200">{r.jurisdiction}</span>
+                              <span className={`flex items-center gap-1 text-xs font-medium ${r.status === "passed" ? "text-emerald-400" : r.status === "failed" ? "text-red-400" : "text-amber-400"}`}>
+                                {r.status === "passed" ? <CheckCircle2 className="h-3.5 w-3.5" /> : <AlertCircle className="h-3.5 w-3.5" />}
+                                {r.status.toUpperCase()} · {r.score}
+                              </span>
+                            </div>
+                            {r.rules && r.rules.length > 0 && (
+                              <div className="mt-2 space-y-1">
+                                {r.rules.map((rule: any) => (
+                                  <div key={rule.rule_id} className="flex items-start justify-between gap-2 text-[11px] text-surface-400">
+                                    <span>{rule.rule_name}</span>
+                                    <span className={rule.status === "passed" ? "text-emerald-400" : rule.status === "failed" ? "text-red-400" : "text-amber-400"}>{rule.status}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -1144,18 +1210,42 @@ export default function GeezCodeIDE() {
                       </div>
                     </div>
                     <div>
-                      {GRANT_CATALOG.filter((g) => !grantSearch || g.title.toLowerCase().includes(grantSearch.toLowerCase()) || g.funder.toLowerCase().includes(grantSearch.toLowerCase())).map((g) => (
+                      {grantsLoading && (
+                        <div className="px-3 py-2 text-[11px] text-surface-500">Loading funding opportunities...</div>
+                      )}
+                      {grantsError && (
+                        <div className="px-3 py-2 text-[11px] text-red-400">{grantsError}</div>
+                      )}
+                      {opportunities.filter((g) => !grantSearch || (g.title || "").toLowerCase().includes(grantSearch.toLowerCase()) || (g.funder || "").toLowerCase().includes(grantSearch.toLowerCase())).map((g) => (
                         <button key={g.id} onClick={() => setSelectedGrant(g)} className={`flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-surface-850 ${selectedGrant?.id === g.id ? "bg-surface-800" : ""}`}>
                           <span className="text-xs font-medium text-surface-200 leading-snug">{g.title}</span>
-                          <span className="text-[11px] text-surface-500">{g.funder} · {g.amount} · {g.region}</span>
+                          <span className="text-[11px] text-surface-500">{g.funder} · {g.currency} {g.amount_min ?? "-"}{g.amount_max ? `-${g.amount_max}` : ""} · {g.funding_type}</span>
                         </button>
                       ))}
                     </div>
                     {selectedGrant && (
                       <div className="m-3 rounded border border-surface-750 bg-surface-950 p-3">
                         <div className="text-xs font-medium text-surface-200">{selectedGrant.title}</div>
-                        <div className="mt-1 text-[11px] text-surface-500">{selectedGrant.funder} · {selectedGrant.sector}</div>
-                        <button className="mt-2 w-full rounded bg-brand-600 py-1.5 text-xs font-medium text-white hover:bg-brand-500">Start Application</button>
+                        <div className="mt-1 text-[11px] text-surface-500">{selectedGrant.funder} · {selectedGrant.funding_type}</div>
+                        {selectedGrant.description && (
+                          <p className="mt-2 text-[11px] leading-relaxed text-surface-400">{selectedGrant.description}</p>
+                        )}
+                        {Array.isArray(selectedGrant.eligible_regions) && selectedGrant.eligible_regions.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {selectedGrant.eligible_regions.slice(0, 4).map((r: string) => (
+                              <span key={r} className="rounded bg-surface-800 px-1.5 py-0.5 text-[10px] text-surface-300">{r}</span>
+                            ))}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => {
+                            const url = selectedGrant.application_url || selectedGrant.source_url;
+                            if (url) window.open(url, "_blank", "noopener,noreferrer");
+                          }}
+                          className="mt-2 w-full rounded bg-brand-600 py-1.5 text-xs font-medium text-white hover:bg-brand-500"
+                        >
+                          {selectedGrant.application_url || selectedGrant.source_url ? "Start Application" : "View Details"}
+                        </button>
                       </div>
                     )}
                   </div>

@@ -45,6 +45,7 @@ ROUTES: list[tuple[str, str]] = [
     ("/v1/opportunities", "incubate"),
     ("/v1/match", "incubate"),
     ("/v1/orchestrate", "orchestrator"),
+    ("/v1/builder", "orchestrator"),
     ("/v1/codegen", "codegen"),
     ("/v1/vector", "vector-store"),
     ("/v1/notifications", "notification"),
