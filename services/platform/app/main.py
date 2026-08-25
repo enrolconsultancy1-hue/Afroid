@@ -11,6 +11,7 @@ from fastapi.responses import ORJSONResponse
 
 from services.platform.app.config import settings
 from services.platform.app.routes.projects import router as projects_router
+from services.platform.app.routes.billing import router as billing_router
 from services.platform.app.routes.organizations import router as orgs_router
 from services.shared.database import create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
@@ -66,6 +67,7 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
 
     app.include_router(projects_router, prefix="/v1")
+    app.include_router(billing_router, prefix="/v1")
     app.include_router(orgs_router, prefix="/v1")
 
     @app.get("/health", response_model=HealthCheck, tags=["health"])

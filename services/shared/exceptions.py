@@ -90,6 +90,30 @@ class RateLimitError(AfroidException):
         self.retry_after = retry_after
 
 
+class ServiceUnavailableError(AfroidException):
+    """Dependent service not configured or unavailable."""
+
+    def __init__(self, detail: str = "Service unavailable.") -> None:
+        super().__init__(
+            status_code=503,
+            title="Service Unavailable",
+            detail=detail,
+            error_type="service_unavailable",
+        )
+
+
+class BadRequestError(AfroidException):
+    """Invalid request."""
+
+    def __init__(self, detail: str = "Invalid request.") -> None:
+        super().__init__(
+            status_code=400,
+            title="Bad Request",
+            detail=detail,
+            error_type="bad_request",
+        )
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """Register global exception handlers on the FastAPI app."""
 

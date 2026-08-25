@@ -42,6 +42,7 @@ ROUTES: list[tuple[str, str]] = [
     ("/v1/kyc", "auth"),
     ("/v1/projects", "platform"),
     ("/v1/organizations", "platform"),
+    ("/v1/billing", "platform"),
     ("/v1/certify", "certify"),
     ("/v1/opportunities", "incubate"),
     ("/v1/match", "incubate"),
