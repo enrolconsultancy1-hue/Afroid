@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="128" height="128">
   <defs>
     <linearGradient id="frame-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stopColor="#33FF66" />
-      <stop offset="100%" stopColor="#00D9A5" />
+      <stop offset="0%" stopColor="#00f0ff" />
+      <stop offset="100%" stopColor="#00b8d4" />
     </linearGradient>
   </defs>
 
@@ -22,7 +22,7 @@
   <polygon
     points="50,12 84,30 84,70 50,88 16,70 16,30"
     fill="none"
-    stroke="#0A8F3C"
+    stroke="#0a6b7a"
     stroke-width="1"
     stroke-opacity="0.5"
   />
@@ -31,7 +31,7 @@
   <text
     x="25"
     y="56"
-    fill="#33FF66"
+    fill="#00f0ff"
     font-size="24"
     font-family="monospace"
     font-weight="bold"
@@ -55,7 +55,7 @@
   <text
     x="75"
     y="56"
-    fill="#33FF66"
+    fill="#00f0ff"
     font-size="20"
     font-family="monospace"
     font-weight="bold"

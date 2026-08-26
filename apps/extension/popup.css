@@ -35,12 +35,26 @@ body {
   background: var(--bg-panel);
 }
 .logo-mark {
-  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  display: inline-flex;
+  align-items: baseline;
   color: var(--accent);
+  font-size: 18px;
   font-weight: 700;
-  font-size: 17px;
+  line-height: 1;
   margin-right: 9px;
-  letter-spacing: -1px;
+  flex-shrink: 0;
+}
+.logo-mark .geez-glyph {
+  font-family: "Ebrima", "Nyala", "Noto Sans Ethiopic", "Abyssinica SIL", serif;
+  font-size: 1.35em;
+}
+.logo-mark .code-accent {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.5em;
+  font-weight: 600;
+  margin-left: 2px;
+  opacity: 0.85;
+  letter-spacing: -0.5px;
 }
 .brand-text { display: flex; flex-direction: column; }
 .brand-name { font-weight: 700; font-size: 15px; letter-spacing: 0.5px; }
