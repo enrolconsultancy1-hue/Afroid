@@ -1,152 +1,238 @@
 /**
- * geezcodE ፩</> Chrome Extension Popup Controller
+ * geezcodE — Startup Intake & Builder Portal popup controller.
+ * API base points at the local gateway; override via chrome.storage "api_base".
  */
 
-document.addEventListener("DOMContentLoaded", () => {
-  // Tab switching
-  const tabBtns = document.querySelectorAll(".tab-btn");
-  const tabContents = document.querySelectorAll(".tab-content");
+const DEFAULT_API_BASE = "http://localhost:8090";
+const TOKEN_KEY = "afroid_access_token";
 
-  tabBtns.forEach((btn) => {
+const $ = (id) => document.getElementById(id);
+
+function val(id) {
+  const el = $(id);
+  return el ? el.value.trim() : "";
+}
+
+async function getApiBase() {
+  const { api_base } = await chrome.storage.local.get("api_base");
+  return api_base || DEFAULT_API_BASE;
+}
+
+async function getToken() {
+  const data = await chrome.storage.local.get(TOKEN_KEY);
+  return data[TOKEN_KEY] || "";
+}
+
+function showStatus(el, message, kind) {
+  el.textContent = message;
+  el.className = `status ${kind}`;
+  el.classList.remove("hidden");
+}
+
+function splitList(raw) {
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function authHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// --- Tab switching ---
+function initTabs() {
+  document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
-      tabBtns.forEach((b) => b.classList.remove("active"));
-      tabContents.forEach((c) => c.classList.remove("active"));
-
+      document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll(".panel").forEach((p) => p.classList.remove("active"));
       btn.classList.add("active");
-      const targetId = `tab-${btn.dataset.tab}`;
-      const targetContent = document.getElementById(targetId);
-      if (targetContent) targetContent.classList.add("active");
+      $(`panel-${btn.dataset.tab}`).classList.add("active");
     });
   });
+}
 
-  // Tab 1: Architect Blueprint formulation
-  const btnGenerateBlueprint = document.getElementById("btn-generate-blueprint");
-  const conceptInput = document.getElementById("concept-input");
-  const architectStatus = document.getElementById("architect-status");
+// --- Tab 1: Submit idea ---
+async function handleSubmitIdea() {
+  const btn = $("btn-submit-idea");
+  const status = $("submit-status");
 
-  btnGenerateBlueprint?.addEventListener("click", async () => {
-    const concept = conceptInput.value.trim();
-    if (!concept) {
-      alert("Please describe your startup concept.");
+  const projectName = val("idea-project");
+  if (!projectName) {
+    showStatus(status, "Please give your startup a name.", "error");
+    return;
+  }
+
+  const payload = {
+    project_name: projectName,
+    one_liner: val("idea-oneliner"),
+    problem: val("idea-problem"),
+    target_users: val("idea-users"),
+    core_features: splitList(val("idea-features")),
+    free_text: val("idea-freetext"),
+    founder_name: val("idea-founder-name") || null,
+    founder_email: val("idea-founder-email") || null,
+  };
+
+  btn.disabled = true;
+  showStatus(status, "Submitting to the central database…", "info");
+
+  try {
+    const base = await getApiBase();
+    const res = await fetch(`${base}/v1/intake/ideas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const idea = await res.json();
+      showStatus(
+        status,
+        `✓ Idea "${idea.project_name}" submitted.\nIt's now queued for technical evaluation.`,
+        "success"
+      );
+      ["idea-project", "idea-oneliner", "idea-problem", "idea-users", "idea-features", "idea-freetext"].forEach(
+        (id) => ($(id).value = "")
+      );
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showStatus(status, `Submit failed: ${err.detail || res.status}`, "error");
+    }
+  } catch (e) {
+    showStatus(status, `Network error: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Tab 2: Builder portal ---
+async function handleSaveToken() {
+  const status = $("portal-status");
+  const token = val("portal-token");
+  if (!token) {
+    showStatus(status, "Paste your access token first.", "error");
+    return;
+  }
+  await chrome.storage.local.set({ [TOKEN_KEY]: token });
+  $("portal-token").value = "";
+  showStatus(status, "✓ Token saved.", "success");
+}
+
+async function handleRegisterWriter() {
+  const status = $("portal-status");
+  const btn = $("btn-register-writer");
+  const token = await getToken();
+  if (!token) {
+    showStatus(status, "Save your access token first.", "error");
+    return;
+  }
+  const displayName = val("writer-name");
+  const email = val("writer-email");
+  if (!displayName || !email) {
+    showStatus(status, "Display name and email are required.", "error");
+    return;
+  }
+
+  const payload = {
+    display_name: displayName,
+    email,
+    title: val("writer-title") || null,
+    skills: splitList(val("writer-skills")),
+  };
+
+  btn.disabled = true;
+  showStatus(status, "Registering…", "info");
+
+  try {
+    const base = await getApiBase();
+    const res = await fetch(`${base}/v1/intake/writers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const writer = await res.json();
+      showStatus(status, `✓ Registered as "${writer.display_name}" (${writer.status}).`, "success");
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showStatus(status, `Registration failed: ${err.detail || res.status}`, "error");
+    }
+  } catch (e) {
+    showStatus(status, `Network error: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function handleClaimNext() {
+  const status = $("portal-status");
+  const btn = $("btn-claim-next");
+  const card = $("claim-result");
+  const token = await getToken();
+  if (!token) {
+    showStatus(status, "Save your access token first.", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  card.classList.add("hidden");
+  showStatus(status, "Fetching next idea in the queue…", "info");
+
+  try {
+    const base = await getApiBase();
+    const nxt = await fetch(`${base}/v1/intake/ideas/next`, { headers: authHeaders(token) });
+
+    if (nxt.status === 404) {
+      showStatus(status, "Queue is empty — no pending ideas right now.", "info");
+      return;
+    }
+    if (!nxt.ok) {
+      const err = await nxt.json().catch(() => ({}));
+      showStatus(status, `Error: ${err.detail || nxt.status}`, "error");
       return;
     }
 
-    btnGenerateBlueprint.disabled = true;
-    btnGenerateBlueprint.innerHTML = "<span>⏳ Formulating Blueprint...</span>";
-    architectStatus.classList.remove("hidden");
-    architectStatus.textContent = "Connecting to geezcodE Zero-Question Intake Engine...";
+    const idea = await nxt.json();
+    const claim = await fetch(`${base}/v1/intake/ideas/${idea.id}/claim`, {
+      method: "POST",
+      headers: authHeaders(token),
+    });
 
-    try {
-      const response = await fetch("http://localhost:8002/v1/builder/intake", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: concept }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        architectStatus.textContent = `✅ Blueprint '${data.blueprint.project_name}' formulated! Opening geezcodE IDE...`;
-        setTimeout(() => {
-          chrome.tabs.create({ url: "http://localhost:3000/dashboard/ide" });
-        }, 800);
-      } else {
-        // Fallback simulation
-        architectStatus.textContent = "✅ Blueprint ready. Redirecting to geezcodE IDE...";
-        setTimeout(() => {
-          chrome.tabs.create({ url: "http://localhost:3000/dashboard/ide" });
-        }, 800);
-      }
-    } catch (err) {
-      architectStatus.textContent = "✅ Blueprint dispatched. Opening geezcodE IDE...";
-      setTimeout(() => {
-        chrome.tabs.create({ url: "http://localhost:3000/dashboard/ide" });
-      }, 800);
-    } finally {
-      btnGenerateBlueprint.disabled = false;
-      btnGenerateBlueprint.innerHTML = "<span>⚡ Formulate Blueprint in IDE</span>";
-    }
-  });
-
-  // Tab 2: Grant Autofill
-  const btnAutofill = document.getElementById("btn-autofill-page");
-  const autofillStatus = document.getElementById("autofill-status");
-
-  btnAutofill?.addEventListener("click", async () => {
-    btnAutofill.disabled = true;
-    btnAutofill.innerHTML = "<span>🪄 Autofilling fields...</span>";
-    autofillStatus.classList.remove("hidden");
-    autofillStatus.textContent = "Scanning active tab for input fields...";
-
-    // Send message to content script
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab?.id) {
-      chrome.tabs.sendMessage(
-        tab.id,
-        { action: "AUTOFILL_GRANT_FORM" },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            autofillStatus.textContent = "⚠️ Please refresh the webpage to enable autofill.";
-          } else if (response?.filledCount !== undefined) {
-            autofillStatus.textContent = `🎉 Successfully autofilled ${response.filledCount} fields with 94.8% confidence!`;
-          } else {
-            autofillStatus.textContent = "✅ Autofill completed.";
-          }
-          btnAutofill.disabled = false;
-          btnAutofill.innerHTML = "<span>🪄 Autofill Active Page</span>";
-        }
-      );
-    }
-  });
-
-  // Tab 3: RegTech Audit
-  const btnRunAudit = document.getElementById("btn-run-audit");
-  const selectCountry = document.getElementById("select-country");
-  const certifyResult = document.getElementById("certify-result");
-
-  btnRunAudit?.addEventListener("click", async () => {
-    const country = selectCountry.value;
-    btnRunAudit.disabled = true;
-    btnRunAudit.innerHTML = "<span>🛡️ Auditing rules...</span>";
-    certifyResult.classList.remove("hidden");
-    certifyResult.innerHTML = "<p>Auditing against Sovereign Regulatory Frameworks...</p>";
-
-    try {
-      const response = await fetch("http://localhost:8003/v1/compliance/evaluate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          country: country,
-          incorporation_years: 2,
-          revenue_usd: 150000,
-          innovative_tech: true,
-          ip_verified: true,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        certifyResult.innerHTML = `
-          <div style="color: #33FF66; font-weight: bold; margin-bottom: 4px;">✅ Certified: Eligible (100% Score)</div>
-          <div style="color: #94a3b8; font-size: 10px;">• Jurisdiction: ${country.toUpperCase()}</div>
-          <div style="color: #94a3b8; font-size: 10px;">• Tax Holiday: 5-Year Exemption Approved</div>
-          <div style="color: #94a3b8; font-size: 10px;">• SHA-256 Ledger ID: 0x88f21a...</div>
-        `;
-      } else {
-        certifyResult.innerHTML = `
-          <div style="color: #33FF66; font-weight: bold; margin-bottom: 4px;">✅ Certified: Eligible (100% Score)</div>
-          <div style="color: #94a3b8; font-size: 10px;">• Jurisdiction: ${country.toUpperCase()}</div>
-          <div style="color: #94a3b8; font-size: 10px;">• Tax Holiday: 5-Year Exemption Approved</div>
-        `;
-      }
-    } catch {
-      certifyResult.innerHTML = `
-        <div style="color: #33FF66; font-weight: bold; margin-bottom: 4px;">✅ Certified: Eligible (100% Score)</div>
-        <div style="color: #94a3b8; font-size: 10px;">• Jurisdiction: ${country.toUpperCase()}</div>
-        <div style="color: #94a3b8; font-size: 10px;">• MinHash IP Score: 100% Original</div>
+    if (claim.ok) {
+      const claimed = await claim.json();
+      card.innerHTML = `
+        <h4>${claimed.project_name}</h4>
+        <div class="meta">Status: ${claimed.status} &middot; claimed now</div>
+        <p>${claimed.one_liner || claimed.problem || "No summary provided."}</p>
       `;
-    } finally {
-      btnRunAudit.disabled = false;
-      btnRunAudit.innerHTML = "<span>🛡️ Run Instant Compliance Audit</span>";
+      card.classList.remove("hidden");
+      showStatus(status, `✓ Claimed "${claimed.project_name}" for evaluation.`, "success");
+    } else {
+      const err = await claim.json().catch(() => ({}));
+      showStatus(status, `Claim failed: ${err.detail || claim.status}`, "error");
+    }
+  } catch (e) {
+    showStatus(status, `Network error: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Boot ---
+function init() {
+  initTabs();
+  $("btn-submit-idea").addEventListener("click", handleSubmitIdea);
+  $("btn-save-token").addEventListener("click", handleSaveToken);
+  $("btn-register-writer").addEventListener("click", handleRegisterWriter);
+  $("btn-claim-next").addEventListener("click", handleClaimNext);
+
+  // Pre-fill the token field from storage so the builder sees it's saved.
+  chrome.storage.local.get(TOKEN_KEY).then((data) => {
+    if (data[TOKEN_KEY]) {
+      $("portal-token").value = data[TOKEN_KEY];
     }
   });
-});
+}
+
+document.addEventListener("DOMContentLoaded", init);

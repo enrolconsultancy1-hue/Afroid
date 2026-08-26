@@ -1,0 +1,19 @@
+[project]
+name = "afroid-intake"
+version = "1.0.0"
+description = "Afroid Intake — founder idea-submission queue + writer/builder portal"
+requires-python = ">=3.12"
+dependencies = [
+    "afroid-shared",
+]
+
+[tool.uv.sources]
+afroid-shared = { workspace = true }
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["services.intake.app", "services.intake.app.models", "services.intake.app.routes", "services.intake.app.schemas", "services.intake.tests"]
+package-dir = {"services.intake.app" = "app", "services.intake.tests" = "tests"}

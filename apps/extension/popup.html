@@ -3,92 +3,111 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>geezcodE ፩</> Copilot</title>
+  <title>geezcodE — Intake & Builder Portal</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="extension-container">
-    <!-- Header -->
+  <div class="app">
     <header class="header">
       <div class="brand">
-        <div class="logo-box">
-          <span class="symbol-bracket">&lt;</span>
-          <span class="symbol-geez">፩</span>
-          <span class="symbol-bracket">/&gt;</span>
-        </div>
+        <span class="logo-mark">&lt;/&gt;</span>
         <div class="brand-text">
-          <span class="brand-name"><span class="geez">geez</span><span class="code">codE</span></span>
-          <span class="tagline">SOVEREIGN COPILOT</span>
+          <span class="brand-name">geez<span class="accent">codE</span></span>
+          <span class="tagline">INTAKE &amp; BUILDER PORTAL</span>
         </div>
       </div>
-      <a href="http://localhost:3000/dashboard/ide" target="_blank" class="ide-link" title="Open geezcodE IDE">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-      </a>
     </header>
 
-    <!-- Nav Tabs -->
-    <nav class="nav-tabs">
-      <button class="tab-btn active" data-tab="architect">Architect</button>
-      <button class="tab-btn" data-tab="autofill">Grant Autofill</button>
-      <button class="tab-btn" data-tab="certify">RegTech</button>
+    <nav class="tabs">
+      <button class="tab active" data-tab="submit">Submit Idea</button>
+      <button class="tab" data-tab="portal">Builder Portal</button>
     </nav>
 
-    <!-- Tab 1: Architect Quick-Intake -->
-    <div id="tab-architect" class="tab-content active">
-      <div class="field-group">
-        <label for="concept-input">Startup Concept (Zero-Question Intake)</label>
-        <textarea id="concept-input" rows="3" placeholder="e.g. Cross-border livestock insurance with automated satellite weather verification"></textarea>
-      </div>
-      <button id="btn-generate-blueprint" class="btn btn-primary">
-        <span>⚡ Formulate Blueprint in IDE</span>
-      </button>
-      <div id="architect-status" class="status-box hidden"></div>
-    </div>
+    <!-- Tab 1: Founder idea intake -->
+    <section id="panel-submit" class="panel active">
+      <p class="panel-desc">Describe your breakthrough idea in plain words. No code needed — geezcodE handles the technical evaluation.</p>
 
-    <!-- Tab 2: Grant Autofill -->
-    <div id="tab-autofill" class="tab-content">
-      <p class="tab-desc">Auto-map startup profile into open grant forms on this webpage.</p>
-      <div class="stats-row">
-        <div class="stat-badge">
-          <span class="stat-label">Funding Catalog</span>
-          <span class="stat-value">$3B+</span>
-        </div>
-        <div class="stat-badge">
-          <span class="stat-label">AI Accuracy</span>
-          <span class="stat-value">94.8%</span>
-        </div>
+      <div class="field">
+        <label for="idea-project">Startup name <span class="hint">what do you call it?</span></label>
+        <input id="idea-project" type="text" placeholder="e.g. AgroPulse AI" />
       </div>
-      <button id="btn-autofill-page" class="btn btn-primary">
-        <span>🪄 Autofill Active Page</span>
-      </button>
-      <div id="autofill-status" class="status-box hidden"></div>
-    </div>
 
-    <!-- Tab 3: RegTech Compliance -->
-    <div id="tab-certify" class="tab-content">
-      <div class="field-group">
-        <label for="select-country">Target African Jurisdiction</label>
-        <select id="select-country" class="select-input">
-          <option value="nigeria">Nigeria (Startup Act 2022)</option>
-          <option value="kenya">Kenya (Startup Bill 2024)</option>
-          <option value="ethiopia">Ethiopia (National Startup Policy)</option>
-          <option value="au">African Union (AU Framework)</option>
-        </select>
+      <div class="field">
+        <label for="idea-oneliner">One-liner <span class="hint">one sentence — what does it do?</span></label>
+        <input id="idea-oneliner" type="text" placeholder="e.g. Satellite-driven pest prediction for smallholder farmers" />
       </div>
-      <button id="btn-run-audit" class="btn btn-secondary">
-        <span>🛡️ Run Instant Compliance Audit</span>
-      </button>
-      <div id="certify-result" class="certify-box hidden"></div>
-    </div>
 
-    <!-- Footer -->
+      <div class="field">
+        <label for="idea-problem">Problem <span class="hint">what painful problem are you solving?</span></label>
+        <textarea id="idea-problem" rows="2" placeholder="e.g. Farmers lose 30% of crops to pests they can't predict"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="idea-users">Who it's for <span class="hint">target users / market</span></label>
+        <input id="idea-users" type="text" placeholder="e.g. Smallholder farmers across East Africa" />
+      </div>
+
+      <div class="field">
+        <label for="idea-features">Key features <span class="hint">comma-separated (optional)</span></label>
+        <input id="idea-features" type="text" placeholder="e.g. satellite imagery, SMS alerts, weather fusion" />
+      </div>
+
+      <div class="field">
+        <label for="idea-freetext">Tell us more <span class="hint">team, market, tech — anything</span></label>
+        <textarea id="idea-freetext" rows="4" placeholder="Describe your idea in your own words..."></textarea>
+      </div>
+
+      <div class="field row">
+        <input id="idea-founder-name" type="text" placeholder="Your name (optional)" />
+        <input id="idea-founder-email" type="email" placeholder="Email (optional)" />
+      </div>
+
+      <button id="btn-submit-idea" class="btn primary">Submit idea &rarr;</button>
+      <div id="submit-status" class="status hidden"></div>
+    </section>
+
+    <!-- Tab 2: Builder / writer portal -->
+    <section id="panel-portal" class="panel">
+      <p class="panel-desc">Register as a builder, then claim the next idea in the queue for evaluation.</p>
+
+      <div class="field">
+        <label for="portal-token">Access token <span class="hint">paste from the geezcodE web app</span></label>
+        <input id="portal-token" type="password" placeholder="afroid_access_token" autocomplete="off" />
+        <button id="btn-save-token" class="btn ghost small">Save token</button>
+      </div>
+
+      <hr class="divider" />
+
+      <h3 class="section-title">Register as a builder</h3>
+      <div class="field">
+        <label for="writer-name">Display name</label>
+        <input id="writer-name" type="text" placeholder="e.g. Ada Lovelace" />
+      </div>
+      <div class="field">
+        <label for="writer-email">Email</label>
+        <input id="writer-email" type="email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label for="writer-title">Title <span class="hint">optional</span></label>
+        <input id="writer-title" type="text" placeholder="e.g. Principal Architect" />
+      </div>
+      <div class="field">
+        <label for="writer-skills">Skills <span class="hint">comma-separated</span></label>
+        <input id="writer-skills" type="text" placeholder="python, system-design, fastapi" />
+      </div>
+      <button id="btn-register-writer" class="btn primary">Register</button>
+
+      <hr class="divider" />
+
+      <h3 class="section-title">Evaluation queue</h3>
+      <button id="btn-claim-next" class="btn secondary">Claim next idea</button>
+      <div id="portal-status" class="status hidden"></div>
+      <div id="claim-result" class="claim-card hidden"></div>
+    </section>
+
     <footer class="footer">
-      <span class="footer-status"><span class="dot"></span> Connected: GCP africa-south1</span>
-      <span class="footer-version">v1.0.0</span>
+      <span><span class="dot"></span> Connected to central DB</span>
+      <span class="ver">v2.0.0</span>
     </footer>
   </div>
 

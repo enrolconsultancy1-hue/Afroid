@@ -19,6 +19,7 @@ members = [
     "services/shared",
     "services/gateway",
     "services/workspace",
+    "services/intake",
 ]
 
 [tool.uv]
