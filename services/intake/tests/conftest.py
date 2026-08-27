@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -19,7 +20,9 @@ from services.shared.database import Base
 settings.jwt_secret_key = "test-secret-key-not-for-production"  # noqa: S105
 
 # Same test DB as the auth service (pre-created in CI and locally).
-TEST_DATABASE_URL = "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_test"
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL", "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_test"
+)
 
 
 @pytest_asyncio.fixture(scope="session")

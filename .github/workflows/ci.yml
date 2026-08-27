@@ -38,6 +38,7 @@ jobs:
           - vector-store
           - codegen
           - notification
+          - intake
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v4
@@ -56,6 +57,13 @@ jobs:
         run: |
           uv sync --package afroid-${{ matrix.service }}
 
+      - name: Create Dedicated Test Databases
+        run: |
+          docker run --rm --network host -e PGPASSWORD=afroid_dev postgres:16 \
+            psql -h localhost -U afroid -d afroid_test -c "CREATE DATABASE afroid_intake_test;" || true
+          docker run --rm --network host -e PGPASSWORD=afroid_dev postgres:16 \
+            psql -h localhost -U afroid -d afroid_test -c "CREATE DATABASE afroid_certify_test;" || true
+
       - name: Run Ruff Linting & Formatting Check
         run: |
           uv run ruff check services/${{ matrix.service }}
@@ -63,6 +71,11 @@ jobs:
 
       - name: Run Pytest Suite
         run: |
+          if [ "${{ matrix.service }}" = "intake" ]; then
+            export TEST_DATABASE_URL="postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_intake_test"
+          elif [ "${{ matrix.service }}" = "certify" ]; then
+            export TEST_DATABASE_URL="postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_certify_test"
+          fi
           uv run pytest services/${{ matrix.service }} -v
 
   typescript-monorepo:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncGenerator
 
 import pytest_asyncio
@@ -20,7 +21,9 @@ from services.certify.app.store import (
 )
 from services.shared.database import Base
 
-TEST_DATABASE_URL = "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_test"
+TEST_DATABASE_URL = os.environ.get(
+    "TEST_DATABASE_URL", "postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_test"
+)
 
 
 @pytest_asyncio.fixture(scope="module")
