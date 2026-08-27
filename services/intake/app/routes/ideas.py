@@ -115,12 +115,27 @@ async def submit_idea(
 ) -> IdeaResponse:
     """Submit a new startup idea (auth optional — founders may submit anonymously)."""
     session = _session(request)
-    phase2 = body.extended or {}
+    phase_a = body.extended or {}
+    extended = dict(phase_a)
+    extended["success_criteria"] = body.success_criteria
+    extended["mvp_definition"] = body.mvp_definition
+    for key in (
+        "feature_acceptance_criteria",
+        "business_rules",
+        "quality_performance_requirements",
+        "existing_system",
+        "protected_requirements",
+        "known_assumptions",
+        "out_of_scope",
+    ):
+        value = getattr(body, key)
+        if value:
+            extended[key] = value
     idea = IdeaSubmission(
         project_name=body.project_name,
-        one_liner=body.one_liner or phase2.get("product_summary", ""),
-        problem=body.problem or phase2.get("business_problem", ""),
-        target_users=body.target_users or phase2.get("target_users", ""),
+        one_liner=body.product_summary,
+        problem=body.business_problem,
+        target_users=body.target_users,
         core_features=body.core_features,
         user_journeys=body.user_journeys,
         functional_requirements=body.functional_requirements,
@@ -130,7 +145,7 @@ async def submit_idea(
         founder_email=body.founder_email,
         submitted_by=user_id,
         status=IDEA_STATUS_PENDING,
-        extended=phase2 or None,
+        extended=extended or None,
     )
     session.add(idea)
     await session.flush()

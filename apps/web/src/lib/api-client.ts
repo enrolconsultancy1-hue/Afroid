@@ -331,13 +331,22 @@ export interface IntakeIdea {
 
 export interface IdeaSubmitPayload {
   project_name: string;
-  core_features: string[];
-  user_journeys: string;
-  functional_requirements: string;
-  data_entities: string;
-  one_liner?: string;
-  problem?: string;
-  target_users?: string;
+  product_summary: string;
+  business_problem: string;
+  target_users: string;
+  success_criteria: string;
+  mvp_definition: string;
+  core_features?: string[];
+  user_journeys?: string;
+  functional_requirements?: string;
+  feature_acceptance_criteria?: string;
+  data_entities?: string;
+  business_rules?: string;
+  quality_performance_requirements?: string;
+  existing_system?: string;
+  protected_requirements?: string;
+  known_assumptions?: string;
+  out_of_scope?: string;
   free_text?: string;
   founder_name?: string | null;
   founder_email?: string | null;

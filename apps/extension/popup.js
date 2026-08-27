@@ -66,10 +66,11 @@ async function handleSubmitIdea() {
 
   const required = [
     { id: "idea-project", label: "Project name" },
-    { id: "idea-features", label: "Core features / modules" },
-    { id: "idea-journeys", label: "Key user journeys" },
-    { id: "idea-requirements", label: "Functional requirements" },
-    { id: "idea-entities", label: "Core data / entities" },
+    { id: "idea-summary", label: "Product summary" },
+    { id: "idea-bproblem", label: "Business problem" },
+    { id: "idea-tusers", label: "Target users" },
+    { id: "idea-success", label: "Success criteria" },
+    { id: "idea-mvp", label: "MVP definition" },
   ];
   const missing = [];
   required.forEach((f) => {
@@ -87,19 +88,9 @@ async function handleSubmitIdea() {
   }
 
   const features = splitList(val("idea-features"));
-  if (!features.length) {
-    $("idea-features").classList.add("invalid");
-    showStatus(status, "Core features needs at least one feature.", "error");
-    return;
-  }
 
   const extended = {};
-  const phase2Map = {
-    "idea-summary": "product_summary",
-    "idea-bproblem": "business_problem",
-    "idea-tusers": "target_users",
-    "idea-success": "success_criteria",
-    "idea-mvp": "mvp_definition",
+  const phase1Map = {
     "idea-tools": "tools_integrations",
     "idea-constraints": "technical_constraints",
     "idea-compliance": "compliance_standards",
@@ -107,17 +98,29 @@ async function handleSubmitIdea() {
     "idea-competitors": "competitors",
     "idea-revenue": "revenue_model",
   };
-  Object.keys(phase2Map).forEach((id) => {
+  Object.keys(phase1Map).forEach((id) => {
     const v = val(id);
-    if (v) extended[phase2Map[id]] = v;
+    if (v) extended[phase1Map[id]] = v;
   });
 
   const payload = {
     project_name: val("idea-project"),
+    product_summary: val("idea-summary"),
+    business_problem: val("idea-bproblem"),
+    target_users: val("idea-tusers"),
+    success_criteria: val("idea-success"),
+    mvp_definition: val("idea-mvp"),
     core_features: features,
     user_journeys: val("idea-journeys"),
     functional_requirements: val("idea-requirements"),
+    feature_acceptance_criteria: val("idea-acceptance"),
     data_entities: val("idea-entities"),
+    business_rules: val("idea-brules"),
+    quality_performance_requirements: val("idea-quality"),
+    existing_system: val("idea-existing"),
+    protected_requirements: val("idea-protected"),
+    known_assumptions: val("idea-assumptions"),
+    out_of_scope: val("idea-outscope"),
     free_text: val("idea-freetext"),
     founder_name: val("idea-founder-name") || null,
     founder_email: val("idea-founder-email") || null,
@@ -139,10 +142,11 @@ async function handleSubmitIdea() {
       const idea = await res.json();
       showStatus(status, "✓ Idea \"" + idea.project_name + "\" submitted — queued for blueprint generation.", "success");
       [
-        "idea-project", "idea-features", "idea-journeys", "idea-requirements", "idea-entities",
-        "idea-summary", "idea-bproblem", "idea-tusers", "idea-success", "idea-mvp",
-        "idea-tools", "idea-constraints", "idea-compliance", "idea-timeline",
-        "idea-competitors", "idea-revenue", "idea-freetext",
+        "idea-project", "idea-summary", "idea-bproblem", "idea-tusers", "idea-success", "idea-mvp",
+        "idea-tools", "idea-constraints", "idea-compliance", "idea-timeline", "idea-competitors",
+        "idea-revenue", "idea-freetext", "idea-features", "idea-journeys", "idea-requirements",
+        "idea-acceptance", "idea-entities", "idea-brules", "idea-quality", "idea-existing",
+        "idea-protected", "idea-assumptions", "idea-outscope",
       ].forEach((id) => ($(id).value = ""));
     } else {
       const err = await res.json().catch(() => ({}));
@@ -439,7 +443,7 @@ function init() {
   initTabs();
   $("btn-submit-idea").addEventListener("click", handleSubmitIdea);
   $("btn-toggle-phase2").addEventListener("click", handleTogglePhase2);
-  ["idea-project", "idea-features", "idea-journeys", "idea-requirements", "idea-entities"].forEach((id) => {
+  ["idea-project", "idea-summary", "idea-bproblem", "idea-tusers", "idea-success", "idea-mvp"].forEach((id) => {
     const el = $(id);
     if (el) el.addEventListener("input", () => el.classList.remove("invalid"));
   });

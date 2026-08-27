@@ -15,61 +15,20 @@ interface FieldDef {
   rows?: number;
 }
 
+/* Phase 1 — required (*): non-technical business & vision (Phase A) */
 const PHASE1_FIELDS: FieldDef[] = [
-  {
-    id: "projectName",
-    label: "Project name",
-    required: true,
-    placeholder: "e.g. AgroPulse AI",
-  },
-  {
-    id: "coreFeatures",
-    label: "Core features / modules",
-    required: true,
-    hint: "comma-separated — the building blocks",
-    placeholder: "e.g. satellite imagery, SMS alerts, weather fusion",
-  },
-  {
-    id: "userJourneys",
-    label: "Key user journeys / use cases",
-    required: true,
-    hint: "step by step, in plain words",
-    placeholder:
-      "1. Farmer registers with a phone number. 2. Farmer opens the app and sees pest risk for their field. 3. Farmer receives an SMS alert before an outbreak...",
-    textarea: true,
-    rows: 3,
-  },
-  {
-    id: "functionalRequirements",
-    label: "Functional requirements",
-    required: true,
-    hint: "what the software must DO",
-    placeholder:
-      "1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data. 3. Let farmers log crop issues...",
-    textarea: true,
-    rows: 3,
-  },
-  {
-    id: "dataEntities",
-    label: "Core data / entities",
-    required: true,
-    hint: "the main things the system stores",
-    placeholder: "e.g. users, farms, fields, pest alerts, subscriptions",
-    textarea: true,
-    rows: 2,
-  },
-];
-
-const PHASE2_FIELDS: FieldDef[] = [
+  { id: "projectName", label: "Project name", required: true, placeholder: "e.g. AgroPulse AI" },
   {
     id: "productSummary",
     label: "Product summary",
+    required: true,
     hint: "what, who, accomplishes",
     placeholder: "e.g. Satellite-driven pest prediction for smallholder farmers",
   },
   {
     id: "businessProblem",
     label: "Business problem",
+    required: true,
     hint: "pain, inefficiency, cost, risk",
     placeholder: "e.g. Farmers lose 30% of crops to pests they cannot predict",
     textarea: true,
@@ -78,65 +37,52 @@ const PHASE2_FIELDS: FieldDef[] = [
   {
     id: "targetUsers",
     label: "Target users / roles",
+    required: true,
     hint: "who interacts with the product",
     placeholder: "e.g. Smallholder farmers, cooperative admins",
   },
   {
     id: "successCriteria",
     label: "Success criteria",
+    required: true,
     hint: "measurable outcomes",
     placeholder: "e.g. 10k active farmers, 30% less crop loss",
   },
   {
     id: "mvpDefinition",
     label: "MVP definition",
+    required: true,
     hint: "smallest useful version",
     placeholder: "e.g. Field registration + SMS pest alerts",
   },
-  {
-    id: "toolsIntegrations",
-    label: "Tools & integrations",
-    hint: "APIs, services, platforms",
-    placeholder: "e.g. M-Pesa, Africa's Talking, Google Maps",
-  },
-  {
-    id: "technicalConstraints",
-    label: "Technical constraints",
-    hint: "frameworks, hosting, limits",
-    placeholder: "e.g. Must work on low-bandwidth mobile",
-  },
-  {
-    id: "complianceStandards",
-    label: "Compliance standards",
-    hint: "laws, security, certifications",
-    placeholder: "e.g. Nigeria Startup Act, GDPR, PCI-DSS",
-  },
-  {
-    id: "timelineMilestones",
-    label: "Timeline & milestones",
-    hint: "deadlines, phases",
-    placeholder: "e.g. MVP in 3 months, launch in 6",
-  },
-  {
-    id: "competitors",
-    label: "Competitors",
-    hint: "comma-separated",
-    placeholder: "e.g. FarmLogs, Plantix",
-  },
-  {
-    id: "revenueModel",
-    label: "Revenue model",
-    hint: "how it earns",
-    placeholder: "e.g. Subscription per farmer + cooperative fees",
-  },
 ];
 
-const PHASE2_KEYS: Record<string, string> = {
-  productSummary: "product_summary",
-  businessProblem: "business_problem",
-  targetUsers: "target_users",
-  successCriteria: "success_criteria",
-  mvpDefinition: "mvp_definition",
+/* Phase 1 — optional: more non-technical business details */
+const PHASE1_OPTIONAL: FieldDef[] = [
+  { id: "toolsIntegrations", label: "Tools & integrations", hint: "APIs, services, platforms", placeholder: "e.g. M-Pesa, Africa's Talking, Google Maps" },
+  { id: "technicalConstraints", label: "Technical constraints", hint: "frameworks, hosting, limits", placeholder: "e.g. Must work on low-bandwidth mobile" },
+  { id: "complianceStandards", label: "Compliance standards", hint: "laws, security, certifications", placeholder: "e.g. Nigeria Startup Act, GDPR, PCI-DSS" },
+  { id: "timelineMilestones", label: "Timeline & milestones", hint: "deadlines, phases", placeholder: "e.g. MVP in 3 months, launch in 6" },
+  { id: "competitors", label: "Competitors", hint: "comma-separated", placeholder: "e.g. FarmLogs, Plantix" },
+  { id: "revenueModel", label: "Revenue model", hint: "how it earns", placeholder: "e.g. Subscription per farmer + cooperative fees" },
+];
+
+/* Phase 2 — optional, technical Software Definition (Phase B); engine fills templates when skipped */
+const PHASE2_FIELDS: FieldDef[] = [
+  { id: "coreFeatures", label: "Core features / modules", hint: "comma-separated — the building blocks", placeholder: "e.g. satellite imagery, SMS alerts, weather fusion" },
+  { id: "userJourneys", label: "Key user journeys / use cases", hint: "step by step, in plain words", placeholder: "1. Farmer registers with a phone number. 2. Farmer opens the app and sees pest risk...", textarea: true, rows: 3 },
+  { id: "functionalRequirements", label: "Functional requirements", hint: "what the software must DO", placeholder: "1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data...", textarea: true, rows: 3 },
+  { id: "featureAcceptanceCriteria", label: "Feature acceptance criteria", hint: "Given → When → Then", placeholder: "Given a registered farmer, when pest risk exceeds a threshold, then an SMS alert is sent.", textarea: true, rows: 2 },
+  { id: "dataEntities", label: "Core data / entities", hint: "the main things the system stores", placeholder: "e.g. users, farms, fields, pest alerts, subscriptions", textarea: true, rows: 2 },
+  { id: "businessRules", label: "Business rules", hint: "limits, permissions, calculations", placeholder: "e.g. Alerts only sent between 6am-9pm local time.", textarea: true, rows: 2 },
+  { id: "qualityPerformanceRequirements", label: "Quality & performance", hint: "security, response times, reliability", placeholder: "e.g. SMS delivered within 30s; 99.9% availability.", textarea: true, rows: 2 },
+  { id: "existingSystem", label: "Existing system", hint: "new / rebuild / migration / extension", placeholder: "e.g. New project" },
+  { id: "protectedRequirements", label: "Protected requirements", hint: "do not change", placeholder: "e.g. Keep the existing branding and SMS provider.", textarea: true, rows: 2 },
+  { id: "knownAssumptions", label: "Known assumptions", placeholder: "e.g. Farmers have basic feature phones.", textarea: true, rows: 2 },
+  { id: "outOfScope", label: "Out of scope", placeholder: "e.g. No mobile apps in v1.", textarea: true, rows: 2 },
+];
+
+const PHASE1_OPTIONAL_KEYS: Record<string, string> = {
   toolsIntegrations: "tools_integrations",
   technicalConstraints: "technical_constraints",
   complianceStandards: "compliance_standards",
@@ -162,14 +108,9 @@ export default function IntakePage() {
     setError(null);
     const required = PHASE1_FIELDS.filter((f) => f.required);
     const missing = required.filter((f) => !(values[f.id] || "").trim());
-    const features = (values.coreFeatures || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
 
     const newErrors: Record<string, boolean> = {};
     missing.forEach((f) => (newErrors[f.id] = true));
-    if (!features.length) newErrors.coreFeatures = true;
     if (Object.keys(newErrors).length) {
       setErrors(newErrors);
       setError("Please complete the required fields (marked *).");
@@ -177,19 +118,36 @@ export default function IntakePage() {
     }
 
     const extended: Record<string, string> = {};
-    PHASE2_FIELDS.forEach((f) => {
+    PHASE1_OPTIONAL.forEach((f) => {
       const v = (values[f.id] || "").trim();
-      if (v) extended[PHASE2_KEYS[f.id]] = v;
+      if (v) extended[PHASE1_OPTIONAL_KEYS[f.id]] = v;
     });
+
+    const features = (values.coreFeatures || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     setSubmitting(true);
     try {
       const idea = await intakeApi.submitIdea({
         project_name: (values.projectName || "").trim(),
+        product_summary: (values.productSummary || "").trim(),
+        business_problem: (values.businessProblem || "").trim(),
+        target_users: (values.targetUsers || "").trim(),
+        success_criteria: (values.successCriteria || "").trim(),
+        mvp_definition: (values.mvpDefinition || "").trim(),
         core_features: features,
         user_journeys: (values.userJourneys || "").trim(),
         functional_requirements: (values.functionalRequirements || "").trim(),
+        feature_acceptance_criteria: (values.featureAcceptanceCriteria || "").trim(),
         data_entities: (values.dataEntities || "").trim(),
+        business_rules: (values.businessRules || "").trim(),
+        quality_performance_requirements: (values.qualityPerformanceRequirements || "").trim(),
+        existing_system: (values.existingSystem || "").trim(),
+        protected_requirements: (values.protectedRequirements || "").trim(),
+        known_assumptions: (values.knownAssumptions || "").trim(),
+        out_of_scope: (values.outOfScope || "").trim(),
         free_text: (values.anythingElse || "").trim(),
         founder_name: (values.founderName || "").trim() || null,
         founder_email: (values.founderEmail || "").trim() || null,
@@ -250,10 +208,7 @@ export default function IntakePage() {
             <GeezCodeLogo size={32} showWordmark={true} />
           </Link>
           <div className="flex items-center gap-3">
-            <Link
-              href="/dashboard"
-              className="btn-ghost text-sm"
-            >
+            <Link href="/dashboard" className="btn-ghost text-sm">
               Dashboard
             </Link>
             <Link href="/login" className="btn-ghost text-sm">
@@ -269,10 +224,10 @@ export default function IntakePage() {
             Architect <span className="text-brand-500">Intake</span>
           </h1>
           <p className="mt-3 max-w-2xl text-surface-400">
-            Describe your idea in plain words. The geezcodE engine — with the frontier
-            model — turns your answers into a complete, zero-question Architecture
-            Blueprint (folder &amp; file tree included), ready for a builder to approve
-            and build live.
+            Answer the business questions in plain words — anyone can. The optional
+            technical software definition can be skipped: the geezcodE engine fills it
+            with proven templates and, with the frontier model, produces the complete
+            zero-question Architecture Blueprint (folder &amp; file tree included).
           </p>
         </div>
 
@@ -282,9 +237,35 @@ export default function IntakePage() {
             <span className="rounded-md bg-brand-500/15 px-2.5 py-1 text-[11px] font-bold tracking-widest text-brand-500">
               PHASE 1 · REQUIRED
             </span>
-            <span className="text-xs text-surface-500">the blueprint backbone</span>
+            <span className="text-xs text-surface-500">business &amp; vision — no tech knowledge needed</span>
           </div>
           <div className="grid gap-5 md:grid-cols-2">{PHASE1_FIELDS.map(renderField)}</div>
+
+          <div className="mt-8 mb-4 flex items-center gap-2">
+            <span className="rounded-md border border-surface-700 px-2.5 py-1 text-[11px] font-bold tracking-widest text-surface-400">
+              MORE BUSINESS DETAILS
+            </span>
+            <span className="text-xs text-surface-500">optional — still non-technical</span>
+          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            {PHASE1_OPTIONAL.map(renderField)}
+            <div className="md:col-span-2">
+              <label htmlFor="anythingElse" className="mb-1.5 block text-sm font-medium">
+                Anything else{" "}
+                <span className="text-xs font-normal text-surface-500">
+                  optional — team, story, risks
+                </span>
+              </label>
+              <textarea
+                id="anythingElse"
+                rows={2}
+                className="input"
+                placeholder="Anything that helps the architect understand the vision..."
+                value={values.anythingElse || ""}
+                onChange={(e) => setValue("anythingElse", e.target.value)}
+              />
+            </div>
+          </div>
 
           {/* Phase 2 toggle */}
           <button
@@ -293,12 +274,12 @@ export default function IntakePage() {
             className="mt-8 flex w-full items-center gap-3 rounded-lg border border-dashed border-surface-700 px-4 py-3 text-left transition-colors hover:border-surface-500"
           >
             <span className="rounded-md border border-surface-700 px-2.5 py-1 text-[11px] font-bold tracking-widest text-surface-400">
-              PHASE 2 · OPTIONAL
+              PHASE 2 · OPTIONAL · TECHNICAL
             </span>
             <span className="flex-1 text-sm text-surface-400">
-              Business &amp; technical details —{" "}
+              Software definition —{" "}
               <span className="font-semibold text-brand-500">
-                skip it, the engine decides
+                skip it, the engine fills templates
               </span>
             </span>
             <span className="text-surface-500">{showPhase2 ? "▲" : "▼"}</span>
@@ -307,25 +288,6 @@ export default function IntakePage() {
           {showPhase2 && (
             <div className="mt-5 grid animate-fade-in gap-5 md:grid-cols-2">
               {PHASE2_FIELDS.map(renderField)}
-              <div className="md:col-span-2">
-                <label
-                  htmlFor="anythingElse"
-                  className="mb-1.5 block text-sm font-medium"
-                >
-                  Anything else{" "}
-                  <span className="text-xs font-normal text-surface-500">
-                    optional — team, story, risks
-                  </span>
-                </label>
-                <textarea
-                  id="anythingElse"
-                  rows={2}
-                  className="input"
-                  placeholder="Anything that helps the architect understand the vision..."
-                  value={values.anythingElse || ""}
-                  onChange={(e) => setValue("anythingElse", e.target.value)}
-                />
-              </div>
             </div>
           )}
 
@@ -387,7 +349,7 @@ export default function IntakePage() {
             {submitting ? "Submitting…" : "Submit idea →"}
           </button>
           <p className="mt-3 text-center text-xs text-surface-500">
-            Phase 2 fields left blank are filled by the engine with proven built-in
+            Phase 2 (technical) left blank is filled by the engine with proven built-in
             templates.
           </p>
         </div>

@@ -9,17 +9,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from services.shared.pitch_rubric import RUBRIC_DIMENSIONS
 
-# Phase 2 optional field keys — the authoritative set from the Master
-# Project Specification (PHASE A business/governance + PHASE B delivery).
-PHASE2_KEYS: frozenset[str] = frozenset(
+# Additional Phase-A (business & governance) keys — non-technical, optional.
+# Stored in ``extended``. The required Phase-1 fields and the Phase-B technical
+# fields are explicit top-level fields on IdeaSubmitRequest.
+PHASE_A_KEYS: frozenset[str] = frozenset(
     {
-        "product_summary",
-        "business_problem",
-        "target_users",
         "current_workflow",
         "desired_workflow",
-        "success_criteria",
-        "mvp_definition",
         "tools_integrations",
         "technical_constraints",
         "project_budget",
@@ -53,14 +49,6 @@ PHASE2_KEYS: frozenset[str] = frozenset(
         "communication_plan",
         "inclusion_strategy",
         "environmental_sustainability",
-        "business_rules",
-        "feature_acceptance_criteria",
-        "quality_performance_requirements",
-        "existing_system",
-        "existing_system_details",
-        "protected_requirements",
-        "known_assumptions",
-        "out_of_scope",
     }
 )
 
@@ -68,46 +56,83 @@ PHASE2_KEYS: frozenset[str] = frozenset(
 class IdeaSubmitRequest(BaseModel):
     """Two-phase Architect Intake (Master Project Specification).
 
-    Phase 1 — required (``*``): the blueprint backbone.
-    Phase 2 — optional: any field from :data:`PHASE2_KEYS`; when omitted the
-    orchestrator engine fills built-in proven templates under the hood.
+    Phase 1 — required (``*``): non-technical business & vision (Phase A).
+    Phase 2 — optional: technical Software Definition (Phase B); when skipped,
+    the orchestrator engine fills built-in proven templates under the hood.
     """
 
-    # --- Phase 1 · Required (*) ---
+    # --- Phase 1 · Required (*) — non-technical business & vision ---
     project_name: str = Field(..., min_length=2, max_length=255, description="Project working name")
-    core_features: list[str] = Field(
-        ..., min_length=1, max_length=20, description="Core features / modules (one per item)"
+    product_summary: str = Field(
+        ...,
+        min_length=10,
+        max_length=500,
+        description="What is built, who it is for, what it helps them accomplish",
     )
-    user_journeys: str = Field(
-        ..., min_length=10, max_length=20000, description="Key user journeys / use cases"
+    business_problem: str = Field(
+        ...,
+        min_length=20,
+        max_length=5000,
+        description="Pain, inefficiency, cost, or risk solved today",
     )
-    functional_requirements: str = Field(
-        ..., min_length=10, max_length=30000, description="Functional requirements"
+    target_users: str = Field(
+        ..., min_length=3, max_length=2000, description="Primary users, stakeholders, and roles"
     )
-    data_entities: str = Field(
-        ..., min_length=10, max_length=20000, description="Core data / entities"
+    success_criteria: str = Field(
+        ..., min_length=10, max_length=2000, description="Measurable outcomes that define success"
+    )
+    mvp_definition: str = Field(
+        ..., min_length=10, max_length=2000, description="Smallest useful version to build first"
     )
 
-    # --- Legacy optional columns (back-compat) ---
-    one_liner: str = Field(default="", max_length=500)
-    problem: str = Field(default="", max_length=5000)
-    target_users: str = Field(default="", max_length=2000)
-    free_text: str = Field(default="", max_length=20000)
+    # --- Phase 2 · Optional — technical Software Definition (Phase B) ---
+    core_features: list[str] = Field(
+        default_factory=list, max_length=20, description="Core features / modules (one per item)"
+    )
+    user_journeys: str = Field(
+        default="", max_length=20000, description="Key user journeys / use cases"
+    )
+    functional_requirements: str = Field(
+        default="", max_length=30000, description="Observable behaviors, specific enough to test"
+    )
+    data_entities: str = Field(default="", max_length=20000, description="Core data / entities")
+    feature_acceptance_criteria: str = Field(
+        default="",
+        max_length=20000,
+        description="Feature acceptance criteria (Given → When → Then)",
+    )
+    business_rules: str = Field(
+        default="", max_length=20000, description="Business rules and logic"
+    )
+    quality_performance_requirements: str = Field(
+        default="", max_length=20000, description="Quality & performance expectations"
+    )
+    existing_system: str = Field(
+        default="", max_length=2000, description="New / rebuild / migration / extension ..."
+    )
+    protected_requirements: str = Field(
+        default="", max_length=20000, description="Protected requirements / do not change"
+    )
+    known_assumptions: str = Field(default="", max_length=20000, description="Known assumptions")
+    out_of_scope: str = Field(default="", max_length=20000, description="Explicitly out of scope")
+
+    # --- Other ---
+    free_text: str = Field(default="", max_length=20000, description="Anything else (optional)")
     founder_name: str | None = Field(default=None, max_length=255)
     founder_email: str | None = Field(default=None, max_length=255)
 
-    # --- Phase 2 · Optional (persisted as a structured dict) ---
-    extended: dict | None = Field(default=None, description="Any PHASE2_KEYS field")
+    # --- Additional Phase-A business fields (optional, validated keys) ---
+    extended: dict | None = Field(default=None, description="Any additional PHASE_A_KEYS field")
 
     @field_validator("extended")
     @classmethod
     def _validate_extended(cls, value: dict | None) -> dict | None:
-        """Reject unknown phase-2 keys (typo protection)."""
+        """Reject unknown Phase-A keys (typo protection)."""
         if value is None:
             return value
-        unknown = set(value) - PHASE2_KEYS
+        unknown = set(value) - PHASE_A_KEYS
         if unknown:
-            raise ValueError(f"Unknown phase-2 fields: {sorted(unknown)}")
+            raise ValueError(f"Unknown phase-A fields: {sorted(unknown)}")
         return value
 
 

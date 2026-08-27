@@ -26,85 +26,117 @@
 
     <!-- Tab 1: Founder idea intake — two-phase Architect Intake -->
     <section id="panel-submit" class="panel active">
-      <p class="panel-desc">Answer the <b>required</b> fields in plain words — they drive the Architect Blueprint. Phase 2 is optional; the engine fills it with proven defaults when skipped.</p>
+      <p class="panel-desc">Answer the <b>required</b> business questions in plain words. Phase 2 is the technical software definition — <b>skip it and the engine decides</b> with proven templates.</p>
 
-      <div class="phase-badge phase-badge-1">PHASE 1 &middot; REQUIRED</div>
+      <div class="phase-badge phase-badge-1">PHASE 1 · REQUIRED</div>
 
       <div class="field">
         <label for="idea-project">Project name <span class="req">*</span></label>
         <input id="idea-project" type="text" placeholder="e.g. AgroPulse AI" />
       </div>
       <div class="field">
-        <label for="idea-features">Core features / modules <span class="req">*</span> <span class="hint">comma-separated — the building blocks</span></label>
-        <input id="idea-features" type="text" placeholder="e.g. satellite imagery, SMS alerts, weather fusion" />
+        <label for="idea-summary">Product summary <span class="req">*</span> <span class="hint">what, who, accomplishes</span></label>
+        <input id="idea-summary" type="text" placeholder="e.g. Satellite-driven pest prediction for smallholder farmers" />
       </div>
       <div class="field">
-        <label for="idea-journeys">Key user journeys / use cases <span class="req">*</span> <span class="hint">step by step, plain words</span></label>
-        <textarea id="idea-journeys" rows="3" placeholder="e.g. 1. Farmer registers with phone number. 2. Farmer opens the app and sees pest risk for their field. 3. Farmer receives an SMS alert before an outbreak..."></textarea>
+        <label for="idea-bproblem">Business problem <span class="req">*</span> <span class="hint">pain, inefficiency, cost, risk</span></label>
+        <textarea id="idea-bproblem" rows="2" placeholder="e.g. Farmers lose 30% of crops to pests they cannot predict"></textarea>
       </div>
       <div class="field">
-        <label for="idea-requirements">Functional requirements <span class="req">*</span> <span class="hint">what the software must DO</span></label>
-        <textarea id="idea-requirements" rows="3" placeholder="e.g. 1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data. 3. Let farmers log crop issues..."></textarea>
+        <label for="idea-tusers">Target users / roles <span class="req">*</span> <span class="hint">who interacts with the product</span></label>
+        <input id="idea-tusers" type="text" placeholder="e.g. Smallholder farmers, cooperative admins" />
       </div>
       <div class="field">
-        <label for="idea-entities">Core data / entities <span class="req">*</span> <span class="hint">the main things the system stores</span></label>
-        <textarea id="idea-entities" rows="2" placeholder="e.g. users, farms, fields, pest alerts, subscriptions"></textarea>
+        <label for="idea-success">Success criteria <span class="req">*</span> <span class="hint">measurable outcomes</span></label>
+        <input id="idea-success" type="text" placeholder="e.g. 10k active farmers, 30% less crop loss" />
+      </div>
+      <div class="field">
+        <label for="idea-mvp">MVP definition <span class="req">*</span> <span class="hint">smallest useful version</span></label>
+        <input id="idea-mvp" type="text" placeholder="e.g. Field registration + SMS pest alerts" />
+      </div>
+
+      <hr class="divider" />
+      <h3 class="section-title">More business details <span class="hint">optional</span></h3>
+
+      <div class="field">
+        <label for="idea-tools">Tools &amp; integrations <span class="hint">APIs, services, platforms</span></label>
+        <input id="idea-tools" type="text" placeholder="e.g. M-Pesa, Africa's Talking, Google Maps" />
+      </div>
+      <div class="field">
+        <label for="idea-constraints">Technical constraints <span class="hint">frameworks, hosting, limits</span></label>
+        <input id="idea-constraints" type="text" placeholder="e.g. Must work on low-bandwidth mobile" />
+      </div>
+      <div class="field">
+        <label for="idea-compliance">Compliance standards <span class="hint">laws, security, certifications</span></label>
+        <input id="idea-compliance" type="text" placeholder="e.g. Nigeria Startup Act, GDPR, PCI-DSS" />
+      </div>
+      <div class="field">
+        <label for="idea-timeline">Timeline &amp; milestones <span class="hint">deadlines, phases</span></label>
+        <input id="idea-timeline" type="text" placeholder="e.g. MVP in 3 months, launch in 6" />
+      </div>
+      <div class="field">
+        <label for="idea-competitors">Competitors <span class="hint">comma-separated</span></label>
+        <input id="idea-competitors" type="text" placeholder="e.g. FarmLogs, Plantix" />
+      </div>
+      <div class="field">
+        <label for="idea-revenue">Revenue model <span class="hint">how it earns</span></label>
+        <input id="idea-revenue" type="text" placeholder="e.g. Subscription per farmer + cooperative fees" />
+      </div>
+      <div class="field">
+        <label for="idea-freetext">Anything else <span class="hint">optional — team, story, risks</span></label>
+        <textarea id="idea-freetext" rows="2" placeholder="Anything that helps the architect understand the vision..."></textarea>
       </div>
 
       <button id="btn-toggle-phase2" type="button" class="phase-toggle">
-        <span class="phase-badge phase-badge-2">PHASE 2 &middot; OPTIONAL</span>
-        <span class="phase-toggle-label">Business &amp; technical details — <b>skip it, the engine decides</b></span>
+        <span class="phase-badge phase-badge-2">PHASE 2 · OPTIONAL · TECHNICAL</span>
+        <span class="phase-toggle-label">Software definition — <b>skip it, the engine fills templates</b></span>
         <span class="phase-chevron">&#9662;</span>
       </button>
 
       <div id="phase2" class="phase2 hidden">
         <div class="field">
-          <label for="idea-summary">Product summary <span class="hint">what, who, accomplishes</span></label>
-          <input id="idea-summary" type="text" placeholder="e.g. Satellite-driven pest prediction for smallholder farmers" />
+          <label for="idea-features">Core features / modules <span class="hint">comma-separated — the building blocks</span></label>
+          <input id="idea-features" type="text" placeholder="e.g. satellite imagery, SMS alerts, weather fusion" />
         </div>
         <div class="field">
-          <label for="idea-bproblem">Business problem <span class="hint">pain, inefficiency, cost, risk</span></label>
-          <textarea id="idea-bproblem" rows="2" placeholder="e.g. Farmers lose 30% of crops to pests they cannot predict"></textarea>
+          <label for="idea-journeys">Key user journeys / use cases <span class="hint">step by step, plain words</span></label>
+          <textarea id="idea-journeys" rows="3" placeholder="1. Farmer registers with a phone number. 2. Farmer opens the app and sees pest risk..."></textarea>
         </div>
         <div class="field">
-          <label for="idea-tusers">Target users / roles <span class="hint">who interacts with the product</span></label>
-          <input id="idea-tusers" type="text" placeholder="e.g. Smallholder farmers, cooperative admins" />
+          <label for="idea-requirements">Functional requirements <span class="hint">what the software must DO</span></label>
+          <textarea id="idea-requirements" rows="3" placeholder="1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data..."></textarea>
         </div>
         <div class="field">
-          <label for="idea-success">Success criteria <span class="hint">measurable outcomes</span></label>
-          <input id="idea-success" type="text" placeholder="e.g. 10k active farmers, 30% less crop loss" />
+          <label for="idea-acceptance">Feature acceptance criteria <span class="hint">Given → When → Then</span></label>
+          <textarea id="idea-acceptance" rows="2" placeholder="Given a registered farmer, when pest risk exceeds a threshold, then an SMS alert is sent."></textarea>
         </div>
         <div class="field">
-          <label for="idea-mvp">MVP definition <span class="hint">smallest useful version</span></label>
-          <input id="idea-mvp" type="text" placeholder="e.g. Field registration + SMS pest alerts" />
+          <label for="idea-entities">Core data / entities <span class="hint">the main things the system stores</span></label>
+          <textarea id="idea-entities" rows="2" placeholder="e.g. users, farms, fields, pest alerts, subscriptions"></textarea>
         </div>
         <div class="field">
-          <label for="idea-tools">Tools &amp; integrations <span class="hint">APIs, services, platforms</span></label>
-          <input id="idea-tools" type="text" placeholder="e.g. M-Pesa, Africa's Talking, Google Maps" />
+          <label for="idea-brules">Business rules <span class="hint">limits, permissions, calculations</span></label>
+          <textarea id="idea-brules" rows="2" placeholder="e.g. Alerts only sent between 6am-9pm local time."></textarea>
         </div>
         <div class="field">
-          <label for="idea-constraints">Technical constraints <span class="hint">frameworks, hosting, limits</span></label>
-          <input id="idea-constraints" type="text" placeholder="e.g. Must work on low-bandwidth mobile" />
+          <label for="idea-quality">Quality &amp; performance <span class="hint">security, response times, reliability</span></label>
+          <textarea id="idea-quality" rows="2" placeholder="e.g. SMS delivered within 30s; 99.9% availability."></textarea>
         </div>
         <div class="field">
-          <label for="idea-compliance">Compliance standards <span class="hint">laws, security, certifications</span></label>
-          <input id="idea-compliance" type="text" placeholder="e.g. Nigeria Startup Act, GDPR, PCI-DSS" />
+          <label for="idea-existing">Existing system <span class="hint">new / rebuild / migration / extension</span></label>
+          <input id="idea-existing" type="text" placeholder="e.g. New project" />
         </div>
         <div class="field">
-          <label for="idea-timeline">Timeline &amp; milestones <span class="hint">deadlines, phases</span></label>
-          <input id="idea-timeline" type="text" placeholder="e.g. MVP in 3 months, launch in 6" />
+          <label for="idea-protected">Protected requirements <span class="hint">do not change</span></label>
+          <textarea id="idea-protected" rows="2" placeholder="e.g. Keep the existing branding and SMS provider."></textarea>
         </div>
         <div class="field">
-          <label for="idea-competitors">Competitors <span class="hint">comma-separated</span></label>
-          <input id="idea-competitors" type="text" placeholder="e.g. FarmLogs, Plantix" />
+          <label for="idea-assumptions">Known assumptions</label>
+          <textarea id="idea-assumptions" rows="2" placeholder="e.g. Farmers have basic feature phones."></textarea>
         </div>
         <div class="field">
-          <label for="idea-revenue">Revenue model <span class="hint">how it earns</span></label>
-          <input id="idea-revenue" type="text" placeholder="e.g. Subscription per farmer + cooperative fees" />
-        </div>
-        <div class="field">
-          <label for="idea-freetext">Anything else <span class="hint">optional — team, story, risks</span></label>
-          <textarea id="idea-freetext" rows="2" placeholder="Anything that helps the architect understand the vision..."></textarea>
+          <label for="idea-outscope">Out of scope</label>
+          <textarea id="idea-outscope" rows="2" placeholder="e.g. No mobile apps in v1."></textarea>
         </div>
       </div>
 

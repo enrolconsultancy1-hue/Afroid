@@ -35,9 +35,11 @@ def _evaluator(**overrides: object) -> dict:
 def _idea(**overrides: object) -> dict:
     base = {
         "project_name": "AgroPulse AI",
-        "one_liner": "Satellite-driven pest prediction for smallholder farmers.",
-        "problem": "Farmers lose crops to pests they cannot predict in time.",
+        "product_summary": "Satellite-driven pest prediction for smallholder farmers.",
+        "business_problem": "Farmers lose crops to pests they cannot predict in time.",
         "target_users": "Smallholder farmers across East Africa.",
+        "success_criteria": "10k active farmers and 30% less crop loss.",
+        "mvp_definition": "Field registration plus SMS pest alerts.",
         "core_features": ["satellite imagery", "SMS alerts"],
         "user_journeys": "1. Farmer registers. 2. Farmer sees pest risk. 3. Farmer gets an SMS alert.",
         "functional_requirements": "1. Send SMS alerts. 2. Show field risk maps. 3. Log crop issues.",
@@ -264,20 +266,34 @@ class TestIdeaIntake:
         r = await client.post(
             "/v1/intake/ideas",
             json=_idea(
-                one_liner="",
                 extended={
-                    "product_summary": "Satellite-driven pest prediction service",
                     "revenue_model": "Subscription per farmer",
                     "competitors": "FarmLogs, Plantix",
-                },
+                }
             ),
         )
         assert r.status_code == 201
         body = r.json()
         assert body["extended"]["revenue_model"] == "Subscription per farmer"
-        assert body["one_liner"] == "Satellite-driven pest prediction service"
+        assert body["extended"]["success_criteria"] != ""
+        assert body["one_liner"] == "Satellite-driven pest prediction for smallholder farmers."
         assert body["user_journeys"] != ""
 
     async def test_submit_rejects_unknown_extended_key(self, client: AsyncClient) -> None:
         r = await client.post("/v1/intake/ideas", json=_idea(extended={"not_a_spec_field": "x"}))
         assert r.status_code == 422
+
+    async def test_submit_technical_fields_optional(self, client: AsyncClient) -> None:
+        r = await client.post(
+            "/v1/intake/ideas",
+            json=_idea(
+                core_features=[],
+                user_journeys="",
+                functional_requirements="",
+                data_entities="",
+            ),
+        )
+        assert r.status_code == 201
+        body = r.json()
+        assert body["core_features"] == []
+        assert body["status"] == "pending"
