@@ -242,6 +242,7 @@ input:-webkit-autofill:focus {
   body { width: 100%; }
   .app { max-width: 760px; margin: 0 auto; }
   .panel { max-height: none; }
+  #btn-fullscreen { display: none; }
 }
 
 /* Footer link button */
