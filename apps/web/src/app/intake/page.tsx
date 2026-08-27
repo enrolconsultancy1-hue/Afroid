@@ -224,10 +224,10 @@ export default function IntakePage() {
             Architect <span className="text-brand-500">Intake</span>
           </h1>
           <p className="mt-3 max-w-2xl text-surface-400">
-            Answer the business questions in plain words — anyone can. The optional
-            technical software definition can be skipped: the geezcodE engine fills it
-            with proven templates and, with the frontier model, produces the complete
-            zero-question Architecture Blueprint (folder &amp; file tree included).
+            Answer the business questions in plain words — anyone can. Add the optional
+            software definition for full technical control, and the frontier model
+            produces the complete zero-question Architecture Blueprint (folder &amp;
+            file tree included).
           </p>
         </div>
 
@@ -274,14 +274,9 @@ export default function IntakePage() {
             className="mt-8 flex w-full items-center gap-3 rounded-lg border border-dashed border-surface-700 px-4 py-3 text-left transition-colors hover:border-surface-500"
           >
             <span className="rounded-md border border-surface-700 px-2.5 py-1 text-[11px] font-bold tracking-widest text-surface-400">
-              PHASE 2 · OPTIONAL · TECHNICAL
+              SOFTWARE DEFINITION (OPTIONAL)
             </span>
-            <span className="flex-1 text-sm text-surface-400">
-              Software definition —{" "}
-              <span className="font-semibold text-brand-500">
-                skip it, the engine fills templates
-              </span>
-            </span>
+            <span className="flex-1" />
             <span className="text-surface-500">{showPhase2 ? "▲" : "▼"}</span>
           </button>
 
@@ -349,8 +344,7 @@ export default function IntakePage() {
             {submitting ? "Submitting…" : "Submit idea →"}
           </button>
           <p className="mt-3 text-center text-xs text-surface-500">
-            Phase 2 (technical) left blank is filled by the engine with proven built-in
-            templates.
+            Optional — the engine completes the technical definition.
           </p>
         </div>
       </main>
