@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncGenerator
 
+import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import text
@@ -31,6 +32,20 @@ async def engine():
     async with eng.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await eng.dispose()
+
+
+@pytest.fixture(autouse=True)
+def _disable_blueprint_generation(monkeypatch) -> None:
+    """Stub out the orchestrator call so claim tests stay fast and deterministic.
+
+    The real blueprint generation path is covered separately in
+    ``test_claim_auto_generates_draft_blueprint`` which re-patches this helper.
+    """
+
+    async def _noop(_idea: object) -> None:
+        return None
+
+    monkeypatch.setattr("services.intake.app.routes.ideas._generate_draft_blueprint", _noop)
 
 
 @pytest_asyncio.fixture(autouse=True)

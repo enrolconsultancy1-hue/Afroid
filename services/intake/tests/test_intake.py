@@ -98,6 +98,24 @@ class TestIdeaSubmissionQueue:
         )
         assert r.status_code == 400
 
+    async def test_claim_auto_generates_draft_blueprint(
+        self, client: AsyncClient, monkeypatch
+    ) -> None:
+        async def fake_generate(idea) -> dict:
+            return {"project_name": idea.project_name, "modules": ["M1", "M2"]}
+
+        monkeypatch.setattr(
+            "services.intake.app.routes.ideas._generate_draft_blueprint", fake_generate
+        )
+        idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
+        r = await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth())
+        assert r.status_code == 200
+        assert r.json()["status"] == "claimed"
+        assert r.json()["draft_blueprint"] == {
+            "project_name": "AgroPulse AI",
+            "modules": ["M1", "M2"],
+        }
+
 
 class TestWriterProfile:
     async def test_register_and_get_me(self, client: AsyncClient) -> None:

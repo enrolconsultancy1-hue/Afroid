@@ -2,14 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 from datetime import UTC, datetime
 
+import httpx
 from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.intake.app.auth import get_current_user, get_optional_user
+from services.intake.app.config import settings
 from services.intake.app.models.intake import (
     IDEA_STATUS_BLUEPRINT_READY,
     IDEA_STATUS_CLAIMED,
@@ -21,6 +24,8 @@ from services.intake.app.models.intake import (
 )
 from services.intake.app.schemas.intake import IdeaResponse, IdeaStatusUpdate, IdeaSubmitRequest
 from services.shared.exceptions import BadRequestError, ForbiddenError, NotFoundError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/ideas", tags=["ideas"])
 
@@ -36,6 +41,32 @@ _ALLOWED_STATUSES = {
 
 def _session(request: Request) -> AsyncSession:
     return request.state.db_session
+
+
+async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
+    """Best-effort zero-question blueprint generation via the orchestrator.
+
+    Fails silently (returns None) if the orchestrator is unreachable or errors,
+    so claiming an idea never blocks on an external dependency.
+    """
+    idea_dict = {
+        "projectName": idea.project_name,
+        "oneLiner": idea.one_liner,
+        "problem": idea.problem,
+        "targetUsers": idea.target_users,
+        "coreFeatures": idea.core_features,
+    }
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=1.5)) as client:
+            response = await client.post(
+                f"{settings.orchestrator_url}/v1/builder/intake",
+                json={"idea": idea_dict},
+            )
+            response.raise_for_status()
+            return response.json().get("data", {}).get("blueprint")
+    except Exception as error:
+        logger.warning("draft_blueprint_generation_failed: %s", error)
+        return None
 
 
 @router.post("", response_model=IdeaResponse, status_code=201)
@@ -109,7 +140,7 @@ async def claim_idea(
     idea_id: uuid.UUID,
     user_id: uuid.UUID = Depends(get_current_user),
 ) -> IdeaResponse:
-    """Claim a pending idea for evaluation (human-in-the-loop)."""
+    """Claim a pending idea for evaluation and auto-generate a draft blueprint."""
     session = _session(request)
     idea = await session.get(IdeaSubmission, idea_id)
     if idea is None:
@@ -121,6 +152,14 @@ async def claim_idea(
     idea.claimed_at = datetime.now(UTC)
     await session.flush()
     await session.refresh(idea)
+
+    # Zero-question blueprint intake (best-effort; never blocks the claim).
+    blueprint = await _generate_draft_blueprint(idea)
+    if blueprint is not None:
+        idea.draft_blueprint = blueprint
+        await session.flush()
+        await session.refresh(idea)
+
     return IdeaResponse.model_validate(idea)
 
 
