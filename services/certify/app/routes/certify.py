@@ -6,6 +6,7 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.app.middleware.auth_middleware import get_current_user
 from services.auth.app.models.user import User
@@ -13,7 +14,14 @@ from services.certify.app.engine.certificate_pdf import render_certificate_pdf
 from services.certify.app.engine.compliance import AuditTrail, ComplianceEngine
 from services.certify.app.engine.ip_verifier import IPVerifier
 from services.certify.app.engine.pitch_deck import PitchDeckCertificationEngine
-from services.shared.exceptions import BadRequestError
+from services.certify.app.models.designation import Designation
+from services.certify.app.store import (
+    designation_to_dict,
+    get_designation_by_certificate_id,
+    list_designations,
+    upsert_designation,
+)
+from services.shared.exceptions import BadRequestError, NotFoundError
 from services.shared.pitch_rubric import RUBRIC_DIMENSIONS
 
 router = APIRouter(prefix="/certify", tags=["certification"])
@@ -21,6 +29,10 @@ router = APIRouter(prefix="/certify", tags=["certification"])
 compliance_engine = ComplianceEngine()
 ip_verifier = IPVerifier()
 pitch_engine = PitchDeckCertificationEngine()
+
+
+def _session(request: Request) -> AsyncSession:
+    return request.state.db_session
 
 
 def _build_designation(body: dict[str, Any]) -> dict[str, Any]:
@@ -46,6 +58,28 @@ def _build_designation(body: dict[str, Any]) -> dict[str, Any]:
         project_name=project_name,
         compliance=compliance_results,
         originality=originality,
+    )
+
+
+async def _persist_designation(request: Request, designation: dict[str, Any]) -> Designation:
+    """Persist a designation (one record per submission, latest wins)."""
+    session = _session(request)
+    return await upsert_designation(
+        session,
+        {
+            "certificate_id": designation["certificate_id"],
+            "submission_id": designation["submission_id"],
+            "project_name": designation["project_name"],
+            "grade": designation["grade"],
+            "score": designation["score"],
+            "designation": designation["designation"],
+            "rubric": designation["rubric"],
+            "compliance": designation["compliance"],
+            "originality": designation["originality"],
+            "issuer": designation["issuer"],
+            "validity_days": designation["validity_days"],
+            "issued_at": designation["issued_at"],
+        },
     )
 
 
@@ -101,8 +135,9 @@ async def designate_startup(
     body: dict[str, Any],
     current_user: User = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Issue a Startup Designation Certificate (grade + summary + audit entry)."""
+    """Issue and persist a Startup Designation Certificate (one per submission)."""
     designation = _build_designation(body)
+    record = await _persist_designation(request, designation)
 
     audit = AuditTrail()
     audit.add_entry(
@@ -116,7 +151,12 @@ async def designate_startup(
         },
     )
 
-    return {"data": {**designation, "audit_entry_id": audit.get_entries()[-1]["id"]}}
+    return {
+        "data": {
+            **designation_to_dict(record),
+            "audit_entry_id": audit.get_entries()[-1]["id"],
+        }
+    }
 
 
 @router.post("/designate/pdf", status_code=200)
@@ -127,6 +167,7 @@ async def designate_startup_pdf(
 ) -> Response:
     """Return the designation as a unique PDF certificate."""
     designation = _build_designation(body)
+    await _persist_designation(request, designation)
     pdf_bytes = render_certificate_pdf(designation)
 
     return Response(
@@ -135,4 +176,50 @@ async def designate_startup_pdf(
         headers={
             "Content-Disposition": (f'inline; filename="{designation["certificate_id"]}.pdf"')
         },
+    )
+
+
+@router.get("/designations", status_code=200)
+async def get_designations(
+    request: Request,
+    submission_id: str | None = None,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """List persisted designations (optionally filtered by submission)."""
+    session = _session(request)
+    records = await list_designations(session, submission_id=submission_id)
+    return {"data": [designation_to_dict(r) for r in records]}
+
+
+@router.get("/designations/{certificate_id}", status_code=200)
+async def get_designation(
+    request: Request,
+    certificate_id: str,
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Fetch a persisted designation by its certificate id."""
+    session = _session(request)
+    record = await get_designation_by_certificate_id(session, certificate_id)
+    if record is None:
+        raise NotFoundError(resource="Designation", resource_id=certificate_id)
+    return {"data": designation_to_dict(record)}
+
+
+@router.get("/designations/{certificate_id}/pdf", status_code=200)
+async def get_designation_pdf(
+    request: Request,
+    certificate_id: str,
+    current_user: User = Depends(get_current_user),
+) -> Response:
+    """Re-render a persisted designation as a PDF certificate."""
+    session = _session(request)
+    record = await get_designation_by_certificate_id(session, certificate_id)
+    if record is None:
+        raise NotFoundError(resource="Designation", resource_id=certificate_id)
+    pdf_bytes = render_certificate_pdf(designation_to_dict(record))
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'inline; filename="{certificate_id}.pdf"'},
     )

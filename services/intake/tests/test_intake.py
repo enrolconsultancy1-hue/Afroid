@@ -33,6 +33,15 @@ def _idea(**overrides: object) -> dict:
     return base
 
 
+async def _register_writer(client: AsyncClient, user_id: str = TEST_USER) -> None:
+    r = await client.post(
+        "/v1/intake/writers",
+        headers=_auth(user_id),
+        json={"display_name": "Test Builder", "email": "builder@example.com"},
+    )
+    assert r.status_code == 201
+
+
 class TestIdeaSubmissionQueue:
     async def test_submit_idea_anonymously(self, client: AsyncClient) -> None:
         r = await client.post("/v1/intake/ideas", json=_idea())
@@ -48,6 +57,7 @@ class TestIdeaSubmissionQueue:
         assert r.json()["submitted_by"] == TEST_USER
 
     async def test_fifo_claim_flow(self, client: AsyncClient) -> None:
+        await _register_writer(client)
         # Submit A, claim it, submit B, then next pending should be B.
         a = (await client.post("/v1/intake/ideas", json=_idea(project_name="First"))).json()
         nxt = await client.get("/v1/intake/ideas/next", headers=_auth())
@@ -65,6 +75,7 @@ class TestIdeaSubmissionQueue:
         assert nxt2.json()["project_name"] == "Second"
 
     async def test_status_transition_with_draft_blueprint(self, client: AsyncClient) -> None:
+        await _register_writer(client)
         idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
         await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth())
 
@@ -83,12 +94,14 @@ class TestIdeaSubmissionQueue:
         assert r.status_code == 401
 
     async def test_double_claim_rejected(self, client: AsyncClient) -> None:
+        await _register_writer(client)
         idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
         await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth())
         r = await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth(TEST_USER))
         assert r.status_code == 400
 
     async def test_invalid_status_rejected(self, client: AsyncClient) -> None:
+        await _register_writer(client)
         idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
         await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth())
         r = await client.patch(
@@ -101,6 +114,8 @@ class TestIdeaSubmissionQueue:
     async def test_claim_auto_generates_draft_blueprint(
         self, client: AsyncClient, monkeypatch
     ) -> None:
+        await _register_writer(client)
+
         async def fake_generate(idea) -> dict:
             return {"project_name": idea.project_name, "modules": ["M1", "M2"]}
 
@@ -115,6 +130,11 @@ class TestIdeaSubmissionQueue:
             "project_name": "AgroPulse AI",
             "modules": ["M1", "M2"],
         }
+
+    async def test_claim_requires_registered_builder(self, client: AsyncClient) -> None:
+        idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
+        r = await client.post(f"/v1/intake/ideas/{idea['id']}/claim", headers=_auth())
+        assert r.status_code == 403
 
 
 class TestWriterProfile:

@@ -104,9 +104,9 @@ class TestDesignation:
 
     def test_certificate_id_deterministic(self) -> None:
         engine = PitchDeckCertificationEngine()
-        a = engine.certificate_id("idea-1", 100.0, "Very Great Distinction", "2026-01-01")
-        b = engine.certificate_id("idea-1", 100.0, "Very Great Distinction", "2026-01-01")
-        c = engine.certificate_id("idea-2", 100.0, "Very Great Distinction", "2026-01-01")
+        a = engine.certificate_id("idea-1", 100.0, "Very Great Distinction")
+        b = engine.certificate_id("idea-1", 100.0, "Very Great Distinction")
+        c = engine.certificate_id("idea-2", 100.0, "Very Great Distinction")
         assert a == b
         assert a != c
 

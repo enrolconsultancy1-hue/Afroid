@@ -79,9 +79,9 @@ class PitchDeckCertificationEngine:
     # --- Certificate ---
 
     @staticmethod
-    def certificate_id(submission_id: str, score: float, grade: str, issued_at: str) -> str:
+    def certificate_id(submission_id: str, score: float, grade: str) -> str:
         """Deterministic certificate id bound to the designation inputs."""
-        payload = f"{submission_id}|{score}|{grade}|{issued_at}"
+        payload = f"{submission_id}|{score}|{grade}"
         return "CERT-" + hashlib.sha256(payload.encode()).hexdigest()[:24].upper()
 
     def designate(
@@ -110,7 +110,7 @@ class PitchDeckCertificationEngine:
         awarded = compliance_status == "passed" and originality_ok and score >= cert_floor
 
         return {
-            "certificate_id": self.certificate_id(submission_id, score, grade, issued_at),
+            "certificate_id": self.certificate_id(submission_id, score, grade),
             "submission_id": submission_id,
             "project_name": project_name,
             "issued_at": issued_at,

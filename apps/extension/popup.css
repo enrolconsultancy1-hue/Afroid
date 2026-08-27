@@ -163,7 +163,7 @@ body {
 .claim-card .meta { font-size: 11px; color: var(--text-muted); margin-bottom: 6px; }
 .claim-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
 
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 /* Footer */
 .footer {

@@ -182,3 +182,59 @@ class TestPitchEvaluation:
             json={"submission_id": idea["id"], "score": 80, "criteria": {"problem": 11}},
         )
         assert r.status_code == 422
+
+
+class TestCertifyFlow:
+    async def test_certify_idea_calls_certify_service(
+        self, client: AsyncClient, monkeypatch
+    ) -> None:
+        captured: dict = {}
+
+        async def fake_certify(payload: dict, token: str) -> dict:
+            captured.update(payload)
+            return {
+                "certificate_id": "CERT-TEST123",
+                "submission_id": payload["submission_id"],
+                "project_name": payload["project_name"],
+                "grade": "Distinction",
+                "score": 75.0,
+                "designation": "awarded",
+            }
+
+        monkeypatch.setattr("services.intake.app.routes.ideas._request_certification", fake_certify)
+        idea = (
+            await client.post(
+                "/v1/intake/ideas", json={"project_name": "Pitchable"}, headers=_auth(FOUNDER)
+            )
+        ).json()
+        await _register_and_approve(client, EVALUATOR)
+        r = await client.post(
+            "/v1/intake/evaluations",
+            headers=_auth(EVALUATOR),
+            json={
+                "submission_id": idea["id"],
+                "score": 80,
+                "criteria": {"problem": 8, "solution": 8, "market": 7},
+            },
+        )
+        assert r.status_code == 201
+
+        resp = await client.post(f"/v1/intake/ideas/{idea['id']}/certify", headers=_auth(FOUNDER))
+        assert resp.status_code == 200
+        assert resp.json()["grade"] == "Distinction"
+        assert captured["submission_id"] == idea["id"]
+        assert captured["project_name"] == "Pitchable"
+        assert captured["criteria"]["problem"] == 8.0
+
+    async def test_certify_requires_evaluations(self, client: AsyncClient, monkeypatch) -> None:
+        async def fake_certify(payload: dict, token: str) -> dict:
+            return {"grade": "x"}
+
+        monkeypatch.setattr("services.intake.app.routes.ideas._request_certification", fake_certify)
+        idea = (
+            await client.post(
+                "/v1/intake/ideas", json={"project_name": "NoEvals"}, headers=_auth(FOUNDER)
+            )
+        ).json()
+        resp = await client.post(f"/v1/intake/ideas/{idea['id']}/certify", headers=_auth(FOUNDER))
+        assert resp.status_code == 400

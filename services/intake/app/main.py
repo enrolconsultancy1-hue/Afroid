@@ -19,6 +19,7 @@ from services.intake.app.models.intake import (  # noqa: F401 — registers mode
 from services.intake.app.routes.evaluations import router as evaluations_router
 from services.intake.app.routes.evaluators import router as evaluators_router
 from services.intake.app.routes.ideas import router as ideas_router
+from services.intake.app.routes.me import router as me_router
 from services.intake.app.routes.writers import router as writers_router
 from services.shared.database import Base, create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
@@ -78,6 +79,7 @@ def create_app() -> FastAPI:
     app.include_router(writers_router, prefix="/v1/intake")
     app.include_router(evaluators_router, prefix="/v1/intake")
     app.include_router(evaluations_router, prefix="/v1/intake")
+    app.include_router(me_router, prefix="/v1/intake")
 
     @app.get("/health", response_model=HealthCheck, tags=["health"])
     async def health_check() -> HealthCheck:

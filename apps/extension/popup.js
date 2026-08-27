@@ -116,6 +116,7 @@ async function handleSaveToken() {
   }
   await chrome.storage.local.set({ [TOKEN_KEY]: token });
   $("portal-token").value = "";
+  applyRoleGating();
   showStatus(status, "✓ Token saved.", "success");
 }
 
@@ -343,6 +344,41 @@ async function handleSubmitEvaluation() {
   }
 }
 
+// --- Role-aware tabs: show only what the current user can do ---
+function setTabVisible(tab, visible) {
+  const btn = document.querySelector('.tab[data-tab="' + tab + '"]');
+  const panel = document.getElementById("panel-" + tab);
+  if (btn) btn.classList.toggle("hidden", !visible);
+  if (panel) panel.classList.toggle("hidden", !visible);
+}
+
+async function applyRoleGating() {
+  const token = await getToken();
+  setTabVisible("submit", true);
+  setTabVisible("portal", false);
+  setTabVisible("evaluator", false);
+  if (!token) {
+    return;
+  }
+  try {
+    const base = await getApiBase();
+    const res = await fetch(base + "/v1/intake/me", { headers: authHeaders(token) });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const me = await res.json();
+    const roles = me.roles || [];
+    setTabVisible("portal", roles.indexOf("writer") !== -1);
+    setTabVisible("evaluator", roles.indexOf("evaluator") !== -1);
+  } catch (e) {
+    // Fallback: keep the builder portal reachable (token entry + registration).
+    setTabVisible("portal", true);
+  }
+  const active = document.querySelector(".tab.active");
+  if (active && active.classList.contains("hidden")) {
+    const first = document.querySelector(".tab:not(.hidden)");
+    if (first) first.click();
+  }
+}
+
 // --- Boot ---
 function init() {
   initTabs();
@@ -355,6 +391,7 @@ function init() {
   $("btn-submit-evaluation").addEventListener("click", handleSubmitEvaluation);
 
   // Pre-fill the token field from storage so the builder sees it's saved.
+  applyRoleGating();
   chrome.storage.local.get(TOKEN_KEY).then((data) => {
     if (data[TOKEN_KEY]) {
       $("portal-token").value = data[TOKEN_KEY];

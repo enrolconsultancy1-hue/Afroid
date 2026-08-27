@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import UTC, datetime
+from typing import Any
 
 import httpx
 from fastapi import APIRouter, Depends, Query, Request
@@ -21,9 +22,17 @@ from services.intake.app.models.intake import (
     IDEA_STATUS_PENDING,
     IDEA_STATUS_REJECTED,
     IdeaSubmission,
+    PitchEvaluation,
+    WriterProfile,
 )
 from services.intake.app.schemas.intake import IdeaResponse, IdeaStatusUpdate, IdeaSubmitRequest
-from services.shared.exceptions import BadRequestError, ForbiddenError, NotFoundError
+from services.intake.app.scoring import rubric_breakdown
+from services.shared.exceptions import (
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+    ServiceUnavailableError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +50,13 @@ _ALLOWED_STATUSES = {
 
 def _session(request: Request) -> AsyncSession:
     return request.state.db_session
+
+
+async def _require_builder(session: AsyncSession, user_id: uuid.UUID) -> None:
+    """Require the user to be a registered builder (writer profile exists)."""
+    result = await session.execute(select(WriterProfile).where(WriterProfile.user_id == user_id))
+    if result.scalar_one_or_none() is None:
+        raise ForbiddenError(detail="Only registered builders can access the evaluation queue.")
 
 
 async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
@@ -66,6 +82,24 @@ async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
             return response.json().get("data", {}).get("blueprint")
     except Exception as error:
         logger.warning("draft_blueprint_generation_failed: %s", error)
+        return None
+
+
+async def _request_certification(payload: dict[str, Any], token: str) -> dict[str, Any] | None:
+    """Call the certify service's designation endpoint (best-effort)."""
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0)) as client:
+            response = await client.post(
+                f"{settings.certify_url}/v1/certify/designate",
+                json=payload,
+                headers={"Authorization": f"Bearer {token}"} if token else {},
+            )
+            if response.status_code >= 400:
+                logger.warning("certify_error: %s %s", response.status_code, response.text[:300])
+                return None
+            return response.json().get("data")
+    except Exception as error:
+        logger.warning("certify_request_failed: %s", error)
         return None
 
 
@@ -120,8 +154,9 @@ async def next_pending(
     request: Request,
     user_id: uuid.UUID = Depends(get_current_user),
 ) -> IdeaResponse:
-    """Dequeue the next pending idea (FIFO by timestamp). Requires auth."""
+    """Dequeue the next pending idea (FIFO by timestamp). Builders only."""
     session = _session(request)
+    await _require_builder(session, user_id)
     result = await session.execute(
         select(IdeaSubmission)
         .where(IdeaSubmission.status == IDEA_STATUS_PENDING)
@@ -142,6 +177,7 @@ async def claim_idea(
 ) -> IdeaResponse:
     """Claim a pending idea for evaluation and auto-generate a draft blueprint."""
     session = _session(request)
+    await _require_builder(session, user_id)
     idea = await session.get(IdeaSubmission, idea_id)
     if idea is None:
         raise NotFoundError(resource="IdeaSubmission", resource_id=str(idea_id))
@@ -161,6 +197,44 @@ async def claim_idea(
         await session.refresh(idea)
 
     return IdeaResponse.model_validate(idea)
+
+
+@router.post("/{idea_id}/certify", response_model=dict[str, Any])
+async def certify_idea(
+    request: Request,
+    idea_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Aggregate evaluations and request a Startup Designation Certificate."""
+    session = _session(request)
+    idea = await session.get(IdeaSubmission, idea_id)
+    if idea is None:
+        raise NotFoundError(resource="IdeaSubmission", resource_id=str(idea_id))
+
+    result = await session.execute(
+        select(PitchEvaluation)
+        .where(PitchEvaluation.submission_id == idea_id)
+        .order_by(PitchEvaluation.created_at.asc())
+    )
+    evaluations = result.scalars().all()
+    if not evaluations:
+        raise BadRequestError(detail="No evaluations yet — the idea cannot be certified.")
+
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header.removeprefix("Bearer ").strip() if auth_header else ""
+
+    payload = {
+        "submission_id": str(idea.id),
+        "project_name": idea.project_name,
+        "criteria": rubric_breakdown(evaluations),
+        "jurisdictions": [],
+        "profile": {},
+        "texts": {},
+    }
+    designation = await _request_certification(payload, token)
+    if designation is None:
+        raise ServiceUnavailableError(detail="Certify service unavailable.")
+    return designation
 
 
 @router.patch("/{idea_id}/status", response_model=IdeaResponse)

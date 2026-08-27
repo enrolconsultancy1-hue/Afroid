@@ -9,14 +9,15 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
+from services.certify.app.config import settings
+from services.certify.app.models.designation import (  # noqa: F401 — registers on Base.metadata
+    Designation,
+)
 from services.certify.app.routes.certify import router as certify_router
-from services.shared.config import BaseAppSettings
-from services.shared.database import create_engine, create_session_factory
+from services.shared.database import Base, create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging
 from services.shared.schemas import HealthCheck
-
-settings = BaseAppSettings()
 
 
 @asynccontextmanager
@@ -29,6 +30,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+    # Create certify-owned tables idempotently (designations).
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
@@ -36,7 +40,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Afroid Certify Service",
-        description="RegTech compliance engine for African Startup Act certifications.",
+        description="RegTech compliance engine, pitch-deck designation certificates, IP verification.",
         version="1.0.0",
         docs_url="/docs" if settings.is_development else None,
         default_response_class=ORJSONResponse,

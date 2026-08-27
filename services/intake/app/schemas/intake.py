@@ -153,3 +153,12 @@ class ScoreResponse(BaseModel):
     average_score: float | None
     rubric_breakdown: dict[str, float] = Field(default_factory=dict)
     evaluations: list[PitchEvaluationResponse]
+
+
+class MeResponse(BaseModel):
+    """Current user's roles within the intake platform."""
+
+    user_id: uuid.UUID
+    writer_status: str | None
+    evaluator_status: str | None
+    roles: list[str]
