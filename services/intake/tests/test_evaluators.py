@@ -40,6 +40,8 @@ def _idea(**overrides: object) -> dict:
         "target_users": "Smallholder farmers across East Africa.",
         "success_criteria": "10k active farmers and 30% less crop loss.",
         "mvp_definition": "Field registration plus SMS pest alerts.",
+        "founder_name": "Test Founder",
+        "founder_email": "founder@example.com",
         "core_features": ["satellite imagery", "SMS alerts"],
         "user_journeys": "1. Farmer registers. 2. Farmer sees pest risk. 3. Farmer gets an SMS alert.",
         "functional_requirements": "1. Send SMS alerts. 2. Show field risk maps. 3. Log crop issues.",
@@ -297,3 +299,10 @@ class TestIdeaIntake:
         body = r.json()
         assert body["core_features"] == []
         assert body["status"] == "pending"
+
+    async def test_submit_requires_founder_contact(self, client: AsyncClient) -> None:
+        r = await client.post(
+            "/v1/intake/ideas",
+            json=_idea(founder_name="", founder_email=""),
+        )
+        assert r.status_code == 422

@@ -316,8 +316,8 @@ export interface IntakeIdea {
   functional_requirements: string;
   data_entities: string;
   free_text: string;
-  founder_name?: string | null;
-  founder_email?: string | null;
+  founder_name: string;
+  founder_email: string;
   submitted_by?: string | null;
   status: string;
   assigned_to?: string | null;

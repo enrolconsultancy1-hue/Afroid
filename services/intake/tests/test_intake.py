@@ -28,6 +28,8 @@ def _idea(**overrides: object) -> dict:
         "target_users": "Smallholder farmers across East Africa.",
         "success_criteria": "10k active farmers and 30% less crop loss.",
         "mvp_definition": "Field registration plus SMS pest alerts.",
+        "founder_name": "Test Founder",
+        "founder_email": "founder@example.com",
         "core_features": ["satellite imagery", "SMS alerts", "weather fusion"],
         "user_journeys": "1. Farmer registers with a phone number. 2. Farmer opens the app and sees pest risk for their field. 3. Farmer receives an SMS alert before an outbreak.",
         "functional_requirements": "1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data. 3. Let farmers log crop issues.",

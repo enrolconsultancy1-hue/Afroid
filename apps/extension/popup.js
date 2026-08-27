@@ -55,9 +55,9 @@ function initTabs() {
 // --- Tab 1: Submit idea ---
 function handleTogglePhase2() {
   const panel = $("phase2");
-  const chevron = document.querySelector(".phase-chevron");
+  const btn = $("btn-toggle-phase2");
   const nowHidden = panel.classList.toggle("hidden");
-  if (chevron) chevron.textContent = nowHidden ? "▾" : "▴";
+  if (btn) btn.classList.toggle("open", !nowHidden);
 }
 
 async function handleSubmitIdea() {
@@ -71,6 +71,8 @@ async function handleSubmitIdea() {
     { id: "idea-tusers", label: "Target users" },
     { id: "idea-success", label: "Success criteria" },
     { id: "idea-mvp", label: "MVP definition" },
+    { id: "idea-founder-name", label: "Full name" },
+    { id: "idea-founder-email", label: "Email" },
   ];
   const missing = [];
   required.forEach((f) => {

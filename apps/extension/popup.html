@@ -140,8 +140,14 @@
       </div>
 
       <div class="field row">
-        <input id="idea-founder-name" type="text" placeholder="Your name (optional)" />
-        <input id="idea-founder-email" type="email" placeholder="Email (optional)" />
+        <div class="field" style="flex:1;margin:0">
+          <label for="idea-founder-name">Full name <span class="req">*</span></label>
+          <input id="idea-founder-name" type="text" placeholder="e.g. Amara Bekele" />
+        </div>
+        <div class="field" style="flex:1;margin:0">
+          <label for="idea-founder-email">Email <span class="req">*</span></label>
+          <input id="idea-founder-email" type="email" placeholder="you@example.com" />
+        </div>
       </div>
 
       <button id="btn-submit-idea" class="btn primary">Submit idea &rarr;</button>
@@ -240,7 +246,7 @@
     <footer class="footer">
       <span><span class="dot"></span> Connected to central DB</span>
       <button id="btn-fullscreen" class="link-btn">Open full window</button>
-      <span class="ver">v2.5.1</span>
+      <span class="ver">v2.5.2</span>
     </footer>
   </div>
 

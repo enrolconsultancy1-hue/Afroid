@@ -118,8 +118,8 @@ class IdeaSubmitRequest(BaseModel):
 
     # --- Other ---
     free_text: str = Field(default="", max_length=20000, description="Anything else (optional)")
-    founder_name: str | None = Field(default=None, max_length=255)
-    founder_email: str | None = Field(default=None, max_length=255)
+    founder_name: str = Field(..., min_length=2, max_length=255, description="Founder full name")
+    founder_email: str = Field(..., min_length=5, max_length=255, description="Founder email")
 
     # --- Additional Phase-A business fields (optional, validated keys) ---
     extended: dict | None = Field(default=None, description="Any additional PHASE_A_KEYS field")
@@ -133,6 +133,13 @@ class IdeaSubmitRequest(BaseModel):
         unknown = set(value) - PHASE_A_KEYS
         if unknown:
             raise ValueError(f"Unknown phase-A fields: {sorted(unknown)}")
+        return value
+
+    @field_validator("founder_email")
+    @classmethod
+    def _validate_founder_email(cls, value: str) -> str:
+        if "@" not in value or "." not in value.split("@")[-1]:
+            raise ValueError("A valid founder email is required.")
         return value
 
 

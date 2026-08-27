@@ -55,6 +55,18 @@ const PHASE1_FIELDS: FieldDef[] = [
     hint: "smallest useful version",
     placeholder: "e.g. Field registration + SMS pest alerts",
   },
+  {
+    id: "founderName",
+    label: "Full name",
+    required: true,
+    placeholder: "e.g. Amara Bekele",
+  },
+  {
+    id: "founderEmail",
+    label: "Email",
+    required: true,
+    placeholder: "you@example.com",
+  },
 ];
 
 /* Phase 1 — optional: more non-technical business details */
@@ -277,7 +289,7 @@ export default function IntakePage() {
               SOFTWARE DEFINITION (OPTIONAL)
             </span>
             <span className="flex-1" />
-            <span className="text-surface-500">{showPhase2 ? "▲" : "▼"}</span>
+            <span className="text-lg leading-none text-brand-500">{showPhase2 ? "▲" : "▼"}</span>
           </button>
 
           {showPhase2 && (
@@ -290,8 +302,7 @@ export default function IntakePage() {
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             <div>
               <label htmlFor="founderName" className="mb-1.5 block text-sm font-medium">
-                Your name{" "}
-                <span className="text-xs font-normal text-surface-500">optional</span>
+                Full name <span className="text-brand-500">*</span>
               </label>
               <input
                 id="founderName"
@@ -304,8 +315,7 @@ export default function IntakePage() {
             </div>
             <div>
               <label htmlFor="founderEmail" className="mb-1.5 block text-sm font-medium">
-                Email{" "}
-                <span className="text-xs font-normal text-surface-500">optional</span>
+                Email <span className="text-brand-500">*</span>
               </label>
               <input
                 id="founderEmail"
