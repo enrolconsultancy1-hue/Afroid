@@ -1,8 +1,10 @@
 :root {
+  color-scheme: dark; /* native controls (select popup, scrollbars) render dark, never white */
   --bg: #0a0f14;
   --bg-panel: #0f161d;
   --bg-input: #121a22;
   --border: #1f2b35;
+  --border-hover: #2e4152;
   --border-focus: #00f0ff;
   --accent: #00f0ff;
   --accent-dim: rgba(0, 240, 255, 0.12);
@@ -83,11 +85,22 @@ body {
 .panel.active { display: block; }
 .panel-desc { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
 
-/* Fields */
+/* Dark scrollbar inside panels */
+.panel::-webkit-scrollbar { width: 8px; }
+.panel::-webkit-scrollbar-track { background: transparent; }
+.panel::-webkit-scrollbar-thumb {
+  background: #1f2b35;
+  border-radius: 4px;
+}
+.panel::-webkit-scrollbar-thumb:hover { background: #2e4152; }
+
+/* Fields — unified dark input system */
 .field { margin-bottom: 10px; }
 .field label { display: block; font-size: 11px; font-weight: 600; margin-bottom: 4px; }
 .field .hint { color: var(--text-muted); font-weight: 400; font-style: italic; }
-.field input, .field textarea {
+.field input,
+.field textarea,
+.field select {
   width: 100%;
   background: var(--bg-input);
   border: 1px solid var(--border);
@@ -96,9 +109,17 @@ body {
   padding: 8px 10px;
   font-size: 12.5px;
   font-family: inherit;
+  caret-color: var(--accent);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.field input::placeholder, .field textarea::placeholder { color: #4a5866; }
-.field input:focus, .field textarea:focus {
+.field input::placeholder,
+.field textarea::placeholder { color: #4a5866; }
+.field input:hover,
+.field textarea:hover,
+.field select:hover { border-color: var(--border-hover); }
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
   outline: none;
   border-color: var(--border-focus);
   box-shadow: 0 0 0 2px var(--accent-dim);
@@ -106,6 +127,37 @@ body {
 .field textarea { resize: vertical; min-height: 40px; }
 .field.row { display: flex; gap: 8px; }
 .field.row input { flex: 1; min-width: 0; }
+
+/* Select — custom chevron, dark dropdown, explicit states */
+.field select,
+.select-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 30px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%2300f0ff' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.field select:disabled,
+.select-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+select option {
+  background-color: var(--bg-input);
+  color: var(--text);
+}
+
+/* Autofill — never flash white/yellow */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-input) inset;
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--accent);
+  transition: background-color 9999s ease-in-out 0s;
+}
 
 /* Buttons */
 .btn {
@@ -184,20 +236,3 @@ body {
   margin-right: 5px;
 }
 .ver { font-family: ui-monospace, Menlo, monospace; }
-
-.select-input {
-  width: 100%;
-  background: var(--bg-input);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 8px 10px;
-  font-size: 12.5px;
-  font-family: inherit;
-  cursor: pointer;
-}
-.select-input:focus {
-  outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px var(--accent-dim);
-}
