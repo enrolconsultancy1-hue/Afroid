@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import statistics
 import uuid
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -20,6 +21,7 @@ from services.shared.exceptions import (
     ForbiddenError,
     NotFoundError,
 )
+from services.shared.pitch_rubric import RUBRIC_DIMENSIONS
 
 router = APIRouter(prefix="/evaluations", tags=["evaluations"])
 
@@ -98,6 +100,22 @@ async def list_evaluations(
     return [PitchEvaluationResponse.model_validate(e) for e in result.scalars().all()]
 
 
+def _rubric_breakdown(evaluations: list[PitchEvaluation]) -> dict[str, float]:
+    """Compute per-dimension median scores across evaluators (robust to outliers)."""
+    dimension_values: dict[str, list[float]] = {dim: [] for dim in RUBRIC_DIMENSIONS}
+    for ev in evaluations:
+        criteria = ev.criteria or {}
+        for dim in RUBRIC_DIMENSIONS:
+            raw = criteria.get(dim)
+            if isinstance(raw, (int, float)) and not isinstance(raw, bool):
+                dimension_values[dim].append(float(raw))
+    return {
+        dim: round(statistics.median(values), 2)
+        for dim, values in dimension_values.items()
+        if values
+    }
+
+
 @router.get("/score/{submission_id}", response_model=ScoreResponse)
 async def get_score(request: Request, submission_id: uuid.UUID) -> ScoreResponse:
     """Aggregate score for a submission (input to the certify designation certificate)."""
@@ -117,5 +135,6 @@ async def get_score(request: Request, submission_id: uuid.UUID) -> ScoreResponse
         submission_id=submission_id,
         score_count=len(evaluations),
         average_score=average,
+        rubric_breakdown=_rubric_breakdown(evaluations),
         evaluations=[PitchEvaluationResponse.model_validate(e) for e in evaluations],
     )

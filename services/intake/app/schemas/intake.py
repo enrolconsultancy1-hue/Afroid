@@ -5,7 +5,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from services.shared.pitch_rubric import RUBRIC_DIMENSIONS
 
 
 class IdeaSubmitRequest(BaseModel):
@@ -103,12 +105,32 @@ class EvaluatorResponse(BaseModel):
 
 
 class PitchEvaluationRequest(BaseModel):
-    """A scored evaluation of a startup pitch deck."""
+    """A scored evaluation of a startup pitch deck.
+
+    ``criteria`` maps shared-rubric dimensions to 0-10 scores; ``score`` remains
+    the evaluator's holistic 0-100 summary (kept for backward compatibility).
+    """
 
     submission_id: uuid.UUID
     score: float = Field(..., ge=0, le=100)
     criteria: dict | None = None
     comments: str | None = Field(default=None, max_length=5000)
+
+    @field_validator("criteria")
+    @classmethod
+    def _validate_criteria(cls, value: dict | None) -> dict | None:
+        """Validate structured per-dimension criteria against the shared rubric."""
+        if value is None:
+            return value
+        unknown = set(value) - set(RUBRIC_DIMENSIONS)
+        if unknown:
+            raise ValueError(f"Unknown rubric dimensions: {sorted(unknown)}")
+        for dimension, raw in value.items():
+            if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+                raise ValueError(f"Criteria '{dimension}' must be a number 0-10.")
+            if not 0 <= float(raw) <= 10:
+                raise ValueError(f"Criteria '{dimension}' must be between 0 and 10.")
+        return value
 
 
 class PitchEvaluationResponse(BaseModel):
@@ -129,4 +151,5 @@ class ScoreResponse(BaseModel):
     submission_id: uuid.UUID
     score_count: int
     average_score: float | None
+    rubric_breakdown: dict[str, float] = Field(default_factory=dict)
     evaluations: list[PitchEvaluationResponse]

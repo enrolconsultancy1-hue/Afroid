@@ -154,3 +154,31 @@ class TestPitchEvaluation:
         ).status_code == 201
         r = await client.post("/v1/intake/evaluations", headers=h, json=payload)
         assert r.status_code == 409
+
+    async def test_criteria_unknown_dimension_rejected(self, client: AsyncClient) -> None:
+        idea = (
+            await client.post(
+                "/v1/intake/ideas", json={"project_name": "X2"}, headers=_auth(FOUNDER)
+            )
+        ).json()
+        await _register_and_approve(client, EVALUATOR)
+        r = await client.post(
+            "/v1/intake/evaluations",
+            headers=_auth(EVALUATOR),
+            json={"submission_id": idea["id"], "score": 80, "criteria": {"not_a_dim": 5}},
+        )
+        assert r.status_code == 422
+
+    async def test_criteria_out_of_range_rejected(self, client: AsyncClient) -> None:
+        idea = (
+            await client.post(
+                "/v1/intake/ideas", json={"project_name": "X3"}, headers=_auth(FOUNDER)
+            )
+        ).json()
+        await _register_and_approve(client, EVALUATOR)
+        r = await client.post(
+            "/v1/intake/evaluations",
+            headers=_auth(EVALUATOR),
+            json={"submission_id": idea["id"], "score": 80, "criteria": {"problem": 11}},
+        )
+        assert r.status_code == 422
