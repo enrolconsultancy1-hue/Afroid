@@ -32,6 +32,21 @@ def _evaluator(**overrides: object) -> dict:
     return base
 
 
+def _idea(**overrides: object) -> dict:
+    base = {
+        "project_name": "AgroPulse AI",
+        "one_liner": "Satellite-driven pest prediction for smallholder farmers.",
+        "problem": "Farmers lose crops to pests they cannot predict in time.",
+        "target_users": "Smallholder farmers across East Africa.",
+        "core_features": ["satellite imagery", "SMS alerts"],
+        "user_journeys": "1. Farmer registers. 2. Farmer sees pest risk. 3. Farmer gets an SMS alert.",
+        "functional_requirements": "1. Send SMS alerts. 2. Show field risk maps. 3. Log crop issues.",
+        "data_entities": "users, farms, fields, pest alerts, subscriptions",
+    }
+    base.update(overrides)
+    return base
+
+
 async def _register_and_approve(client: AsyncClient, uid: str) -> None:
     h = _auth(uid)
     r = await client.post("/v1/intake/evaluators", headers=h, json=_evaluator())
@@ -79,7 +94,7 @@ class TestPitchEvaluation:
     async def test_submit_and_aggregate_score(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "Pitchable"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="Pitchable"), headers=_auth(FOUNDER)
             )
         ).json()
         sid = idea["id"]
@@ -114,7 +129,7 @@ class TestPitchEvaluation:
     async def test_self_evaluation_forbidden(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "Mine"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="Mine"), headers=_auth(FOUNDER)
             )
         ).json()
         await _register_and_approve(client, FOUNDER)
@@ -128,7 +143,7 @@ class TestPitchEvaluation:
     async def test_unapproved_evaluator_forbidden(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "Pitch"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="Pitch"), headers=_auth(FOUNDER)
             )
         ).json()
         h = _auth(EVALUATOR)
@@ -143,7 +158,7 @@ class TestPitchEvaluation:
     async def test_duplicate_evaluation_conflicts(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "Dup"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="Dup"), headers=_auth(FOUNDER)
             )
         ).json()
         await _register_and_approve(client, EVALUATOR)
@@ -158,7 +173,7 @@ class TestPitchEvaluation:
     async def test_criteria_unknown_dimension_rejected(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "X2"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="X2"), headers=_auth(FOUNDER)
             )
         ).json()
         await _register_and_approve(client, EVALUATOR)
@@ -172,7 +187,7 @@ class TestPitchEvaluation:
     async def test_criteria_out_of_range_rejected(self, client: AsyncClient) -> None:
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "X3"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="X3"), headers=_auth(FOUNDER)
             )
         ).json()
         await _register_and_approve(client, EVALUATOR)
@@ -204,7 +219,7 @@ class TestCertifyFlow:
         monkeypatch.setattr("services.intake.app.routes.ideas._request_certification", fake_certify)
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "Pitchable"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="Pitchable"), headers=_auth(FOUNDER)
             )
         ).json()
         await _register_and_approve(client, EVALUATOR)
@@ -233,8 +248,36 @@ class TestCertifyFlow:
         monkeypatch.setattr("services.intake.app.routes.ideas._request_certification", fake_certify)
         idea = (
             await client.post(
-                "/v1/intake/ideas", json={"project_name": "NoEvals"}, headers=_auth(FOUNDER)
+                "/v1/intake/ideas", json=_idea(project_name="NoEvals"), headers=_auth(FOUNDER)
             )
         ).json()
         resp = await client.post(f"/v1/intake/ideas/{idea['id']}/certify", headers=_auth(FOUNDER))
         assert resp.status_code == 400
+
+
+class TestIdeaIntake:
+    async def test_submit_requires_phase1_fields(self, client: AsyncClient) -> None:
+        r = await client.post("/v1/intake/ideas", json={"project_name": "Only Name"})
+        assert r.status_code == 422
+
+    async def test_submit_with_phase2_extended(self, client: AsyncClient) -> None:
+        r = await client.post(
+            "/v1/intake/ideas",
+            json=_idea(
+                one_liner="",
+                extended={
+                    "product_summary": "Satellite-driven pest prediction service",
+                    "revenue_model": "Subscription per farmer",
+                    "competitors": "FarmLogs, Plantix",
+                },
+            ),
+        )
+        assert r.status_code == 201
+        body = r.json()
+        assert body["extended"]["revenue_model"] == "Subscription per farmer"
+        assert body["one_liner"] == "Satellite-driven pest prediction service"
+        assert body["user_journeys"] != ""
+
+    async def test_submit_rejects_unknown_extended_key(self, client: AsyncClient) -> None:
+        r = await client.post("/v1/intake/ideas", json=_idea(extended={"not_a_spec_field": "x"}))
+        assert r.status_code == 422

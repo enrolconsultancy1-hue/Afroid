@@ -71,6 +71,10 @@ async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
         "problem": idea.problem,
         "targetUsers": idea.target_users,
         "coreFeatures": idea.core_features,
+        "userJourneys": idea.user_journeys,
+        "functionalRequirements": idea.functional_requirements,
+        "dataEntities": idea.data_entities,
+        "additionalContext": idea.extended or {},
     }
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=1.5)) as client:
@@ -111,17 +115,22 @@ async def submit_idea(
 ) -> IdeaResponse:
     """Submit a new startup idea (auth optional — founders may submit anonymously)."""
     session = _session(request)
+    phase2 = body.extended or {}
     idea = IdeaSubmission(
         project_name=body.project_name,
-        one_liner=body.one_liner,
-        problem=body.problem,
-        target_users=body.target_users,
+        one_liner=body.one_liner or phase2.get("product_summary", ""),
+        problem=body.problem or phase2.get("business_problem", ""),
+        target_users=body.target_users or phase2.get("target_users", ""),
         core_features=body.core_features,
+        user_journeys=body.user_journeys,
+        functional_requirements=body.functional_requirements,
+        data_entities=body.data_entities,
         free_text=body.free_text,
         founder_name=body.founder_name,
         founder_email=body.founder_email,
         submitted_by=user_id,
         status=IDEA_STATUS_PENDING,
+        extended=phase2 or None,
     )
     session.add(idea)
     await session.flush()

@@ -44,6 +44,10 @@ class IdeaSubmission(Base):
     claimed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     draft_blueprint: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    user_journeys: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    functional_requirements: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    data_entities: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    extended: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), index=True

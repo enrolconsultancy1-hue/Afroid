@@ -53,33 +53,83 @@ function initTabs() {
 }
 
 // --- Tab 1: Submit idea ---
+function handleTogglePhase2() {
+  const panel = $("phase2");
+  const chevron = document.querySelector(".phase-chevron");
+  const nowHidden = panel.classList.toggle("hidden");
+  if (chevron) chevron.textContent = nowHidden ? "▾" : "▴";
+}
+
 async function handleSubmitIdea() {
   const btn = $("btn-submit-idea");
   const status = $("submit-status");
 
-  const projectName = val("idea-project");
-  if (!projectName) {
-    showStatus(status, "Please give your startup a name.", "error");
+  const required = [
+    { id: "idea-project", label: "Project name" },
+    { id: "idea-features", label: "Core features / modules" },
+    { id: "idea-journeys", label: "Key user journeys" },
+    { id: "idea-requirements", label: "Functional requirements" },
+    { id: "idea-entities", label: "Core data / entities" },
+  ];
+  const missing = [];
+  required.forEach((f) => {
+    const el = $(f.id);
+    if (!el.value.trim()) {
+      el.classList.add("invalid");
+      missing.push(f.label);
+    } else {
+      el.classList.remove("invalid");
+    }
+  });
+  if (missing.length) {
+    showStatus(status, "Please complete the required fields: " + missing.join(", "), "error");
     return;
   }
 
+  const features = splitList(val("idea-features"));
+  if (!features.length) {
+    $("idea-features").classList.add("invalid");
+    showStatus(status, "Core features needs at least one feature.", "error");
+    return;
+  }
+
+  const extended = {};
+  const phase2Map = {
+    "idea-summary": "product_summary",
+    "idea-bproblem": "business_problem",
+    "idea-tusers": "target_users",
+    "idea-success": "success_criteria",
+    "idea-mvp": "mvp_definition",
+    "idea-tools": "tools_integrations",
+    "idea-constraints": "technical_constraints",
+    "idea-compliance": "compliance_standards",
+    "idea-timeline": "timeline_milestones",
+    "idea-competitors": "competitors",
+    "idea-revenue": "revenue_model",
+  };
+  Object.keys(phase2Map).forEach((id) => {
+    const v = val(id);
+    if (v) extended[phase2Map[id]] = v;
+  });
+
   const payload = {
-    project_name: projectName,
-    one_liner: val("idea-oneliner"),
-    problem: val("idea-problem"),
-    target_users: val("idea-users"),
-    core_features: splitList(val("idea-features")),
+    project_name: val("idea-project"),
+    core_features: features,
+    user_journeys: val("idea-journeys"),
+    functional_requirements: val("idea-requirements"),
+    data_entities: val("idea-entities"),
     free_text: val("idea-freetext"),
     founder_name: val("idea-founder-name") || null,
     founder_email: val("idea-founder-email") || null,
   };
+  if (Object.keys(extended).length) payload.extended = extended;
 
   btn.disabled = true;
   showStatus(status, "Submitting to the central database…", "info");
 
   try {
     const base = await getApiBase();
-    const res = await fetch(`${base}/v1/intake/ideas`, {
+    const res = await fetch(base + "/v1/intake/ideas", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -87,20 +137,20 @@ async function handleSubmitIdea() {
 
     if (res.ok) {
       const idea = await res.json();
-      showStatus(
-        status,
-        `✓ Idea "${idea.project_name}" submitted.\nIt's now queued for technical evaluation.`,
-        "success"
-      );
-      ["idea-project", "idea-oneliner", "idea-problem", "idea-users", "idea-features", "idea-freetext"].forEach(
-        (id) => ($(id).value = "")
-      );
+      showStatus(status, "✓ Idea \"" + idea.project_name + "\" submitted — queued for blueprint generation.", "success");
+      [
+        "idea-project", "idea-features", "idea-journeys", "idea-requirements", "idea-entities",
+        "idea-summary", "idea-bproblem", "idea-tusers", "idea-success", "idea-mvp",
+        "idea-tools", "idea-constraints", "idea-compliance", "idea-timeline",
+        "idea-competitors", "idea-revenue", "idea-freetext",
+      ].forEach((id) => ($(id).value = ""));
     } else {
       const err = await res.json().catch(() => ({}));
-      showStatus(status, `Submit failed: ${err.detail || res.status}`, "error");
+      const detail = Array.isArray(err.detail) ? err.detail.map((d) => d.msg).join("; ") : err.detail;
+      showStatus(status, "Submit failed: " + (detail || res.status), "error");
     }
   } catch (e) {
-    showStatus(status, `Network error: ${e.message}`, "error");
+    showStatus(status, "Network error: " + e.message, "error");
   } finally {
     btn.disabled = false;
   }
@@ -388,6 +438,11 @@ async function applyRoleGating() {
 function init() {
   initTabs();
   $("btn-submit-idea").addEventListener("click", handleSubmitIdea);
+  $("btn-toggle-phase2").addEventListener("click", handleTogglePhase2);
+  ["idea-project", "idea-features", "idea-journeys", "idea-requirements", "idea-entities"].forEach((id) => {
+    const el = $(id);
+    if (el) el.addEventListener("input", () => el.classList.remove("invalid"));
+  });
   $("btn-save-token").addEventListener("click", handleSaveToken);
   $("btn-register-writer").addEventListener("click", handleRegisterWriter);
   $("btn-claim-next").addEventListener("click", handleClaimNext);

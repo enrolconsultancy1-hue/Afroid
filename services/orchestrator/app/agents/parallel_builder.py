@@ -384,6 +384,30 @@ class ZeroQuestionIntakeEngine:
             deployment={"docker": True, "gcp_region": "africa-south1"},
         )
 
+    @staticmethod
+    def _apply_defaults(idea: BusinessIdea) -> BusinessIdea:
+        """Fill empty blueprint-signal fields with proven built-in templates."""
+        defaults = {
+            "userJourneys": (
+                "Onboarding: a new user signs up, completes their profile, and reaches first "
+                "value within five minutes. Core task: the primary user workflow end to end. "
+                "Admin: manage users, content, and operations."
+            ),
+            "functionalRequirements": (
+                "1. User registration and authentication. 2. Core domain workflows and CRUD. "
+                "3. Notifications and messaging. 4. Reporting and analytics dashboard. "
+                "5. Admin and moderation tools."
+            ),
+            "dataEntities": (
+                "users, organizations, projects, transactions, notifications, audit_logs"
+            ),
+        }
+        data = idea.model_dump()
+        for field, value in defaults.items():
+            if not str(data.get(field) or "").strip():
+                data[field] = value
+        return BusinessIdea(**data)
+
     async def generate_blueprint(
         self,
         concept_input: str | BusinessIdea,
@@ -402,6 +426,8 @@ class ZeroQuestionIntakeEngine:
         else:
             idea = concept_input
 
+        idea = self._apply_defaults(idea)
+
         try:
             llm = model_registry.create_llm(
                 agent_name="architect", model_id=model_id, temperature=0.1
@@ -417,6 +443,10 @@ class ZeroQuestionIntakeEngine:
                 "compliance": idea.compliance,
                 "platform": idea.platform,
                 "techPreferences": idea.techPreferences,
+                "userJourneys": idea.userJourneys,
+                "functionalRequirements": idea.functionalRequirements,
+                "dataEntities": idea.dataEntities,
+                "additionalContext": idea.additionalContext,
                 "directive": "Generate a COMPLETE, non-ambiguous ArchitectureBlueprint with zero questions to ask.",
             }
 

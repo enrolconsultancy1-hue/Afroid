@@ -27,6 +27,9 @@ def _idea(**overrides: object) -> dict:
         "problem": "Farmers lose crops to pests they can't predict.",
         "target_users": "Smallholder farmers across East Africa.",
         "core_features": ["satellite imagery", "SMS alerts", "weather fusion"],
+        "user_journeys": "1. Farmer registers with a phone number. 2. Farmer opens the app and sees pest risk for their field. 3. Farmer receives an SMS alert before an outbreak.",
+        "functional_requirements": "1. Send pest-risk alerts by SMS. 2. Show field maps from satellite data. 3. Let farmers log crop issues.",
+        "data_entities": "users, farms, fields, pest alerts, subscriptions",
         "free_text": "Team has agronomy + ML background. Looking for a technical build partner.",
     }
     base.update(overrides)

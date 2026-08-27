@@ -50,6 +50,10 @@ class BusinessIdea(BaseModel):
     )
     teamSkill: str = Field(default="Beginner", description="Team engineering proficiency")
     timeline: str = Field(default="1-3 months", description="Target shipping timeline")
+    userJourneys: str = Field(default="", description="Key user journeys / use cases")
+    functionalRequirements: str = Field(default="", description="Functional requirements")
+    dataEntities: str = Field(default="", description="Core data entities")
+    additionalContext: dict = Field(default_factory=dict, description="Phase-2 spec fields")
     successCriteria: str = Field(default="", description="Key metrics and goals")
 
 
