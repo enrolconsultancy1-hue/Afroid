@@ -286,3 +286,76 @@ export interface MatchResponse {
   total_matches: number;
   matches: OpportunityMatch[];
 }
+
+// --- Intake (two-phase Architect Intake) ---
+
+export const intakeApi = {
+  submitIdea: (data: IdeaSubmitPayload) =>
+    request<IntakeIdea>("/v1/intake/ideas", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  listIdeas: (status?: string, limit = 50) =>
+    request<IntakeIdea[]>(
+      `/v1/intake/ideas?limit=${limit}${status ? `&status=${status}` : ""}`
+    ),
+
+  getScore: (submissionId: string) =>
+    request<IntakeScoreResponse>(`/v1/intake/evaluations/score/${submissionId}`),
+};
+
+export interface IntakeIdea {
+  id: string;
+  project_name: string;
+  one_liner: string;
+  problem: string;
+  target_users: string;
+  core_features: string[];
+  user_journeys: string;
+  functional_requirements: string;
+  data_entities: string;
+  free_text: string;
+  founder_name?: string | null;
+  founder_email?: string | null;
+  submitted_by?: string | null;
+  status: string;
+  assigned_to?: string | null;
+  claimed_at?: string | null;
+  evaluated_at?: string | null;
+  draft_blueprint?: Record<string, unknown> | null;
+  extended?: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IdeaSubmitPayload {
+  project_name: string;
+  core_features: string[];
+  user_journeys: string;
+  functional_requirements: string;
+  data_entities: string;
+  one_liner?: string;
+  problem?: string;
+  target_users?: string;
+  free_text?: string;
+  founder_name?: string | null;
+  founder_email?: string | null;
+  extended?: Record<string, string>;
+}
+
+export interface IntakeScoreResponse {
+  submission_id: string;
+  score_count: number;
+  average_score: number | null;
+  rubric_breakdown: Record<string, number>;
+  evaluations: Array<{
+    id: string;
+    submission_id: string;
+    evaluator_id: string;
+    score: number | null;
+    criteria: Record<string, number> | null;
+    comments: string | null;
+    created_at: string;
+  }>;
+}

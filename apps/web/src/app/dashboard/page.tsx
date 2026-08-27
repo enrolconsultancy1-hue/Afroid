@@ -77,6 +77,9 @@ export default function DashboardPage() {
               <Link href="/dashboard/certify" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                 Certify
               </Link>
+              <Link href="/intake" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
+                Intake
+              </Link>
               <Link href="/dashboard/incubate" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
                 Incubate
               </Link>
