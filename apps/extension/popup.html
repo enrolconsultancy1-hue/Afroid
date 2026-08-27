@@ -21,6 +21,7 @@
     <nav class="tabs">
       <button class="tab active" data-tab="submit">Submit Idea</button>
       <button class="tab" data-tab="portal">Builder Portal</button>
+      <button class="tab" data-tab="evaluator">Evaluator Portal</button>
     </nav>
 
     <!-- Tab 1: Founder idea intake -->
@@ -105,9 +106,59 @@
       <div id="claim-result" class="claim-card hidden"></div>
     </section>
 
+    <!-- Tab 3: Pitch Deck Evaluator -->
+    <section id="panel-evaluator" class="panel">
+      <p class="panel-desc">Vetted evaluators (gov bodies, chambers, judges) score startup pitch decks. Scores feed the certify designation certificate.</p>
+
+      <h3 class="section-title">Register as evaluator</h3>
+      <div class="field">
+        <label for="ev-name">Display name</label>
+        <input id="ev-name" type="text" placeholder="e.g. Dr. Amara Bekele" />
+      </div>
+      <div class="field">
+        <label for="ev-org">Organization</label>
+        <input id="ev-org" type="text" placeholder="e.g. Addis Ababa Chamber of Commerce" />
+      </div>
+      <div class="field">
+        <label for="ev-type">Organization type</label>
+        <select id="ev-type" class="select-input">
+          <option value="government">Government body</option>
+          <option value="chamber">Chamber of Commerce</option>
+          <option value="judge">Judge / Panel</option>
+          <option value="entity">Entity</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ev-credential">Credential ref <span class="hint">optional</span></label>
+        <input id="ev-credential" type="text" placeholder="e.g. appointment-letter-123" />
+      </div>
+      <button id="btn-register-evaluator" class="btn primary">Register evaluator</button>
+
+      <hr class="divider" />
+
+      <h3 class="section-title">Score a pitch deck</h3>
+      <div class="field">
+        <label for="ev-load">Submissions</label>
+        <button id="btn-load-submissions" class="btn ghost small">Load submissions</button>
+        <select id="ev-submission" class="select-input" disabled>
+          <option value="">— load first —</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ev-score">Score <span class="hint">0-100</span></label>
+        <input id="ev-score" type="number" min="0" max="100" step="0.1" placeholder="e.g. 85.5" />
+      </div>
+      <div class="field">
+        <label for="ev-comments">Comments <span class="hint">optional</span></label>
+        <textarea id="ev-comments" rows="2" placeholder="Feedback for the founder..."></textarea>
+      </div>
+      <button id="btn-submit-evaluation" class="btn secondary">Submit score</button>
+      <div id="evaluator-status" class="status hidden"></div>
+    </section>
+
     <footer class="footer">
       <span><span class="dot"></span> Connected to central DB</span>
-      <span class="ver">v2.0.0</span>
+      <span class="ver">v2.1.0</span>
     </footer>
   </div>
 

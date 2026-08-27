@@ -203,7 +203,7 @@ async function handleClaimNext() {
       const claimed = await claim.json();
       card.innerHTML = `
         <h4>${claimed.project_name}</h4>
-        <div class="meta">Status: ${claimed.status} &middot; claimed now</div>
+        <div class="meta">Status: ${claimed.status} · claimed now</div>
         <p>${claimed.one_liner || claimed.problem || "No summary provided."}</p>
       `;
       card.classList.remove("hidden");
@@ -219,6 +219,130 @@ async function handleClaimNext() {
   }
 }
 
+// --- Tab 3: Pitch Deck Evaluator ---
+async function handleRegisterEvaluator() {
+  const status = $("evaluator-status");
+  const btn = $("btn-register-evaluator");
+  const token = await getToken();
+  if (!token) {
+    showStatus(status, "Save your access token first (Builder Portal tab).", "error");
+    return;
+  }
+  const displayName = val("ev-name");
+  const orgName = val("ev-org");
+  if (!displayName || !orgName) {
+    showStatus(status, "Display name and organization are required.", "error");
+    return;
+  }
+
+  const payload = {
+    display_name: displayName,
+    org_name: orgName,
+    org_type: val("ev-type") || "entity",
+    credential_ref: val("ev-credential") || null,
+  };
+
+  btn.disabled = true;
+  showStatus(status, "Registering evaluator…", "info");
+
+  try {
+    const base = await getApiBase();
+    const res = await fetch(`${base}/v1/intake/evaluators`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const ev = await res.json();
+      showStatus(status, `✓ Registered (${ev.status}). Await approval before scoring.`, "success");
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showStatus(status, `Registration failed: ${err.detail || res.status}`, "error");
+    }
+  } catch (e) {
+    showStatus(status, `Network error: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function handleLoadSubmissions() {
+  const status = $("evaluator-status");
+  const sel = $("ev-submission");
+  const btn = $("btn-load-submissions");
+  btn.disabled = true;
+  showStatus(status, "Loading submissions…", "info");
+  try {
+    const base = await getApiBase();
+    const res = await fetch(`${base}/v1/intake/ideas?limit=50`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const ideas = await res.json();
+    sel.innerHTML = "";
+    if (!ideas.length) {
+      sel.innerHTML = '<option value="">— no submissions —</option>';
+    } else {
+      ideas.forEach((idea) => {
+        const opt = document.createElement("option");
+        opt.value = idea.id;
+        opt.textContent = `${idea.project_name} (${idea.status})`;
+        sel.appendChild(opt);
+      });
+    }
+    sel.disabled = false;
+    showStatus(status, `Loaded ${ideas.length} submission(s).`, "success");
+  } catch (e) {
+    showStatus(status, `Failed to load: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function handleSubmitEvaluation() {
+  const status = $("evaluator-status");
+  const btn = $("btn-submit-evaluation");
+  const token = await getToken();
+  if (!token) {
+    showStatus(status, "Save your access token first (Builder Portal tab).", "error");
+    return;
+  }
+  const submissionId = val("ev-submission");
+  const score = val("ev-score");
+  if (!submissionId) {
+    showStatus(status, "Load and select a submission first.", "error");
+    return;
+  }
+  const num = parseFloat(score);
+  if (Number.isNaN(num) || num < 0 || num > 100) {
+    showStatus(status, "Score must be a number 0-100.", "error");
+    return;
+  }
+
+  const payload = { submission_id: submissionId, score: num, comments: val("ev-comments") || null };
+
+  btn.disabled = true;
+  showStatus(status, "Submitting score…", "info");
+
+  try {
+    const base = await getApiBase();
+    const res = await fetch(`${base}/v1/intake/evaluations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...authHeaders(token) },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const ev = await res.json();
+      showStatus(status, `✓ Score ${ev.score} submitted.`, "success");
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showStatus(status, `Submit failed: ${err.detail || res.status}`, "error");
+    }
+  } catch (e) {
+    showStatus(status, `Network error: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
+}
+
 // --- Boot ---
 function init() {
   initTabs();
@@ -226,6 +350,9 @@ function init() {
   $("btn-save-token").addEventListener("click", handleSaveToken);
   $("btn-register-writer").addEventListener("click", handleRegisterWriter);
   $("btn-claim-next").addEventListener("click", handleClaimNext);
+  $("btn-register-evaluator").addEventListener("click", handleRegisterEvaluator);
+  $("btn-load-submissions").addEventListener("click", handleLoadSubmissions);
+  $("btn-submit-evaluation").addEventListener("click", handleSubmitEvaluation);
 
   // Pre-fill the token field from storage so the builder sees it's saved.
   chrome.storage.local.get(TOKEN_KEY).then((data) => {

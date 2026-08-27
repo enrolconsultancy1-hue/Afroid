@@ -16,6 +16,8 @@ from services.intake.app.models.intake import (  # noqa: F401 — registers mode
     PitchEvaluation,
     WriterProfile,
 )
+from services.intake.app.routes.evaluations import router as evaluations_router
+from services.intake.app.routes.evaluators import router as evaluators_router
 from services.intake.app.routes.ideas import router as ideas_router
 from services.intake.app.routes.writers import router as writers_router
 from services.shared.database import Base, create_engine, create_session_factory
@@ -34,7 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
-    # Create intake-owned tables idempotently (phase-2 evaluator stubs included).
+    # Create intake-owned tables idempotently (phase-2 evaluator tables included).
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
@@ -44,7 +46,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Afroid Intake Service",
-        description="Founder idea-submission queue and writer/builder portal.",
+        description="Founder idea-submission queue, writer/builder portal, and pitch-deck evaluation.",
         version="1.0.0",
         docs_url="/docs" if settings.is_development else None,
         default_response_class=ORJSONResponse,
@@ -74,6 +76,8 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     app.include_router(ideas_router, prefix="/v1/intake")
     app.include_router(writers_router, prefix="/v1/intake")
+    app.include_router(evaluators_router, prefix="/v1/intake")
+    app.include_router(evaluations_router, prefix="/v1/intake")
 
     @app.get("/health", response_model=HealthCheck, tags=["health"])
     async def health_check() -> HealthCheck:

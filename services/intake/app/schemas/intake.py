@@ -74,3 +74,59 @@ class WriterResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
+
+
+# --- Pitch Deck Evaluator (phase 2) ---
+
+
+class EvaluatorRegisterRequest(BaseModel):
+    """Register as a vetted pitch-deck evaluator (gov body / chamber / judge)."""
+
+    display_name: str = Field(..., min_length=2, max_length=255)
+    org_name: str = Field(..., min_length=2, max_length=255)
+    org_type: str = Field(..., max_length=32)  # government|chamber|judge|entity
+    credential_ref: str | None = Field(default=None, max_length=2000)
+
+
+class EvaluatorResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    user_id: uuid.UUID
+    display_name: str
+    org_name: str
+    org_type: str
+    credential_ref: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class PitchEvaluationRequest(BaseModel):
+    """A scored evaluation of a startup pitch deck."""
+
+    submission_id: uuid.UUID
+    score: float = Field(..., ge=0, le=100)
+    criteria: dict | None = None
+    comments: str | None = Field(default=None, max_length=5000)
+
+
+class PitchEvaluationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    submission_id: uuid.UUID
+    evaluator_id: uuid.UUID
+    score: float | None
+    criteria: dict | None
+    comments: str | None
+    created_at: datetime
+
+
+class ScoreResponse(BaseModel):
+    """Aggregate score for a submission — input to the certify designation certificate."""
+
+    submission_id: uuid.UUID
+    score_count: int
+    average_score: float | None
+    evaluations: list[PitchEvaluationResponse]
