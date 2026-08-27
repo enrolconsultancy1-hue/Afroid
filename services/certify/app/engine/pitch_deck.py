@@ -13,6 +13,7 @@ from typing import Any
 
 from services.certify.app.config import settings
 from services.shared.pitch_rubric import (
+    GRADE_BANDS,
     PITCH_RUBRIC,
     RUBRIC_DIMENSIONS,
     RUBRIC_LABELS,
@@ -105,7 +106,8 @@ class PitchDeckCertificationEngine:
             "needs_review",
         }
 
-        awarded = compliance_status == "passed" and originality_ok and score >= 50.0
+        cert_floor = GRADE_BANDS[-1][0]  # lowest awardable band ("Certified")
+        awarded = compliance_status == "passed" and originality_ok and score >= cert_floor
 
         return {
             "certificate_id": self.certificate_id(submission_id, score, grade, issued_at),

@@ -40,9 +40,9 @@ RUBRIC_LABELS: dict[str, str] = {
 # Grade bands: (minimum_score, label), descending order.
 GRADE_BANDS: tuple[tuple[float, str], ...] = (
     (90.0, "Very Great Distinction"),
-    (75.0, "Great Distinction"),
-    (60.0, "Distinction"),
-    (50.0, "Certified"),
+    (81.0, "Great Distinction"),
+    (71.0, "Distinction"),
+    (65.0, "Certified"),
 )
 
 NOT_CERTIFIED_LABEL: str = "Not Certified"
