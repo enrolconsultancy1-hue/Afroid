@@ -344,6 +344,11 @@ async function handleSubmitEvaluation() {
   }
 }
 
+// --- Open the popup UI in a full browser tab ---
+function handleOpenFullWindow() {
+  chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
+}
+
 // --- Role-aware tabs: show only what the current user can do ---
 function setTabVisible(tab, visible) {
   const btn = document.querySelector('.tab[data-tab="' + tab + '"]');
@@ -389,6 +394,7 @@ function init() {
   $("btn-register-evaluator").addEventListener("click", handleRegisterEvaluator);
   $("btn-load-submissions").addEventListener("click", handleLoadSubmissions);
   $("btn-submit-evaluation").addEventListener("click", handleSubmitEvaluation);
+  $("btn-fullscreen").addEventListener("click", handleOpenFullWindow);
 
   // Pre-fill the token field from storage so the builder sees it's saved.
   applyRoleGating();

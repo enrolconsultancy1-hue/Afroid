@@ -236,3 +236,23 @@ input:-webkit-autofill:focus {
   margin-right: 5px;
 }
 .ver { font-family: ui-monospace, Menlo, monospace; }
+
+/* Full-window mode: when popup.html is opened as a tab/window */
+@media (min-width: 600px) {
+  body { width: 100%; }
+  .app { max-width: 760px; margin: 0 auto; }
+  .panel { max-height: none; }
+}
+
+/* Footer link button */
+.link-btn {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+.link-btn:hover { color: var(--text); }
