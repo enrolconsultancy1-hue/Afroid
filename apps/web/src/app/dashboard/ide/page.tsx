@@ -349,6 +349,7 @@ export default function GeezCodeIDE() {
   const [blueprintTab, setBlueprintTab] = useState<"overview" | "arch" | "data" | "modules" | "milestones" | "json">("overview");
   const [blueprintData, setBlueprintData] = useState<BlueprintData | null>(null);
   const [jsonText, setJsonText] = useState("");
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
   const [editedBlueprintSummary, setEditedBlueprintSummary] = useState("");
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
@@ -1138,8 +1139,96 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
   return (
     <div className="flex h-screen flex-col bg-surface-950 text-surface-100 font-sans antialiased overflow-hidden">
       {/* ===== Title bar ===== */}
-      <header className="grid grid-cols-3 h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 px-3 select-none">
-        <div className="flex items-center gap-1">
+      <header className="grid grid-cols-3 h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 px-3 select-none relative z-40">
+        <div className="flex items-center gap-1 text-xs">
+          {/* File Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === "file" ? null : "file")}
+              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "file" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
+            >
+              File
+            </button>
+            {activeMenu === "file" && (
+              <div className="absolute left-0 top-full mt-1 w-48 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
+                <button onClick={() => { handleNewFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <FilePlus className="h-3.5 w-3.5 text-brand-400" /> New File...
+                </button>
+                <button onClick={() => { alert("File saved successfully."); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" /> Save File
+                </button>
+                <button onClick={() => { if (openFiles.length > 0) handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <X className="h-3.5 w-3.5 text-red-400" /> Close File
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Project Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === "project" ? null : "project")}
+              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "project" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
+            >
+              Project
+            </button>
+            {activeMenu === "project" && (
+              <div className="absolute left-0 top-full mt-1 w-52 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
+                <button onClick={() => { setShowIntakeModal(true); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <SlidersHorizontal className="h-3.5 w-3.5 text-brand-400" /> New Project (Architect Intake)
+                </button>
+                <button onClick={() => { setActiveActivity("explorer"); setShowLeftSidebar(true); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Files className="h-3.5 w-3.5 text-surface-400" /> Open Folder / Explorer
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Workspace Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === "workspace" ? null : "workspace")}
+              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "workspace" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
+            >
+              Workspace
+            </button>
+            {activeMenu === "workspace" && (
+              <div className="absolute left-0 top-full mt-1 w-48 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
+                <button onClick={() => { setTerminalLogs((prev) => [...prev, "[Workspace] Workspace successfully synced with sovereign cloud core."]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <RefreshCw className="h-3.5 w-3.5 text-brand-400" /> Sync Workspace
+                </button>
+                <button onClick={() => { setTerminalLogs([]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Trash2 className="h-3.5 w-3.5 text-surface-400" /> Clear Terminal
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Edit Menu */}
+          <div className="relative">
+            <button
+              onClick={() => setActiveMenu(activeMenu === "edit" ? null : "edit")}
+              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "edit" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
+            >
+              Edit
+            </button>
+            {activeMenu === "edit" && (
+              <div className="absolute left-0 top-full mt-1 w-44 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
+                <button onClick={() => { setTerminalLogs((prev) => [...prev, "[Edit] Format code executed."]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Code2 className="h-3.5 w-3.5 text-brand-400" /> Format Code
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-center">
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <GeezCodeLogo size={18} showWordmark={true} />
+          </Link>
+        </div>
+
+        <div className="flex items-center justify-end gap-1">
           <button
             onClick={() => setShowLeftSidebar(!showLeftSidebar)}
             title="Toggle sidebar"
@@ -1161,16 +1250,6 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           >
             <TerminalIcon className="h-3.5 w-3.5" />
           </button>
-        </div>
-
-        <div className="flex items-center justify-center">
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <GeezCodeLogo size={18} showWordmark={true} />
-          </Link>
-        </div>
-
-        <div className="flex items-center justify-end gap-2">
-          {/* Right side spacer */}
         </div>
       </header>
 
