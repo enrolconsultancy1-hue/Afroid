@@ -91,9 +91,15 @@ def _walk(
 
 
 @router.get("/tree")
-async def get_tree(current_user: User = Depends(get_current_user)) -> dict[str, Any]:
+async def get_tree(
+    current_user: User = Depends(get_current_user),
+    path: str | None = Query(default=None, description="Optional project subfolder"),
+) -> dict[str, Any]:
     base = user_workspace(str(current_user.id))
-    return {"data": _walk(base, base)}
+    target = _safe_resolve(path, base) if path else base
+    if not target.is_dir():
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return {"data": _walk(target, base), "root": target.name if path else None}
 
 
 @router.get("/file")

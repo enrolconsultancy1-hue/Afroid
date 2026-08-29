@@ -20,6 +20,7 @@ from services.workspace.app.config import settings
 from services.workspace.app.routes.fs import router as fs_router
 from services.workspace.app.routes.git import router as git_router
 from services.workspace.app.routes.terminal import router as terminal_router
+from services.workspace.app.routes.projects import router as projects_router
 
 
 @asynccontextmanager
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(fs_router, prefix="/v1/workspace")
     app.include_router(git_router, prefix="/v1/workspace")
     app.include_router(terminal_router, prefix="/v1/workspace")
+app.include_router(projects_router, prefix="/v1/workspace")
 
     @app.get("/health", response_model=HealthCheck, tags=["health"])
     async def health() -> HealthCheck:

@@ -382,6 +382,17 @@ export default function GeezCodeIDE() {
     dockEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [dockMessages]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const proj = params.get("projectName");
+      if (proj) {
+        setIdeaForm((prev) => ({ ...prev, projectName: proj, oneLiner: `Sovereign full-stack project for ${proj}` }));
+        setTerminalLogs((prev) => [...prev, `[Bridge] Successfully synchronized intake project '${proj}' from extension / web intake form into IDE workspace.`]);
+      }
+    }
+  }, []);
+
   const { connect: connectWs } = useAgentStream({
     sessionId: sessionId || undefined,
     onCodeChunk: (_filePath, chunk) => {

@@ -342,6 +342,12 @@ export default function IntakePage() {
               <div className="mt-1 text-emerald-400/80">
                 It's queued for blueprint generation. Status: {submitted.status}.
               </div>
+              <Link
+                href={`/dashboard/ide?projectName=${encodeURIComponent(submitted.project_name)}`}
+                className="mt-3 inline-flex items-center gap-2 rounded bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-surface-950 transition-colors hover:bg-emerald-400"
+              >
+                Open in geezcodE IDE &amp; Sync Project →
+              </Link>
             </div>
           )}
 

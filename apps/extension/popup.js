@@ -143,6 +143,11 @@ async function handleSubmitIdea() {
     if (res.ok) {
       const idea = await res.json();
       showStatus(status, "✓ Idea \"" + idea.project_name + "\" submitted — queued for blueprint generation.", "success");
+      const ideLink = $("link-open-ide");
+      if (ideLink) {
+        ideLink.href = "http://localhost:3000/dashboard/ide?projectName=" + encodeURIComponent(idea.project_name || "Sovereign Project");
+        $("ide-bridge-cta").classList.remove("hidden");
+      }
       [
         "idea-project", "idea-summary", "idea-bproblem", "idea-tusers", "idea-success", "idea-mvp",
         "idea-tools", "idea-constraints", "idea-compliance", "idea-timeline", "idea-competitors",

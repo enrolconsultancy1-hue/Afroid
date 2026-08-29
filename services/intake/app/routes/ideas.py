@@ -261,6 +261,51 @@ async def certify_idea(
     return designation
 
 
+async def _request_start_project(name: str, idea_id: str, token: str) -> dict[str, Any] | None:
+    """Call the workspace service to create a project folder (best-effort)."""
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0)) as client:
+            response = await client.post(
+                f"{settings.workspace_url}/v1/workspace/projects",
+                json={"name": name, "idea_id": idea_id},
+                headers={"Authorization": f"Bearer {token}"} if token else {},
+            )
+            if response.status_code >= 400:
+                logger.warning(
+                    "start_project_error: %s %s", response.status_code, response.text[:300]
+                )
+                return None
+            return response.json()
+    except Exception as error:
+        logger.warning("start_project_failed: %s", error)
+        return None
+
+
+@router.post("/{idea_id}/start-project", response_model=dict[str, Any])
+async def start_project(
+    request: Request,
+    idea_id: uuid.UUID,
+    user_id: uuid.UUID = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Create a workspace project folder named after this intake idea.
+
+    Bridges the extension/web Architect Intake into the IDE: the workspace
+    service creates an empty folder named after the idea inside the user's
+    isolated workspace, and the IDE opens it as the new project root.
+    """
+    session = _session(request)
+    idea = await session.get(IdeaSubmission, idea_id)
+    if idea is None:
+        raise NotFoundError(resource="IdeaSubmission", resource_id=str(idea_id))
+
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header.removeprefix("Bearer ").strip() if auth_header else ""
+    result = await _request_start_project(idea.project_name, str(idea.id), token)
+    if result is None:
+        raise ServiceUnavailableError(detail="Workspace service unavailable.")
+    return result
+
+
 @router.patch("/{idea_id}/status", response_model=IdeaResponse)
 async def update_status(
     request: Request,
