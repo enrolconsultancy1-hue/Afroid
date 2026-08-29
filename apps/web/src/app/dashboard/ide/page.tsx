@@ -1115,53 +1115,9 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <GeezCodeLogo size={18} showWordmark={true} />
           </Link>
-          <div className="h-3.5 w-px bg-surface-800" />
-          <span className="text-xs text-surface-400 font-medium">geezcodE</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded border border-surface-750 bg-surface-950 p-0.5">
-            <button
-              onClick={() => { setAutopilot(true); setPendingReview(null); }}
-              title="Autopilot: agents build, test & write files automatically"
-              className={`flex items-center gap-1.5 px-2.5 py-[3px] text-[11px] font-medium rounded transition-colors ${
-                autopilot ? "bg-surface-800 text-surface-100" : "text-surface-500 hover:text-surface-200"
-              }`}
-            >
-              <Play className="h-3 w-3 fill-current" /> Autopilot
-            </button>
-            <button
-              onClick={() => setAutopilot(false)}
-              title="Interactive: agents pause for code review & steering"
-              className={`flex items-center gap-1.5 px-2.5 py-[3px] text-[11px] font-medium rounded transition-colors ${
-                !autopilot ? "bg-surface-800 text-surface-100" : "text-surface-500 hover:text-surface-200"
-              }`}
-            >
-              <Pause className="h-3 w-3 fill-current" /> Interactive
-            </button>
-          </div>
-
-          <div className="flex items-center gap-1.5 rounded border border-surface-750 bg-surface-950 px-2 py-[3px]">
-            <Cpu className="h-3.5 w-3.5 text-surface-500" />
-            <select
-              value={selectedModel}
-              onChange={(e) => setSelectedModel(e.target.value)}
-              className="bg-transparent text-xs text-surface-200 outline-none cursor-pointer font-mono"
-            >
-              {(models.length > 0
-                ? models
-                : [
-                    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (current)" },
-                    { id: "gemini-pro-latest", name: "Gemini Pro (latest)" },
-                    { id: "gemini-3-flash-preview", name: "Gemini 3 Flash (preview)" },
-                    { id: "custom", name: "Custom Model" },
-                  ]
-              ).map((m: any) => (
-                <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
-              ))}
-            </select>
-          </div>
-
           <button
             onClick={() => setShowIntakeModal(true)}
             className="flex items-center gap-1.5 rounded border border-brand-500/40 bg-brand-500/10 px-3 py-[4px] text-xs font-medium text-brand-400 hover:bg-brand-500/15 transition-colors"
@@ -1192,8 +1148,6 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           >
             <TerminalIcon className="h-3.5 w-3.5" />
           </button>
-          <div className="h-3.5 w-px bg-surface-800 mx-1" />
-          <span className="text-[11px] text-surface-500 font-mono">{user?.email || "founder@afroid.io"}</span>
         </div>
       </header>
 
@@ -1760,17 +1714,56 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                 <div ref={dockEndRef} />
               </div>
 
-              <form onSubmit={handleSendDockMessage} className="border-t border-surface-800 p-2">
-                <div className="flex items-center gap-2 rounded-lg border border-surface-750 bg-surface-950 px-2 py-1.5">
-                  <input
-                    value={dockInput}
-                    onChange={(e) => setDockInput(e.target.value)}
-                    placeholder="Ask or steer the agent..."
-                    className="flex-1 bg-transparent text-xs outline-none placeholder:text-surface-500"
-                  />
-                  <button type="submit" className="rounded p-1 text-brand-400 hover:bg-surface-800" title="Send">
-                    <Send className="h-3.5 w-3.5" />
-                  </button>
+              <form onSubmit={handleSendDockMessage} className="border-t border-surface-800 p-2 pt-3">
+                <div className="relative group flex flex-col gap-1 rounded-lg border border-surface-750 bg-surface-950 px-2.5 py-2 pt-3">
+                  {/* Model Selector at middle prompt text input upper frame, visible only on hovering */}
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+                    <div className="flex items-center gap-1 rounded-full border border-surface-700 bg-surface-900 px-2.5 py-0.5 text-[10px] font-mono text-surface-200 shadow-md">
+                      <Cpu className="h-3 w-3 text-brand-400" />
+                      <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="bg-transparent text-[10px] text-surface-200 outline-none cursor-pointer font-mono"
+                      >
+                        {(models.length > 0 ? models : [
+                          { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (current)" },
+                          { id: "gemini-pro-latest", name: "Gemini Pro (latest)" },
+                          { id: "gemini-3-flash-preview", name: "Gemini 3 Flash (preview)" },
+                        ]).map((m: any) => (
+                          <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Autopilot / Interactive mode toggle with colored indicator mark at left top corner of border frame */}
+                  <div className="absolute -top-2.5 left-3 z-10">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutopilot(!autopilot);
+                        if (!autopilot) setPendingReview(null);
+                      }}
+                      className="flex items-center gap-1.5 rounded-full border border-surface-700 bg-surface-900 px-2.5 py-0.5 text-[10px] font-medium text-surface-200 shadow-md hover:border-surface-500 transition-colors"
+                      title={autopilot ? "Autopilot mode active (click to switch to Interactive)" : "Interactive mode active (click to switch to Autopilot)"}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${autopilot ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
+                      <span>{autopilot ? "Autopilot" : "Interactive"}</span>
+                      <ChevronRight className="h-2.5 w-2.5 text-surface-400 rotate-90" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      value={dockInput}
+                      onChange={(e) => setDockInput(e.target.value)}
+                      placeholder="Ask or steer the agent..."
+                      className="flex-1 bg-transparent text-xs outline-none placeholder:text-surface-500"
+                    />
+                    <button type="submit" className="rounded p-1 text-brand-400 hover:bg-surface-800" title="Send">
+                      <Send className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 </div>
               </form>
             </aside>
