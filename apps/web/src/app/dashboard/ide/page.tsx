@@ -2062,6 +2062,28 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           </div>
         </div>
       )}
+
+      {/* ===== Generating Blueprint Transition Overlay ===== */}
+      {isGenerating && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-surface-950/85 backdrop-blur-md animate-fade-in p-6">
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="relative flex items-center justify-center">
+              <div className="absolute h-16 w-16 animate-ping rounded-full bg-brand-500/20" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-brand-500/40 bg-surface-900 shadow-2xl">
+                <Loader2 className="h-7 w-7 animate-spin text-brand-400" />
+              </div>
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-surface-100">
+                Generating <span className="text-brand-400">{ideaForm.projectName || "Sovereign"}</span> Blueprint...
+              </h2>
+              <p className="mt-1 text-xs text-surface-400">
+                Chief Architect agent is formulating the zero-question architectural specification and directory structure.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
