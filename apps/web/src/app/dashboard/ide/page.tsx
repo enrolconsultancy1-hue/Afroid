@@ -349,6 +349,8 @@ export default function GeezCodeIDE() {
   const [blueprintTab, setBlueprintTab] = useState<"overview" | "arch" | "data" | "modules" | "milestones" | "json">("overview");
   const [blueprintData, setBlueprintData] = useState<BlueprintData | null>(null);
   const [jsonText, setJsonText] = useState("");
+  const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
+  const [editedBlueprintSummary, setEditedBlueprintSummary] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isBuilding, setIsBuilding] = useState(false);
   const [blueprintRaw, setBlueprintRaw] = useState<any>(null);
@@ -697,6 +699,7 @@ export default function GeezCodeIDE() {
       generatedBy: "geezcodE:ZeroQuestionArchitect",
     };
     setBlueprintData(fallbackBp);
+    setEditedBlueprintSummary(fallbackBp.summary);
     setJsonText(JSON.stringify(fallbackBp, null, 2));
   };
 
@@ -740,6 +743,7 @@ export default function GeezCodeIDE() {
           generatedBy: bp.generated_by || "geezcodE:architect",
         };
         setBlueprintData(normalizedBp);
+        setEditedBlueprintSummary(normalizedBp.summary);
         setJsonText(JSON.stringify(normalizedBp, null, 2));
       } else {
         generateOfflineBlueprintFallback();
@@ -1872,14 +1876,30 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="flex max-h-[90vh] w-full max-w-4xl flex-col rounded-lg border border-surface-750 bg-surface-900 shadow-2xl animate-scale-in">
             <div className="flex items-center justify-between border-b border-surface-800 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Code2 className="h-4 w-4 text-brand-400" />
-                <span className="text-sm font-medium text-surface-100">{blueprintData.projectName}</span>
-                <span className="rounded bg-surface-800 px-1.5 py-0.5 text-[10px] text-surface-400">{blueprintData.completeness}%</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Code2 className="h-4 w-4 text-brand-400" />
+                  <span className="text-sm font-semibold text-surface-100">Architect Blueprint Preview</span>
+                </div>
+                <span className="rounded bg-surface-800 px-2 py-0.5 font-mono text-xs text-brand-400">{blueprintData.projectName}</span>
+                <span className="rounded bg-surface-800 px-1.5 py-0.5 text-[10px] text-surface-400">{blueprintData.completeness}% complete</span>
               </div>
-              <button onClick={() => setShowBlueprintModal(false)} className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200">
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (isEditingBlueprint && blueprintData) {
+                      setBlueprintData({ ...blueprintData, summary: editedBlueprintSummary });
+                    }
+                    setIsEditingBlueprint(!isEditingBlueprint);
+                  }}
+                  className="rounded px-2 py-1 text-xs font-medium text-surface-400 hover:bg-surface-800 hover:text-surface-200"
+                >
+                  {isEditingBlueprint ? "Save" : "Edit"}
+                </button>
+                <button onClick={() => setShowBlueprintModal(false)} className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-0 border-b border-surface-800 px-4">
@@ -1893,7 +1913,16 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             <div className="flex-1 overflow-y-auto p-4">
               {blueprintTab === "overview" && (
                 <div className="space-y-3 text-sm text-surface-300">
-                  <p className="text-surface-200">{blueprintData.summary}</p>
+                  {isEditingBlueprint ? (
+                    <textarea
+                      rows={3}
+                      className="input w-full text-sm"
+                      value={editedBlueprintSummary}
+                      onChange={(e) => setEditedBlueprintSummary(e.target.value)}
+                    />
+                  ) : (
+                    <p className="text-surface-200">{blueprintData.summary}</p>
+                  )}
                   <div>
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-surface-500">Tech stack</div>
                     <div className="flex flex-wrap gap-1.5">
