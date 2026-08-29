@@ -1058,11 +1058,21 @@ export default function GeezCodeIDE() {
     { id: "search", label: "Search", icon: <Search className="h-[18px] w-[18px]" /> },
     { id: "git", label: "Source Control", icon: <GitBranch className="h-[18px] w-[18px]" /> },
     { id: "architect", label: "Architect", icon: <Layers className="h-[18px] w-[18px]" /> },
+    { id: "intake", label: "Architect Intake", icon: <SlidersHorizontal className="h-[18px] w-[18px]" /> },
     { id: "swarm", label: "Agent Swarm", icon: <Bot className="h-[18px] w-[18px]" /> },
     { id: "certify", label: "Certify", icon: <ShieldCheck className="h-[18px] w-[18px]" /> },
     { id: "incubate", label: "Incubate", icon: <Coins className="h-[18px] w-[18px]" /> },
     { id: "kyc", label: "KYC", icon: <QrCode className="h-[18px] w-[18px]" /> },
-];
+  ];
+
+  const handleActivityClick = (id: string) => {
+    if (id === "intake") {
+      setShowIntakeModal(true);
+    } else {
+      setActiveActivity(id);
+      setShowLeftSidebar(true);
+    }
+  };
 
 function generateCleanWorkspace(projectName: string): FileNode[] {
   const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -1159,15 +1169,15 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             {activityItems.slice(0, 5).map((item) => (
               <button
                 key={item.id}
-                onClick={() => { setActiveActivity(item.id); setShowLeftSidebar(true); }}
+                onClick={() => handleActivityClick(item.id)}
                 title={item.label}
                 className={`relative p-2 rounded-md transition-colors ${
-                  activeActivity === item.id && showLeftSidebar
+                  activeActivity === item.id && showLeftSidebar && item.id !== "intake"
                     ? "text-surface-100"
                     : "text-surface-500 hover:text-surface-200"
                 }`}
               >
-                {activeActivity === item.id && showLeftSidebar && (
+                {activeActivity === item.id && showLeftSidebar && item.id !== "intake" && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
                 )}
                 {item.icon}
@@ -1178,15 +1188,15 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             {activityItems.slice(5).map((item) => (
               <button
                 key={item.id}
-                onClick={() => { setActiveActivity(item.id); setShowLeftSidebar(true); }}
+                onClick={() => handleActivityClick(item.id)}
                 title={item.label}
                 className={`relative p-2 rounded-md transition-colors ${
-                  activeActivity === item.id && showLeftSidebar
+                  activeActivity === item.id && showLeftSidebar && item.id !== "intake"
                     ? "text-surface-100"
                     : "text-surface-500 hover:text-surface-200"
                 }`}
               >
-                {activeActivity === item.id && showLeftSidebar && (
+                {activeActivity === item.id && showLeftSidebar && item.id !== "intake" && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
                 )}
                 {item.icon}
