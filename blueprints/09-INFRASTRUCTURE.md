@@ -9,10 +9,10 @@
 
 ```mermaid
 graph TB
-    subgraph "GCP Project: afroid-production"
+    subgraph "GCP Project: afroid-506916"
         subgraph "Networking"
             VPC["VPC Network<br/>(afroid-vpc)"]
-            SUB["Subnet<br/>(africa-south1)"]
+            SUB["Subnet<br/>(us-central1 / africa-south1)"]
             NAT["Cloud NAT"]
             FW["Firewall Rules"]
             ARMOR["Cloud Armor<br/>(WAF + DDoS)"]
@@ -109,7 +109,7 @@ graph TB
 |---------|-------------|---------|
 | `afroid-dev` | Development | Dev testing, lower-tier resources |
 | `afroid-staging` | Staging | Pre-production validation |
-| `afroid-production` | Production | Live workloads, `africa-south1` |
+| `afroid-506916` | Production | Live workloads, `us-central1` (Primary) & `africa-south1` (Regional) |
 | `afroid-ml` | ML/Training | TPU training, model experiments |
 
 ---

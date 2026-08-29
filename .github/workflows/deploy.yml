@@ -5,13 +5,13 @@ on:
     branches: [main]
 
 env:
-  PROJECT_ID: "afroid-production"
-  REGION: "africa-south1"
-  REGISTRY: "africa-south1-docker.pkg.dev/afroid-production/afroid-containers"
+  PROJECT_ID: "afroid-506916"
+  REGION: "us-central1"
+  REGISTRY: "us-central1-docker.pkg.dev/afroid-506916/afroid-containers"
 
 jobs:
   deploy:
-    name: Build & Deploy to Cloud Run (africa-south1)
+    name: Build & Deploy to Cloud Run (us-central1 Primary / Global)
     if: ${{ vars.GCP_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
@@ -26,14 +26,14 @@ jobs:
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
-          service_account: "deployer-sa@afroid-production.iam.gserviceaccount.com"
+          service_account: "deployer-sa@afroid-506916.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker for Artifact Registry
         run: |
-          gcloud auth configure-docker africa-south1-docker.pkg.dev --quiet
+          gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
 
       - name: Build and Deploy Microservices
         run: |

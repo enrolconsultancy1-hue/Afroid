@@ -55,13 +55,13 @@ class ModelRegistry:
 
     def __init__(self) -> None:
         self._models: dict[str, ModelDescriptor] = {}
-        self._default_model_id = "gemini-flash-latest"
+        self._default_model_id = "gemini-3.6-flash"
         self._agent_defaults: dict[str, str] = {
-            "analyst": "gemini-flash-latest",
-            "architect": "gemini-flash-latest",
-            "codegen": "gemini-flash-latest",
-            "reviewer": "gemini-flash-latest",
-            "deployer": "gemini-flash-latest",
+            "analyst": "gemini-3.6-flash",
+            "architect": "gemini-3.6-flash",
+            "codegen": "gemini-3.6-flash",
+            "reviewer": "gemini-3.6-flash",
+            "deployer": "gemini-3.6-flash",
         }
         self._initialize_builtins()
 
@@ -69,13 +69,53 @@ class ModelRegistry:
         """Seed known current & latest Gemini model families."""
         builtins = [
             ModelDescriptor(
-                id="gemini-flash-latest",
-                name="Gemini Flash (latest stable)",
+                id="gemini-3.6-flash",
+                name="Gemini 3.6 Flash (current)",
                 provider="google",
                 context_window=1048576,
                 max_output_tokens=65536,
                 is_default=True,
-                description="Google current-generation fast multimodal model (stable -latest alias).",
+                description="Google current-generation fast multimodal model.",
+            ),
+            ModelDescriptor(
+                id="gemini-3.7-flash",
+                name="Gemini 3.7 Flash (newest)",
+                provider="google",
+                context_window=1048576,
+                max_output_tokens=65536,
+                description="Google newest flash model family.",
+            ),
+            ModelDescriptor(
+                id="gemini-3.5-flash",
+                name="Gemini 3.5 Flash",
+                provider="google",
+                context_window=1048576,
+                max_output_tokens=65536,
+                description="Google flash model family.",
+            ),
+            ModelDescriptor(
+                id="gemini-3.5-flash-lite",
+                name="Gemini 3.5 Flash Lite",
+                provider="google",
+                context_window=1048576,
+                max_output_tokens=65536,
+                description="Google lightweight flash model.",
+            ),
+            ModelDescriptor(
+                id="gemini-3.1-pro-preview",
+                name="Gemini 3.1 Pro (preview)",
+                provider="google",
+                context_window=2097152,
+                max_output_tokens=65536,
+                description="Google flagship reasoning model (preview).",
+            ),
+            ModelDescriptor(
+                id="gemini-flash-latest",
+                name="Gemini Flash (latest alias)",
+                provider="google",
+                context_window=1048576,
+                max_output_tokens=65536,
+                description="Stable -latest alias (slower; prefer gemini-3.6-flash).",
             ),
             ModelDescriptor(
                 id="gemini-pro-latest",

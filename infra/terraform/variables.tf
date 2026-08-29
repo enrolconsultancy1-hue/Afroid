@@ -5,13 +5,13 @@
 variable "project_id" {
   type        = string
   description = "GCP Project ID for Afroid deployment"
-  default     = "afroid-production"
+  default     = "afroid-506916"
 }
 
 variable "primary_region" {
   type        = string
-  description = "Primary African GCP region for data sovereignty"
-  default     = "africa-south1"
+  description = "Primary North American GCP region for commercial production (e.g. us-central1), with africa-south1 as regional expansion"
+  default     = "us-central1"
 }
 
 variable "environment" {

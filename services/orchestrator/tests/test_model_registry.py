@@ -48,7 +48,7 @@ class TestModelRegistry:
 
     def test_dynamic_per_agent_resolution(self, registry: ModelRegistry) -> None:
         # Default for analyst
-        assert registry.resolve_model_id(agent_name="analyst") == "gemini-flash-latest"
+        assert registry.resolve_model_id(agent_name="analyst") == "gemini-3.6-flash"
 
         # Per-agent override in job state
         job_config = {
@@ -88,5 +88,5 @@ class TestModelRegistry:
     def test_llm_factory_instantiation(self, registry: ModelRegistry) -> None:
         llm = registry.create_llm(agent_name="analyst", temperature=0.2)
         assert llm is not None
-        assert llm.model == "gemini-flash-latest"
+        assert llm.model == "gemini-3.6-flash"
         assert llm.temperature == 0.2

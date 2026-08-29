@@ -365,9 +365,9 @@ steps:
     waitFor: ['integration-tests']
 
 substitutions:
-  _REGION: 'africa-south1'
+  _REGION: 'us-central1'
   _STAGING_PROJECT: 'afroid-staging'
-  _PROD_PROJECT: 'afroid-production'
+  _PROD_PROJECT: 'afroid-506916'
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -544,7 +544,7 @@ migration-check:
 graph LR
     DEV["Development<br/>(local + dev project)"]
     STG["Staging<br/>(afroid-staging)"]
-    PROD["Production<br/>(afroid-production)"]
+    PROD["Production<br/>(afroid-506916)"]
 
     DEV -->|"merge to main<br/>auto-deploy"| STG
     STG -->|"integration tests pass<br/>manual approval"| PROD

@@ -309,12 +309,12 @@ GOOGLE_CLIENT_SECRET=
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/callback/google
 
 # --- Google Cloud ---
-GCP_PROJECT_ID=afroid-production
-GCP_REGION=africa-south1
+GCP_PROJECT_ID=afroid-506916
+GCP_REGION=us-central1                   # North America primary (africa-south1 for regional Africa expansion)
 GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
 
 # --- Vertex AI / Gemini ---
-VERTEX_AI_PROJECT=afroid-production
+VERTEX_AI_PROJECT=afroid-506916
 VERTEX_AI_LOCATION=us-central1
 GEMINI_MODEL=gemini-2.5-pro
 
@@ -323,7 +323,7 @@ GCS_BUCKET_ARTIFACTS=afroid-artifacts
 GCS_BUCKET_DOCUMENTS=afroid-documents
 
 # --- Google Pub/Sub ---
-PUBSUB_PROJECT_ID=afroid-production
+PUBSUB_PROJECT_ID=afroid-506916
 
 # --- Stripe ---
 STRIPE_SECRET_KEY=
