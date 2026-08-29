@@ -265,7 +265,7 @@ export default function GeezCodeIDE() {
   const [editorContent, setEditorContent] = useState<string>(INITIAL_FILES[0].children![0].children![0].content || "");
 
   const [autopilot, setAutopilot] = useState(true);
-  const [selectedModel, setSelectedModel] = useState("gemini-flash-latest");
+  const [selectedModel, setSelectedModel] = useState("gemini-3.6-flash");
   const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
 
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
@@ -1035,7 +1035,7 @@ export default function GeezCodeIDE() {
               {(models.length > 0
                 ? models
                 : [
-                    { id: "gemini-flash-latest", name: "Gemini Flash (latest)" },
+                    { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (current)" },
                     { id: "gemini-pro-latest", name: "Gemini Pro (latest)" },
                     { id: "gemini-3-flash-preview", name: "Gemini 3 Flash (preview)" },
                     { id: "custom", name: "Custom Model" },
