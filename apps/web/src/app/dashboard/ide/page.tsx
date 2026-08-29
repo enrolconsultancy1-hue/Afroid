@@ -1120,22 +1120,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
   return (
     <div className="flex h-screen flex-col bg-surface-950 text-surface-100 font-sans antialiased overflow-hidden">
       {/* ===== Title bar ===== */}
-      <header className="flex h-9 shrink-0 items-center justify-between border-b border-surface-800 bg-surface-900 px-3 select-none">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <GeezCodeLogo size={18} showWordmark={true} />
-          </Link>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowIntakeModal(true)}
-            className="flex items-center gap-1.5 rounded border border-brand-500/40 bg-brand-500/10 px-3 py-[4px] text-xs font-medium text-brand-400 hover:bg-brand-500/15 transition-colors"
-          >
-            <SlidersHorizontal className="h-3.5 w-3.5" /> Intake
-          </button>
-        </div>
-
+      <header className="grid grid-cols-3 h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 px-3 select-none">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowLeftSidebar(!showLeftSidebar)}
@@ -1158,6 +1143,16 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           >
             <TerminalIcon className="h-3.5 w-3.5" />
           </button>
+        </div>
+
+        <div className="flex items-center justify-center">
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <GeezCodeLogo size={18} showWordmark={true} />
+          </Link>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          {/* Right side spacer */}
         </div>
       </header>
 
