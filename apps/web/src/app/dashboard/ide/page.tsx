@@ -369,15 +369,15 @@ export default function GeezCodeIDE() {
   const [activeLiveAgent, setActiveLiveAgent] = useState<string>("geezcodE Copilot");
   const [liveProgress, setLiveProgress] = useState<number>(0);
   const [tokensUsed, setTokensUsed] = useState<number>(1240);
-  const [dockMessages, setDockMessages] = useState<AiDockMessage[]>([
-    {
-      id: "msg-1",
-      sender: "agent",
-      agentName: "Architect",
-      text: "I am your Chief Architect. Describe your startup concept or open the intake form to generate a zero-question architectural blueprint for parallel builders.",
-      timestamp: "Just now",
-    },
-  ]);
+   const [dockMessages, setDockMessages] = useState<AiDockMessage[]>([
+     {
+       id: "msg-1",
+       sender: "agent",
+       agentName: "geez-agent",
+       text: "Hello! I am geez-agent, your system operation guide. I can help you navigate and operate the geezcodE IDE, 2-phase Architect Intake, Certify, and Incubate. How can I guide you today?",
+       timestamp: "Just now",
+     },
+   ]);
   const [dockInput, setDockInput] = useState("");
   const dockEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -942,22 +942,40 @@ export default function GeezCodeIDE() {
     const userText = dockInput.trim();
     setDockInput("");
     setDockMessages((prev) => [...prev, { id: `user-${Date.now()}`, sender: "user", text: userText, timestamp: "Just now" }]);
-    setActiveLiveAgent("geezcodE Assistant");
+    setActiveLiveAgent("geez-agent");
     setActiveLiveTask(`Processing: "${userText}"`);
+
+    const lower = userText.toLowerCase();
+    const isAskingArchitecture =
+      lower.includes("architecture") ||
+      lower.includes("internal") ||
+      lower.includes("workflow") ||
+      lower.includes("under the hood") ||
+      lower.includes("source code") ||
+      lower.includes("backend") ||
+      lower.includes("pipeline") ||
+      lower.includes("how does it work");
+
+    const userName = user?.full_name || user?.email?.split("@")[0] || "Founder";
+
+    const replyText = isAskingArchitecture
+      ? `i am sorry ${userName} am not trained to answer that. is there anything i can help you with related to operation guidance?  if not Good luck ${userName} Happy coding.`
+      : `Hello ${userName}! As geez-agent, I am your UI operation guide. You can open the 2-phase Architect Intake via the activity bar, review blueprints, sync projects to the workspace, and run compliance audits in Certify. How can I guide your navigation today?`;
+
     setTimeout(() => {
       setDockMessages((prev) => [
         ...prev,
         {
           id: `reply-${Date.now()}`,
           sender: "agent",
-          agentName: "geezcodE Assistant",
-          text: `Steer applied to active session. Adjusting architecture and CodeGen workers to incorporate: "${userText}".`,
+          agentName: "geez-agent",
+          text: replyText,
           timestamp: "Just now",
         },
       ]);
-      setActiveLiveAgent("geezcodE Copilot");
-      setActiveLiveTask("Ready for concept intake or code edit");
-    }, 900);
+      setActiveLiveAgent("geez-agent");
+      setActiveLiveTask("Ready for guidance instructions");
+    }, 800);
   };
 
   const handleRunCertifyAudit = async () => {
@@ -1694,7 +1712,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               <div className="flex h-8 items-center justify-between border-b border-surface-800 px-3">
                 <div className="flex items-center gap-2">
                   <Bot className="h-3.5 w-3.5 text-brand-400" />
-                  <span className="text-xs font-medium text-surface-200">Copilot</span>
+                  <span className="text-xs font-medium text-surface-200">geez-agent</span>
                 </div>
                 <span className="text-[10px] text-surface-500">{tokensUsed.toLocaleString()} tokens</span>
               </div>
