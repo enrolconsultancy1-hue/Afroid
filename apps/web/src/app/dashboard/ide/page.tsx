@@ -387,8 +387,26 @@ export default function GeezCodeIDE() {
       const params = new URLSearchParams(window.location.search);
       const proj = params.get("projectName");
       if (proj) {
+        const cleanTree = generateCleanWorkspace(proj);
+        const slug = proj.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+        const mainPyPath = `services/${slug}/main.py`;
+        const mainPyContent = cleanTree[0].children![0].children![0].content || "";
+        setFileTree(cleanTree);
+        setOpenFiles([{ name: "main.py", path: mainPyPath, type: "file", language: "python", content: mainPyContent }]);
+        setActiveFilePath(mainPyPath);
+        setEditorContent(mainPyContent);
         setIdeaForm((prev) => ({ ...prev, projectName: proj, oneLiner: `Sovereign full-stack project for ${proj}` }));
-        setTerminalLogs((prev) => [...prev, `[Bridge] Successfully synchronized intake project '${proj}' from extension / web intake form into IDE workspace.`]);
+        setTerminalLogs((prev) => [...prev, `[Bridge] Successfully synchronized clean workspace for project '${proj}' from Architect Intake bridge.`]);
+        setDockMessages((prev) => [
+          ...prev,
+          {
+            id: `msg_${Date.now()}`,
+            sender: "agent",
+            agentName: "Chief Architect",
+            text: `Welcome to geezcodE IDE! Your clean workspace for '${proj}' has been successfully generated and synchronized from your Architect Intake form.`,
+            timestamp: "Just now",
+          },
+        ]);
       }
     }
   }, []);
@@ -1000,7 +1018,50 @@ export default function GeezCodeIDE() {
     { id: "certify", label: "Certify", icon: <ShieldCheck className="h-[18px] w-[18px]" /> },
     { id: "incubate", label: "Incubate", icon: <Coins className="h-[18px] w-[18px]" /> },
     { id: "kyc", label: "KYC", icon: <QrCode className="h-[18px] w-[18px]" /> },
+];
+
+function generateCleanWorkspace(projectName: string): FileNode[] {
+  const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  return [
+    {
+      name: "services",
+      path: "services",
+      type: "directory",
+      isOpen: true,
+      children: [
+        {
+          name: slug,
+          path: `services/${slug}`,
+          type: "directory",
+          isOpen: true,
+          children: [
+            {
+              name: "main.py",
+              path: `services/${slug}/main.py`,
+              type: "file",
+              language: "python",
+              content: `from fastapi import FastAPI\n\napp = FastAPI(title="${projectName}", version="1.0.0")\n\n@app.get("/health")\ndef health_check():\n    return {"status": "healthy", "project": "${projectName}", "sovereignty": "verified"}\n\n@app.get("/")\ndef root():\n    return {"message": "Welcome to ${projectName} API powered by geezcodE"}\n`,
+            },
+            {
+              name: "Dockerfile",
+              path: `services/${slug}/Dockerfile`,
+              type: "file",
+              language: "dockerfile",
+              content: `FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install fastapi uvicorn\nCMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]\n`,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: "README.md",
+      path: "README.md",
+      type: "file",
+      language: "markdown",
+      content: `# ${projectName}\n\nGenerated autonomously via geezcodE 2-Phase Architect Intake & Multi-Agent Swarm.\n\n## Stack\n- Python 3.12 + FastAPI\n- Cloud Run Serverless\n- PostgreSQL + pgvector\n`,
+    },
   ];
+}
 
   return (
     <div className="flex h-screen flex-col bg-surface-950 text-surface-100 font-sans antialiased overflow-hidden">
