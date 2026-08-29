@@ -1927,14 +1927,12 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    if (isEditingBlueprint && blueprintData) {
-                      setBlueprintData({ ...blueprintData, summary: editedBlueprintSummary });
-                    }
-                    setIsEditingBlueprint(!isEditingBlueprint);
+                    setShowBlueprintModal(false);
+                    setShowIntakeModal(true);
                   }}
-                  className="rounded px-2 py-1 text-xs font-medium text-surface-400 hover:bg-surface-800 hover:text-surface-200"
+                  className="rounded px-2.5 py-1 text-xs font-medium bg-surface-800 text-brand-400 hover:bg-surface-750 transition-colors flex items-center gap-1.5"
                 >
-                  {isEditingBlueprint ? "Save" : "Edit"}
+                  <SlidersHorizontal className="h-3.5 w-3.5" /> Edit (Architect Intake)
                 </button>
                 <button onClick={() => setShowBlueprintModal(false)} className="rounded p-1 text-surface-500 hover:bg-surface-800 hover:text-surface-200">
                   <X className="h-4 w-4" />
@@ -1953,16 +1951,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             <div className="flex-1 overflow-y-auto p-4">
               {blueprintTab === "overview" && (
                 <div className="space-y-3 text-sm text-surface-300">
-                  {isEditingBlueprint ? (
-                    <textarea
-                      rows={3}
-                      className="input w-full text-sm"
-                      value={editedBlueprintSummary}
-                      onChange={(e) => setEditedBlueprintSummary(e.target.value)}
-                    />
-                  ) : (
-                    <p className="text-surface-200">{blueprintData.summary}</p>
-                  )}
+                  <p className="text-surface-200">{blueprintData.summary}</p>
                   <div>
                     <div className="mb-1 text-xs font-semibold uppercase tracking-wider text-surface-500">Tech stack</div>
                     <div className="flex flex-wrap gap-1.5">
