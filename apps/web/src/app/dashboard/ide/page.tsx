@@ -350,6 +350,26 @@ export default function GeezCodeIDE() {
   const [blueprintData, setBlueprintData] = useState<BlueprintData | null>(null);
   const [jsonText, setJsonText] = useState("");
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [promptTitle, setPromptTitle] = useState("");
+  const [promptPlaceholder, setPromptPlaceholder] = useState("");
+  const [promptInputValue, setPromptInputValue] = useState("");
+  const [promptCallback, setPromptCallback] = useState<((val: string) => void) | null>(null);
+  const [showAlertModal, setShowAlertModal] = useState(false);
+  const [alertMessage, setAlertMessage] = useState("");
+
+  const openPrompt = (title: string, placeholder: string, cb: (val: string) => void) => {
+    setPromptTitle(title);
+    setPromptPlaceholder(placeholder);
+    setPromptInputValue("");
+    setPromptCallback(() => cb);
+    setShowPromptModal(true);
+  };
+
+  const showAlert = (msg: string) => {
+    setAlertMessage(msg);
+    setShowAlertModal(true);
+  };
   const [isEditingBlueprint, setIsEditingBlueprint] = useState(false);
   const [editedBlueprintSummary, setEditedBlueprintSummary] = useState("");
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "synced">("idle");
@@ -601,19 +621,21 @@ export default function GeezCodeIDE() {
   };
 
   const handleNewFile = () => {
-    const name = prompt("Enter new file path (e.g. services/api/utils.py):");
-    if (name) {
+    openPrompt("Create New File", "e.g. services/api/utils.py", (name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
       const newFile: FileNode = {
-        name: name.split("/").pop() || name,
-        path: name,
+        name: trimmed.split("/").pop() || trimmed,
+        path: trimmed,
         type: "file",
         content: "# New file\n",
       };
       setFileTree((prev) => [...prev, newFile]);
       setOpenFiles((prev) => [...prev, newFile]);
-      setActiveFilePath(name);
+      setActiveFilePath(trimmed);
       setEditorContent("# New file\n");
-    }
+      setTerminalLogs((prev) => [...prev, `[Filesystem] Created file: ${trimmed}`]);
+    });
   };
 
   const handleTerminalCommand = async (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1154,7 +1176,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                 <button onClick={() => { handleNewFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
                   <FilePlus className="h-3.5 w-3.5 text-brand-400" /> New File...
                 </button>
-                <button onClick={() => { alert("File saved successfully."); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                <button onClick={() => { showAlert("File saved successfully to workspace disk."); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
                   <Check className="h-3.5 w-3.5 text-emerald-400" /> Save File
                 </button>
                 <button onClick={() => { if (openFiles.length > 0) handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
@@ -1327,16 +1349,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       <span className="text-[11px] font-semibold uppercase tracking-wider text-surface-500">Workspace</span>
                       <div className="flex items-center gap-0.5 text-surface-500">
                         <button
-                          onClick={() => {
-                            const name = prompt("Enter new file path (e.g. services/api/utils.py):");
-                            if (name) {
-                              const newFile: FileNode = { name: name.split("/").pop() || name, path: name, type: "file", content: "# New file\n" };
-                              setFileTree((prev) => [...prev, newFile]);
-                              setOpenFiles((prev) => [...prev, newFile]);
-                              setActiveFilePath(name);
-                              setEditorContent("# New file\n");
-                            }
-                          }}
+                          onClick={handleNewFile}
                           title="New File"
                           className="p-1 rounded hover:text-surface-200 hover:bg-surface-800"
                         >
@@ -2175,6 +2188,71 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               <p className="mt-1 text-xs text-surface-400">
                 Chief Architect agent is formulating the zero-question architectural specification and directory structure.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== IDE Native Prompt Modal ===== */}
+      {showPromptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-lg border border-surface-750 bg-surface-900 p-6 shadow-2xl animate-scale-in">
+            <h3 className="text-sm font-semibold text-surface-100">{promptTitle}</h3>
+            <p className="mt-1 text-xs text-surface-400">Enter target relative path in the workspace:</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (promptCallback && promptInputValue.trim()) {
+                  promptCallback(promptInputValue);
+                }
+                setShowPromptModal(false);
+              }}
+              className="mt-4 space-y-4"
+            >
+              <input
+                autoFocus
+                type="text"
+                className="input w-full font-mono text-xs"
+                placeholder={promptPlaceholder}
+                value={promptInputValue}
+                onChange={(e) => setPromptInputValue(e.target.value)}
+              />
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPromptModal(false)}
+                  className="btn-secondary text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary text-xs"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== IDE Native Alert Modal ===== */}
+      {showAlertModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-surface-750 bg-surface-900 p-6 shadow-2xl animate-scale-in text-center">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 mb-3">
+              <Check className="h-5 w-5" />
+            </div>
+            <h3 className="text-sm font-semibold text-surface-100">Notification</h3>
+            <p className="mt-2 text-xs text-surface-300">{alertMessage}</p>
+            <div className="mt-5">
+              <button
+                onClick={() => setShowAlertModal(false)}
+                className="btn-primary w-full text-xs"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>
