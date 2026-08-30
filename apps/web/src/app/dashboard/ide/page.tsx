@@ -266,7 +266,15 @@ function GeezCodeIDEContent() {
 
   const [autopilot, setAutopilot] = useState(true);
   const [selectedModel, setSelectedModel] = useState("gemini-3.6-flash");
-  const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
+
+  const [projectRoot, setProjectRoot] = useState<string | null>(null);
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [intakeIdeas, setIntakeIdeas] = useState<
+    Array<{ id: string; project_name: string; status: string }>
+  >([]);
+  const [workspaceProjects, setWorkspaceProjects] = useState<
+    Array<{ name: string; path: string }>
+  >([]);  const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
 
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightDock, setShowRightDock] = useState(true);
@@ -513,7 +521,7 @@ function GeezCodeIDEContent() {
 
   const fetchWorkspaceTree = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/v1/workspace/tree`);
+      const res = await fetch(`${API_BASE}/v1/workspace/tree${projectRoot ? `?path=${encodeURIComponent(projectRoot)}` : ""}`);
       if (!res.ok) return;
       const json = await res.json();
       const nodes: FileNode[] = Array.isArray(json.data) ? json.data : [];
@@ -521,7 +529,46 @@ function GeezCodeIDEContent() {
     } catch {
       // keep current tree on failure
     }
+  }, [projectRoot]);
+
+  const loadIntakeIdeas = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/intake/ideas?limit=25`, { headers: { ...authHeaders() } });
+      if (res.ok) setIntakeIdeas(await res.json());
+    } catch { /* ignore */ }
   }, []);
+
+  const loadWorkspaceProjects = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/projects`, { headers: { ...authHeaders() } });
+      if (res.ok) {
+        const json = await res.json();
+        setWorkspaceProjects(Array.isArray(json.projects) ? json.projects : []);
+      }
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    loadIntakeIdeas();
+    loadWorkspaceProjects();
+  }, [loadIntakeIdeas, loadWorkspaceProjects]);
+
+  const startProjectFromIdea = async (ideaId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/intake/ideas/${ideaId}/start-project`, {
+        method: "POST",
+        headers: { ...authHeaders() },
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json.path) {
+        setProjectRoot(json.path);
+        setShowNewProject(false);
+        await loadWorkspaceProjects();
+        fetchWorkspaceTree();
+      }
+    } catch { /* ignore */ }
+  };
 
   const fetchGitStatus = useCallback(async () => {
     try {
@@ -1355,12 +1402,19 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                         >
                           <FilePlus className="h-3.5 w-3.5" />
                         </button>
+                        <button onClick={() => setShowNewProject(true)} title="Start New Project" className="p-1 rounded hover:text-surface-200 hover:bg-surface-800">
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
                         <button onClick={fetchWorkspaceTree} title="Refresh" className="p-1 rounded hover:text-surface-200 hover:bg-surface-800">
                           <RefreshCw className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     </div>
-                    {renderFileTree(fileTree)}
+                    {renderFileTree(
+                      projectRoot
+                        ? ([{ name: projectRoot.slice(1), path: projectRoot.slice(1), type: "dir" as const, children: fileTree }] as unknown as FileNode[])
+                        : fileTree
+                    )}
                   </div>
                 )}
 
