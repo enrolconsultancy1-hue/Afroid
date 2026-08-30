@@ -52,8 +52,6 @@ select = [
     "RUF",  # ruff-specific rules
 ]
 ignore = [
-    "ANN101",  # Missing type annotation for self
-    "ANN102",  # Missing type annotation for cls
     "S101",    # Use of assert (needed in tests)
     "E501",    # line-too-long (handled by ruff format)
     "ANN001",  # missing-type-function-argument (partial annotations)
