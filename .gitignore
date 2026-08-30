@@ -71,4 +71,5 @@ projects/
 
 # Per-user workspace runtime data (never commit)
 workspaces/
+scratch/
 
