@@ -177,6 +177,7 @@ class TestWriterProfile:
         r = await client.post("/v1/intake/writers", json={"display_name": "X", "email": "x@y.z"})
         assert r.status_code == 401
 
+
 class TestStartProject:
     async def test_start_project_calls_workspace(self, client: AsyncClient, monkeypatch) -> None:
         captured: dict = {}
@@ -190,13 +191,9 @@ class TestStartProject:
                 "idea_id": idea_id,
             }
 
-        monkeypatch.setattr(
-            "services.intake.app.routes.ideas._request_start_project", fake_start
-        )
+        monkeypatch.setattr("services.intake.app.routes.ideas._request_start_project", fake_start)
         idea = (await client.post("/v1/intake/ideas", json=_idea())).json()
-        r = await client.post(
-            f"/v1/intake/ideas/{idea['id']}/start-project", headers=_auth()
-        )
+        r = await client.post(f"/v1/intake/ideas/{idea['id']}/start-project", headers=_auth())
         assert r.status_code == 200
         body = r.json()
         assert body["slug"] == "agropulse-ai"
