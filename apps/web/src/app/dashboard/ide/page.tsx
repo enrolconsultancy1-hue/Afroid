@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -253,7 +253,7 @@ const GRANT_CATALOG = [
   { id: "g5", title: "develoPPP Ventures", funder: "DEG / GIZ", amount: "€100,000", region: "Pan-African", sector: "Impact" },
 ];
 
-export default function GeezCodeIDE() {
+function GeezCodeIDEContent() {
   const { user } = useAuthStore();
 
   const [activeActivity, setActiveActivity] = useState<string>("explorer");
@@ -2267,5 +2267,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="mb-1 block text-xs font-medium text-surface-400">{label}</span>
       {children}
     </label>
+  );
+}
+
+export default function GeezCodeIDE() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-surface-950 text-brand-400 font-mono text-sm">Loading geezcodE IDE...</div>}>
+      <GeezCodeIDEContent />
+    </Suspense>
   );
 }
