@@ -40,7 +40,7 @@ Afroid/
 │   ├── codegen/                             # Code generation engine
 │   ├── certify/                             # Compliance + IP verification
 │   ├── incubate/                            # Funding matching + autofill
-│   ├── vector-store/                        # Vector embedding + search
+│   ├── vector_store/                        # Vector embedding + search
 │   ├── notification/                        # Email + push notifications
 │   └── shared/                              # Shared Python utilities
 │
@@ -404,7 +404,7 @@ app/
     └── writer.py
 ```
 
-#### `services/vector-store/`
+#### `services/vector_store/`
 ```
 app/
 ├── routes/embeddings.py              # POST /embed, /embed-batch
@@ -599,7 +599,7 @@ members = [
     "services/codegen",
     "services/certify",
     "services/incubate",
-    "services/vector-store",
+    "services/vector_store",
     "services/notification",
     "services/shared",
 ]

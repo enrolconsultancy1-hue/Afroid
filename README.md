@@ -73,7 +73,7 @@ Afroid is a deep-tech autonomous startup acceleration ecosystem designed specifi
 | **`services/orchestrator`** | `8002` | Multi-Agent Swarm, Model Hub, WebSockets (`/ws`) | LangGraph, Gemini, WebSockets |
 | **`services/certify`** | `8003` | RegTech Compliance Engine & MinHash IP Verifier | Python, Cryptography |
 | **`services/incubate`** | `8004` | Semantic Grant Matching & Form Autofill Engine | pgvector, Gemini AI |
-| **`services/vector-store`**| `8005` | 768-dim Embedding Service (`text-embedding-004`) | pgvector, Vertex AI |
+| **`services/vector_store`**| `8005` | 768-dim Embedding Service (`text-embedding-004`) | pgvector, Vertex AI |
 | **`services/codegen`** | `8006` | Jinja2 Template Rendering & AST Syntax Validator | Jinja2, Python AST |
 | **`services/notification`**| `8007` | Transactional Email, SMS & HMAC-Signed Webhooks | Python, HMAC-SHA256 |
 | **`apps/web`** | `3000` | Next.js 15 Web Application & geezcodE IDE | Next.js 15, Monaco, Tailwind |

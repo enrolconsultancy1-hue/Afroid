@@ -44,10 +44,11 @@ jobs:
             echo "🚀 Building & Deploying service: $svc"
             echo "===================================================="
             
+            SVC_DIR="${svc//-/_}"
             IMAGE_URI="${REGISTRY}/${svc}:${GITHUB_SHA}"
             
             # Build container image
-            docker build -t "$IMAGE_URI" -f "services/${svc}/Dockerfile" .
+            docker build -t "$IMAGE_URI" -f "services/${SVC_DIR}/Dockerfile" .
             docker push "$IMAGE_URI"
             
             # Deploy to Google Cloud Run in Johannesburg

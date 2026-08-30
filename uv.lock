@@ -269,7 +269,7 @@ requires-dist = [
 [[package]]
 name = "afroid-vector-store"
 version = "1.0.0"
-source = { editable = "services/vector-store" }
+source = { editable = "services/vector_store" }
 dependencies = [
     { name = "afroid-shared" },
     { name = "langchain-google-genai" },

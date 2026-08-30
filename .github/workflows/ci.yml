@@ -66,8 +66,10 @@ jobs:
 
       - name: Run Ruff Linting & Formatting Check
         run: |
-          uv run ruff check services/${{ matrix.service }}
-          uv run ruff format --check services/${{ matrix.service }}
+          SVC_DIR="services/${{ matrix.service }}"
+          SVC_DIR="${SVC_DIR//-/_}"
+          uv run ruff check "$SVC_DIR"
+          uv run ruff format --check "$SVC_DIR"
 
       - name: Run Pytest Suite
         run: |
@@ -76,7 +78,9 @@ jobs:
           elif [ "${{ matrix.service }}" = "certify" ]; then
             export TEST_DATABASE_URL="postgresql+asyncpg://afroid:afroid_dev@localhost:5432/afroid_certify_test"
           fi
-          uv run pytest services/${{ matrix.service }} -v
+          SVC_DIR="services/${{ matrix.service }}"
+          SVC_DIR="${SVC_DIR//-/_}"
+          uv run pytest "$SVC_DIR" -v
 
   typescript-monorepo:
     name: Test TypeScript Packages & Web App

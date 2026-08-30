@@ -142,12 +142,12 @@ uv run alembic init alembic
 **Goal**: Shared vector embedding and similarity search service.
 
 **Files to Create**:
-1. `services/vector-store/app/main.py` — FastAPI entry
-2. `services/vector-store/app/routes/embeddings.py` — Embed text/documents
-3. `services/vector-store/app/routes/search.py` — Similarity search endpoints
-4. `services/vector-store/app/services/embedding_service.py` — Gemini text-embedding-005
-5. `services/vector-store/app/services/pgvector_store.py` — pgvector CRUD operations
-6. `services/vector-store/app/models/embedding.py` — Embedding SQLAlchemy model
+1. `services/vector_store/app/main.py` — FastAPI entry
+2. `services/vector_store/app/routes/embeddings.py` — Embed text/documents
+3. `services/vector_store/app/routes/search.py` — Similarity search endpoints
+4. `services/vector_store/app/services/embedding_service.py` — Gemini text-embedding-005
+5. `services/vector_store/app/services/pgvector_store.py` — pgvector CRUD operations
+6. `services/vector_store/app/models/embedding.py` — Embedding SQLAlchemy model
 
 **Acceptance Criteria**:
 - [ ] `POST /embeddings` accepts text, returns 768-dim vector

@@ -251,7 +251,7 @@ graph TD
         CGEN["services/codegen"]
         CERT["services/certify"]
         INC["services/incubate"]
-        VS["services/vector-store"]
+        VS["services/vector_store"]
         NOTIF["services/notification"]
         SHARED["services/shared"]
     end

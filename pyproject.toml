@@ -14,7 +14,7 @@ members = [
     "services/codegen",
     "services/certify",
     "services/incubate",
-    "services/vector-store",
+    "services/vector_store",
     "services/notification",
     "services/shared",
     "services/gateway",
@@ -74,7 +74,7 @@ extend-immutable-calls = [
 ]
 [tool.ruff.lint.per-file-ignores]
 # table_name is validated against ALLOWED_TABLES whitelist (identifiers cannot be parameterized)
-"services/vector-store/app/services/search_service.py" = ["S608"]
+"services/vector_store/app/services/search_service.py" = ["S608"]
 [tool.ruff.lint.isort]
 known-first-party = ["services"]
 
