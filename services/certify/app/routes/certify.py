@@ -8,8 +8,6 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.certify.app.engine.certificate_pdf import render_certificate_pdf
 from services.certify.app.engine.compliance import AuditTrail, ComplianceEngine
 from services.certify.app.engine.ip_verifier import IPVerifier
@@ -21,8 +19,10 @@ from services.certify.app.store import (
     list_designations,
     upsert_designation,
 )
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import BadRequestError, NotFoundError
 from services.shared.pitch_rubric import RUBRIC_DIMENSIONS
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/certify", tags=["certification"])
 

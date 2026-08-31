@@ -9,8 +9,8 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
+from services.shared.auth_middleware import get_current_user
+from services.shared.user_models import User
 from services.workspace.app.config import EXCLUDED_DIRS, user_workspace
 
 router = APIRouter(tags=["filesystem"])

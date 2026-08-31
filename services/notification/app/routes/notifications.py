@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.notification.app.schemas.notification import (
     EmailNotificationRequest,
     NotificationResponse,
@@ -13,6 +11,8 @@ from services.notification.app.schemas.notification import (
     WebhookDispatchEvent,
 )
 from services.notification.app.services.dispatcher import NotificationDispatcher
+from services.shared.auth_middleware import get_current_user
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 dispatcher = NotificationDispatcher()

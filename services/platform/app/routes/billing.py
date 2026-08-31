@@ -18,10 +18,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.platform.app.config import settings
 from services.platform.app.models.platform import Organization, OrganizationMember, Subscription
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import (
     BadRequestError,
     ForbiddenError,
@@ -29,6 +28,7 @@ from services.shared.exceptions import (
     ServiceUnavailableError,
     UnauthorizedError,
 )
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/billing", tags=["billing"])
 

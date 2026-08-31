@@ -8,13 +8,13 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.orchestrator.app.schemas.state import ConceptInput, OrchestrationState
 from services.orchestrator.app.services.model_registry import (
     CustomModelRegistration,
     model_registry,
 )
+from services.shared.auth_middleware import get_current_user
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/orchestrate", tags=["orchestration"])
 

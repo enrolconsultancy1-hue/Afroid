@@ -1,5 +1,5 @@
 """Auth service data models."""
 
-from services.auth.app.models.user import KycVerification, RefreshToken, User
+from services.shared.user_models import KycVerification, RefreshToken, User
 
 __all__ = ["KycVerification", "RefreshToken", "User"]

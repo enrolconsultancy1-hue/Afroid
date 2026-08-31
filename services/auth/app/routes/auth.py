@@ -17,8 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.auth.app.config import settings
 from services.auth.app.limiter import limiter
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import RefreshToken, User
 from services.auth.app.schemas.auth import (
     AuthResponse,
     GoogleLoginRequest,
@@ -29,9 +27,11 @@ from services.auth.app.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
-from services.auth.app.services.jwt_service import JWTService
 from services.auth.app.services.password_service import PasswordService
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import ConflictError, UnauthorizedError
+from services.shared.jwt_service import JWTService
+from services.shared.user_models import RefreshToken, User
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 

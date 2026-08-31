@@ -10,8 +10,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.platform.app.models.platform import Organization, OrganizationMember
 from services.platform.app.schemas.platform import (
     AddMemberRequest,
@@ -20,7 +18,9 @@ from services.platform.app.schemas.platform import (
     OrgMemberResponse,
     UpdateOrganizationRequest,
 )
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import ConflictError, ForbiddenError, NotFoundError
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 

@@ -10,8 +10,6 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.platform.app.models.platform import Project, StartupProfile
 from services.platform.app.schemas.platform import (
     CreateProjectRequest,
@@ -22,7 +20,9 @@ from services.platform.app.schemas.platform import (
     UpdateProjectRequest,
     UpdateStartupProfileRequest,
 )
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import ForbiddenError, NotFoundError
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 

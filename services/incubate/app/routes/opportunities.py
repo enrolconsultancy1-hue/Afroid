@@ -8,11 +8,11 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.auth.app.middleware.auth_middleware import get_current_user
-from services.auth.app.models.user import User
 from services.incubate.app.schemas.incubate import OpportunityResponse
 from services.platform.app.models.platform import Opportunity
+from services.shared.auth_middleware import get_current_user
 from services.shared.exceptions import NotFoundError
+from services.shared.user_models import User
 
 router = APIRouter(prefix="/opportunities", tags=["opportunities"])
 
