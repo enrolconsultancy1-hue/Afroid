@@ -1,8 +1,8 @@
-# ፩</> geezcodE Chrome Extension
+# ፩</> AfroID Chrome Extension
 
 > **Sovereign AI Code & Grant Copilot for Google Chrome**
 
-The **geezcodE ፩</>** Chrome Extension brings the power of Afroid directly to your browser with 1-click African grant form autofill, instant RegTech compliance checks, and quick concept-to-code dispatch to geezcodE IDE.
+The **AfroID ፩</>** Chrome Extension brings the power of Afroid directly to your browser with 1-click African grant form autofill, instant RegTech compliance checks, and quick concept-to-code dispatch to geezcodE IDE.
 
 ---
 
@@ -23,7 +23,7 @@ Toggle the **"Developer mode"** switch in the top right corner of the Extensions
    ```text
    c:\Users\user\projects\Afroid\apps\extension
    ```
-3. The **`geezcodE ፩</> — Sovereign AI Code & Grant Copilot`** extension is now installed and active!
+3. The **`AfroID ፩</> — Sovereign Startup Intake & Grant Copilot`** extension is now installed and active!
 
 ---
 
@@ -31,7 +31,7 @@ Toggle the **"Developer mode"** switch in the top right corner of the Extensions
 
 1. **🪄 1-Click African Grant Autofill**:
    - Navigate to any funding application form (e.g. Tony Elumelu Foundation, KeNIA, Google for Startups, Mastercard Foundation).
-   - Click the floating `< ፩ /> geezcodE` badge or open the popup and click **"Autofill Active Page"**.
+   - Click the floating `< ፩ /> AfroID` badge or open the popup and click **"Autofill Active Page"**.
    - Watch the form populate with your startup's pitch, market data, and financial metrics with 94.8% accuracy.
 
 2. **⚡ Zero-Question Architect Quick-Intake**:

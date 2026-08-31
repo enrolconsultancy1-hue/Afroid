@@ -1,5 +1,5 @@
 /**
- * geezcodE ፩</> Content Script — Grant Form Detection & Autofill Injection
+ * AfroID ፩</> Content Script — Grant Form Detection & Autofill Injection
  */
 
 const DEFAULT_STARTUP_DATA = {
@@ -101,7 +101,7 @@ function injectFloatingCopilot() {
     <div class="geezcode-float-icon">
       <span>&lt;</span><span class="geez-numeral">፩</span><span>/&gt;</span>
     </div>
-    <span class="geezcode-float-text">geezcodE</span>
+    <span class="geezcode-float-text">AfroID</span>
   `;
 
   btn.addEventListener("click", () => {

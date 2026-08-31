@@ -17,34 +17,33 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Afroid — The Sovereign Startup Factory",
-    template: "%s | Afroid",
+    default: "AfroID — The Startup Factory",
+    template: "%s | AfroID",
   },
   description:
-    "Build, certify, and fund your African startup with AI-powered tools. " +
-    "geezcodE IDE, compliance certification, and non-dilutive funding matching.",
+    "Build, certify, and fund your startup with AI-powered tools: code generation, " +
+    "compliance certification, and global funding matching.",
   keywords: [
-    "African startups",
+    "startup factory",
     "AI code generation",
     "startup certification",
     "grant funding",
     "non-dilutive funding",
-    "geezcodE",
-    "Afroid",
+    "AfroID",
   ],
-  authors: [{ name: "Afroid" }],
+  authors: [{ name: "AfroID" }],
   openGraph: {
     type: "website",
     locale: "en_US",
     url: "https://afroid.io",
-    siteName: "Afroid",
-    title: "Afroid — The Sovereign Startup Factory",
-    description: "Build, certify, and fund your African startup with AI.",
+    siteName: "AfroID",
+    title: "AfroID — The Startup Factory",
+    description: "Build, certify, and fund your startup with AI.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Afroid — The Sovereign Startup Factory",
-    description: "Build, certify, and fund your African startup with AI.",
+    title: "AfroID — The Startup Factory",
+    description: "Build, certify, and fund your startup with AI.",
   },
   robots: {
     index: true,
