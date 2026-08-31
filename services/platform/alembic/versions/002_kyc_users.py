@@ -24,7 +24,9 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    op.add_column("users", sa.Column("kyc_status", sa.String(20), nullable=False, server_default="unverified"))
+    op.add_column(
+        "users", sa.Column("kyc_status", sa.String(20), nullable=False, server_default="unverified")
+    )
     op.add_column("users", sa.Column("kyc_id_type", sa.String(50), nullable=True))
     op.add_column("users", sa.Column("kyc_id_masked", sa.String(50), nullable=True))
     op.add_column("users", sa.Column("kyc_verified_at", sa.DateTime(timezone=True), nullable=True))
