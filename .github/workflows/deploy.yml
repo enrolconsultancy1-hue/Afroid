@@ -12,7 +12,6 @@ env:
 jobs:
   deploy:
     name: Build & Deploy to Cloud Run (us-central1 Primary / Global)
-    if: ${{ vars.GCP_DEPLOY_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -25,7 +24,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "projects/123456789/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          workload_identity_provider: "projects/<REAL_PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-pool/providers/github-provider"  # TODO(Phase 0): set real WIF provider number
           service_account: "deployer-sa@afroid-506916.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
@@ -37,7 +36,7 @@ jobs:
 
       - name: Build and Deploy Microservices
         run: |
-          SERVICES=("auth" "platform" "orchestrator" "certify" "incubate" "vector-store" "codegen" "notification")
+          SERVICES=("auth" "platform" "orchestrator" "certify" "incubate" "vector-store" "codegen" "notification" "workspace" "intake" "gateway")
           
           for svc in "${SERVICES[@]}"; do
             echo "===================================================="

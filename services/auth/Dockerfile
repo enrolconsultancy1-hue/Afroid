@@ -20,8 +20,10 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Copy workspace files for dependency resolution
 COPY pyproject.toml uv.lock ./
-COPY services/shared/pyproject.toml services/shared/
+COPY services/shared/ services/shared/
 COPY services/auth/pyproject.toml services/auth/
+COPY services/auth/app/ services/auth/app/
+COPY services/auth/tests/ services/auth/tests/
 
 # Install dependencies only (cached layer)
 RUN uv sync --frozen --no-dev --package afroid-auth

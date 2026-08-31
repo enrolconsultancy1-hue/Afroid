@@ -118,6 +118,7 @@ name = "afroid-gateway"
 version = "1.0.0"
 source = { editable = "services/gateway" }
 dependencies = [
+    { name = "afroid-shared" },
     { name = "fastapi" },
     { name = "httpx" },
     { name = "pydantic-settings" },
@@ -126,6 +127,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
+    { name = "afroid-shared", editable = "services/shared" },
     { name = "fastapi", specifier = ">=0.115.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "pydantic-settings", specifier = ">=2.5.0" },

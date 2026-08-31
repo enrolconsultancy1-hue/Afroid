@@ -3,8 +3,10 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libffi-dev && rm -rf /var/lib/apt/lists/*
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock* ./
-COPY services/shared/pyproject.toml services/shared/
+COPY services/shared/ services/shared/
 COPY services/platform/pyproject.toml services/platform/
+COPY services/platform/app/ services/platform/app/
+COPY services/platform/tests/ services/platform/tests/
 RUN uv sync --no-dev --package afroid-platform
 
 FROM python:3.12-slim AS runtime
