@@ -24,7 +24,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "projects/<REAL_PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-pool/providers/github-provider"  # TODO(Phase 0): set real WIF provider number
+          workload_identity_provider: "projects/629240539505/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
           service_account: "deployer-sa@afroid-506916.iam.gserviceaccount.com"
 
       - name: Set up Cloud SDK
