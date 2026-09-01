@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { GeezCodeLogo } from "@/components/geezcode-logo";
+
 import { useAuthStore } from "@/stores/auth-store";
 
 const registerSchema = z.object({
@@ -60,7 +60,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center">
           <Link href="/" className="inline-flex items-center gap-2">
-            <GeezCodeLogo size={40} showWordmark={false} />
+            <span className="text-2xl font-bold tracking-tight"><span className="text-surface-100">Afro</span><span className="text-brand-500">ID</span></span>
           </Link>
           <h1 className="mt-6 text-2xl font-bold">Create your account</h1>
           <p className="mt-2 text-sm text-surface-500">

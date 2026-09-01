@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GeezCodeLogo } from "@/components/geezcode-logo";
+
 import { intakeApi, type IntakeIdea } from "@/lib/api-client";
 
 interface FieldDef {
@@ -216,8 +216,9 @@ export default function IntakePage() {
       {/* Header */}
       <nav className="border-b border-surface-800 bg-surface-950">
         <div className="mx-auto flex h-16 max-w-4xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <GeezCodeLogo size={32} showWordmark={true} />
+          <Link href="/" className="flex items-baseline gap-0.5 text-lg font-bold tracking-tight">
+            <span className="text-surface-100">Afro</span>
+            <span className="text-brand-500">ID</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="btn-ghost text-sm">
