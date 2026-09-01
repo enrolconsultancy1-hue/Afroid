@@ -13,6 +13,9 @@ import socket
 
 import pytest
 
+# Ensure deterministic test secret key across all test modules
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-not-for-production")
+
 # ---------------------------------------------------------------------------
 # Detect whether the test Postgres instance is reachable
 # ---------------------------------------------------------------------------

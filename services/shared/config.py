@@ -26,7 +26,7 @@ class BaseAppSettings(BaseSettings):
     app_secret_key: str = ""
 
     # --- Auth (JWT) ---
-    jwt_secret_key: str = ""
+    jwt_secret_key: str = "dev-secret-key-change-in-production-afroid-jwt-token-signing"
     jwt_algorithm: str = "HS256"
 
     # --- Observability ---

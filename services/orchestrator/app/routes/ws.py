@@ -7,7 +7,8 @@ from typing import Any
 
 import structlog
 from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError as JWTError
 
 from services.orchestrator.app.config import settings
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 
 from httpx import AsyncClient
-from jose import jwt
+import jwt
 
 from services.intake.app.config import settings
 

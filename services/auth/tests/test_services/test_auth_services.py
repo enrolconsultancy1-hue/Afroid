@@ -77,7 +77,7 @@ class TestJWTService:
 
     def test_decode_invalid_token(self) -> None:
         """Decoding an invalid token raises JWTError."""
-        from jose import JWTError
+        from jwt.exceptions import PyJWTError as JWTError
 
         with pytest.raises(JWTError):
             JWTService.decode_access_token("invalid.jwt.token")

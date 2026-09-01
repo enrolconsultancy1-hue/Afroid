@@ -11,7 +11,8 @@ import uuid
 
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jose import JWTError, jwt
+import jwt
+from jwt.exceptions import PyJWTError as JWTError
 
 from services.intake.app.config import settings
 from services.shared.exceptions import UnauthorizedError
