@@ -93,9 +93,20 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = [
+    "services/auth/tests",
+    "services/platform/tests",
+    "services/orchestrator/tests",
+    "services/codegen/tests",
+    "services/certify/tests",
+    "services/incubate/tests",
+    "services/vector_store/tests",
+    "services/notification/tests",
+    "services/workspace/tests",
+    "services/intake/tests",
+]
 asyncio_mode = "auto"
-addopts = "-v --tb=short --strict-markers"
+addopts = "-v --tb=short --strict-markers --import-mode=importlib"
 markers = [
     "integration: marks tests as integration tests",
     "e2e: marks tests as end-to-end tests",

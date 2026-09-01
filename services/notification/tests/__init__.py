@@ -1,1 +1,0 @@
-"""Notification test package init."""

@@ -1,1 +1,0 @@
-"""Certify tests package."""
