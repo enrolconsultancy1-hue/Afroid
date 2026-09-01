@@ -7,11 +7,6 @@ output "cloud_sql_connection_name" {
   description = "Cloud SQL PostgreSQL instance connection string"
 }
 
-output "redis_host" {
-  value       = module.memorystore.redis_host
-  description = "Redis host IP for caching"
-}
-
 output "artifact_registry_url" {
   value       = "${var.primary_region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_repo.repository_id}"
   description = "Google Artifact Registry repository path"

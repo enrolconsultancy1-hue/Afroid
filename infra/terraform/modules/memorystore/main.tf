@@ -2,7 +2,10 @@ variable "project_id" { type = string }
 variable "region" { type = string }
 variable "environment" { type = string }
 variable "network_id" { type = string }
-variable "memory_size_gb" { type = number; default = 1 }
+variable "memory_size_gb" {
+  type = number
+  default = 1
+}
 
 resource "google_redis_instance" "cache" {
   name           = "afroid-redis-${var.environment}"

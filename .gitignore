@@ -73,3 +73,10 @@ projects/
 workspaces/
 scratch/
 
+
+# Terraform service account key & local files (never commit)
+infra/terraform/terraform-sa-key.json
+.terraform/
+*.tfstate
+*.tfstate.*
+*.plan

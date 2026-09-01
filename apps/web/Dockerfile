@@ -4,8 +4,9 @@ WORKDIR /app
 
 # ---- Dependencies Stage ----
 FROM base AS deps
-COPY package.json turbo.json ./
+COPY package.json package-lock.json* turbo.json ./
 COPY apps/web/package.json ./apps/web/
+COPY apps/extension/package.json ./apps/extension/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/dsl/package.json ./packages/dsl/

@@ -83,15 +83,6 @@ module "cloud_sql" {
 }
 
 # --- Redis Memorystore Module ---
-module "memorystore" {
-  source = "./modules/memorystore"
-
-  project_id  = var.project_id
-  region      = var.primary_region
-  environment = var.environment
-  network_id  = google_compute_network.vpc_network.id
-  memory_size_gb = var.environment == "prod" ? 5 : 1
-}
 
 # --- Cloud Run Services ---
 locals {
@@ -172,7 +163,7 @@ locals {
 }
 
 module "cloud_run_services" {
-  for_each = locals.services
+  for_each = local.services
   source   = "./modules/cloud_run"
 
   service_name    = "afroid-${replace(each.key, "_", "-")}-${var.environment}"
@@ -188,7 +179,6 @@ module "cloud_run_services" {
   env_vars = {
     APP_ENV       = var.environment
     DATABASE_URL  = module.cloud_sql.database_connection_url
-    REDIS_URL     = module.memorystore.redis_connection_url
-    VERTEX_REGION = var.primary_region
+      VERTEX_REGION = var.primary_region
   }
 }

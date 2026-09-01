@@ -1,13 +1,31 @@
 variable "service_name" { type = string }
 variable "region" { type = string }
 variable "image" { type = string }
-variable "container_port" { type = number; default = 8080 }
-variable "cpu" { type = string; default = "1" }
-variable "memory" { type = string; default = "512Mi" }
-variable "min_instances" { type = number; default = 0 }
-variable "max_instances" { type = number; default = 10 }
+variable "container_port" {
+  type = number
+  default = 8080
+}
+variable "cpu" {
+  type = string
+  default = "1"
+}
+variable "memory" {
+  type = string
+  default = "512Mi"
+}
+variable "min_instances" {
+  type = number
+  default = 0
+}
+variable "max_instances" {
+  type = number
+  default = 10
+}
 variable "vpc_connector_id" { type = string }
-variable "env_vars" { type = map(string); default = {} }
+variable "env_vars" {
+  type    = map(string)
+  default = {}
+}
 
 resource "google_cloud_run_v2_service" "service" {
   name     = var.service_name

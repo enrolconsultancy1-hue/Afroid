@@ -50,7 +50,7 @@ jobs:
             docker build -t "$IMAGE_URI" -f "services/${SVC_DIR}/Dockerfile" .
             docker push "$IMAGE_URI"
             
-            # Deploy to Google Cloud Run in Johannesburg
+            # Deploy to Google Cloud Run
             gcloud run deploy "afroid-${svc}-prod" \
               --image "$IMAGE_URI" \
               --region "$REGION" \
@@ -58,3 +58,19 @@ jobs:
               --allow-unauthenticated \
               --quiet
           done
+
+      - name: Build and Deploy Web Frontend
+        run: |
+          echo "===================================================="
+          echo "🚀 Building & Deploying Web Frontend"
+          echo "===================================================="
+          IMAGE_URI="${REGISTRY}/web:${GITHUB_SHA}"
+          docker build -t "$IMAGE_URI" -f apps/web/Dockerfile .
+          docker push "$IMAGE_URI"
+          gcloud run deploy "afroid-web-prod" \
+            --image "$IMAGE_URI" \
+            --region "$REGION" \
+            --port 3000 \
+            --platform managed \
+            --allow-unauthenticated \
+            --quiet

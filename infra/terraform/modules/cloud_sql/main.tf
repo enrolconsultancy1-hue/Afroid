@@ -2,9 +2,18 @@ variable "project_id" { type = string }
 variable "region" { type = string }
 variable "environment" { type = string }
 variable "network_id" { type = string }
-variable "database_name" { type = string; default = "afroid" }
-variable "db_tier" { type = string; default = "db-custom-2-7680" }
-variable "enable_backups" { type = bool; default = true }
+variable "database_name" {
+  type = string
+  default = "afroid"
+}
+variable "db_tier" {
+  type = string
+  default = "db-custom-2-7680"
+}
+variable "enable_backups" {
+  type = bool
+  default = true
+}
 
 resource "random_password" "db_password" {
   length  = 32
@@ -20,13 +29,11 @@ resource "google_sql_database_instance" "postgres" {
     tier = var.db_tier
 
     ip_configuration {
-      ipv4_enabled    = true
-      private_network = var.network_id
-    }
-
-    database_flags {
-      name  = "cloudsql.enable_pgvector"
-      value = "on"
+      ipv4_enabled = true
+      authorized_networks {
+        name  = "cloud-run-egress"
+        value = "0.0.0.0/0"
+      }
     }
 
     backup_configuration {
@@ -54,6 +61,6 @@ output "instance_connection_name" {
 }
 
 output "database_connection_url" {
-  value     = "postgresql+asyncpg://${google_sql_user.app_user.name}:${random_password.db_password.result}@${google_sql_database_instance.postgres.private_ip_address}:5432/${google_sql_database.database.name}"
+  value     = "postgresql+asyncpg://${google_sql_user.app_user.name}:${random_password.db_password.result}@${google_sql_database_instance.postgres.ip_address}:5432/${google_sql_database.database.name}"
   sensitive = true
 }

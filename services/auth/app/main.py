@@ -73,6 +73,9 @@ def create_app() -> FastAPI:
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next) -> Response:
         """Inject a DB session into each request."""
+        if request.url.path == "/health":
+            return await call_next(request)
+
         async with app.state.session_factory() as session:
             request.state.db_session = session
             try:
