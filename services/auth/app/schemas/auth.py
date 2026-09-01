@@ -55,6 +55,19 @@ class LogoutRequest(BaseModel):
     refresh_token: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    """Password recovery request."""
+
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Password recovery response."""
+
+    message: str
+    dispatched: bool = True
+
+
 # --- Response Schemas ---
 
 

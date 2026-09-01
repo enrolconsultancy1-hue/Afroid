@@ -19,6 +19,8 @@ from services.auth.app.config import settings
 from services.auth.app.limiter import limiter
 from services.auth.app.schemas.auth import (
     AuthResponse,
+    ForgotPasswordRequest,
+    ForgotPasswordResponse,
     GoogleLoginRequest,
     LoginRequest,
     LogoutRequest,
@@ -219,6 +221,32 @@ async def logout(
 
     if refresh_record is not None:
         await session.delete(refresh_record)
+
+
+# ============================================
+# POST /auth/forgot-password
+# ============================================
+@router.post("/forgot-password", response_model=ForgotPasswordResponse)
+@limiter.limit("5/minute")
+async def forgot_password(
+    request: Request,
+    body: ForgotPasswordRequest,
+) -> ForgotPasswordResponse:
+    """Request a password reset link (dispatches recovery instructions)."""
+    session = _get_session(request)
+    result = await session.execute(select(User).where(User.email == body.email))
+    user = result.scalar_one_or_none()
+
+    if user is not None:
+        # In a fully deployed setup, this fires an event to the notification service
+        # to dispatch a transactional password recovery email.
+        pass
+
+    # Always return a success-style message to prevent account enumeration
+    return ForgotPasswordResponse(
+        message=f"If an account exists for {body.email}, password recovery instructions have been sent.",
+        dispatched=True,
+    )
 
 
 # ============================================

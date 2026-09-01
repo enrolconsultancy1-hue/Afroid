@@ -112,6 +112,12 @@ export const authApi = {
       body: JSON.stringify({ refresh_token: refreshToken }),
     }),
 
+  forgotPassword: (email: string) =>
+    request<{ message: string; dispatched: boolean }>("/v1/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    }),
+
   getMe: () => request<UserProfile>("/v1/auth/me"),
 };
 
