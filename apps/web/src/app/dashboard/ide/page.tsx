@@ -58,6 +58,9 @@ const MonacoDiffEditor = dynamic(
 );
 const XTerminalPanel = dynamic(() => import("@/components/xterm-panel"), { ssr: false });
 const SandboxPreview = dynamic(() => import("@/components/sandbox-preview"), { ssr: false });
+import { IDEMenuBar } from "@/components/ide-menu-bar";
+import { QuickOpenModal } from "@/components/quick-open-modal";
+import { ShortcutsModal, AboutModal } from "@/components/ide-dialogs";
 
 interface FileNode {
   name: string;
@@ -347,6 +350,10 @@ function GeezCodeIDEContent() {
   const [showBottomTerminal, setShowBottomTerminal] = useState(true);
   const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output" | "swarm">("terminal");
   const [previewUrl, setPreviewUrl] = useState("");
+  const editorRef = useRef<any>(null);
+  const [showQuickOpen, setShowQuickOpen] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(260);
   const [rightDockWidth, setRightDockWidth] = useState(360);
@@ -845,6 +852,75 @@ function GeezCodeIDEContent() {
       setTerminalLogs((prev) => [...prev, "[terminal] workspace service unreachable"]);
     }
   };
+
+  const runTerminalCommand = async (cmd: string) => {
+    setTerminalTab("terminal");
+    setShowBottomTerminal(true);
+    setTerminalLogs((prev) => [...prev, `geezcodE@ide:~$ ${cmd}`]);
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/terminal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ command: cmd }),
+      });
+      const json = await res.json();
+      const d = json.data;
+      if (d) {
+        const out = ((d.stdout || "") + (d.stderr || "")).trim();
+        if (out) setTerminalLogs((prev) => [...prev, out]);
+        if (d.exit_code !== undefined && d.exit_code !== 0) {
+          setTerminalLogs((prev) => [...prev, `[exit code ${d.exit_code}]`]);
+        }
+      }
+    } catch {
+      setTerminalLogs((prev) => [...prev, "[terminal] workspace service unreachable"]);
+    }
+  };
+
+  const handleRunActiveFile = () => {
+    if (!activeFilePath) return;
+    if (activeFilePath.endsWith(".py")) {
+      runTerminalCommand(`python ${activeFilePath}`);
+    } else if (activeFilePath.endsWith(".js") || activeFilePath.endsWith(".ts")) {
+      runTerminalCommand(`node ${activeFilePath}`);
+    } else {
+      runTerminalCommand(`cat ${activeFilePath}`);
+    }
+  };
+
+  const handleRunTests = () => {
+    runTerminalCommand("pytest -v");
+  };
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+      if (isCtrlOrMeta && e.key.toLowerCase() === "s" && !e.shiftKey) {
+        e.preventDefault();
+        handleSaveFile();
+      } else if (isCtrlOrMeta && e.key.toLowerCase() === "p" && !e.shiftKey) {
+        e.preventDefault();
+        setShowQuickOpen(true);
+      } else if (isCtrlOrMeta && e.key.toLowerCase() === "b" && !e.altKey) {
+        e.preventDefault();
+        setShowLeftSidebar((prev) => !prev);
+      } else if (isCtrlOrMeta && e.altKey && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setShowRightDock((prev) => !prev);
+      } else if (isCtrlOrMeta && e.key.toLowerCase() === "j") {
+        e.preventDefault();
+        setShowBottomTerminal((prev) => !prev);
+      } else if (isCtrlOrMeta && e.key === "`") {
+        e.preventDefault();
+        setTerminalTab("terminal");
+        setShowBottomTerminal(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [activeFilePath, editorContent]);
 
   const generateOfflineBlueprintFallback = () => {
     const slug = (ideaForm.projectName || "Sovereign").toLowerCase().replace(/\s+/g, "-");
@@ -1375,122 +1451,83 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
   return (
     <div className="flex h-screen flex-col bg-surface-950 text-surface-100 font-sans antialiased overflow-hidden">
       {/* ===== Title bar ===== */}
-      <header className="grid grid-cols-3 h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 px-3 select-none relative z-40">
-        <div className="flex items-center gap-1 text-xs">
-          {/* File Menu */}
-          <div className="relative" onMouseEnter={() => setActiveMenu("file")} onMouseLeave={() => setActiveMenu(null)}>
-            <button
-              onClick={() => setActiveMenu(activeMenu === "file" ? null : "file")}
-              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "file" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
-            >
-              File
-            </button>
-            {activeMenu === "file" && (
-              <div className="absolute left-0 top-full mt-1 w-52 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
-                <button onClick={() => { handleNewFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <FilePlus className="h-3.5 w-3.5 text-brand-400" /> New File...
-                </button>
-                <button onClick={() => { handleNewFolder(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Files className="h-3.5 w-3.5 text-brand-400" /> New Folder...
-                </button>
-                <button onClick={() => { handleSaveFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" /> Save File
-                </button>
-                <button onClick={() => { handleSaveAs(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Check className="h-3.5 w-3.5 text-emerald-400" /> Save As...
-                </button>
-                <button onClick={() => { handleDeleteFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Trash2 className="h-3.5 w-3.5 text-red-400" /> Delete File...
-                </button>
-                <button onClick={() => { if (openFiles.length > 0) handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <X className="h-3.5 w-3.5 text-red-400" /> Close File
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Project Menu */}
-          <div className="relative" onMouseEnter={() => setActiveMenu("project")} onMouseLeave={() => setActiveMenu(null)}>
-            <button
-              onClick={() => setActiveMenu(activeMenu === "project" ? null : "project")}
-              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "project" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
-            >
-              Project
-            </button>
-            {activeMenu === "project" && (
-              <div className="absolute left-0 top-full mt-1 w-52 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
-                <button onClick={() => { setShowIntakeModal(true); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-brand-400" /> New Project (Architect Intake)
-                </button>
-                <button onClick={() => { setActiveActivity("explorer"); setShowLeftSidebar(true); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Files className="h-3.5 w-3.5 text-surface-400" /> Open Folder / Explorer
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Workspace Menu */}
-          <div className="relative" onMouseEnter={() => setActiveMenu("workspace")} onMouseLeave={() => setActiveMenu(null)}>
-            <button
-              onClick={() => setActiveMenu(activeMenu === "workspace" ? null : "workspace")}
-              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "workspace" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
-            >
-              Workspace
-            </button>
-            {activeMenu === "workspace" && (
-              <div className="absolute left-0 top-full mt-1 w-48 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
-                <button onClick={() => { setTerminalLogs((prev) => [...prev, "[Workspace] Workspace successfully synced with sovereign cloud core."]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <RefreshCw className="h-3.5 w-3.5 text-brand-400" /> Sync Workspace
-                </button>
-                <button onClick={() => { setTerminalLogs([]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Trash2 className="h-3.5 w-3.5 text-surface-400" /> Clear Terminal
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Edit Menu */}
-          <div className="relative" onMouseEnter={() => setActiveMenu("edit")} onMouseLeave={() => setActiveMenu(null)}>
-            <button
-              onClick={() => setActiveMenu(activeMenu === "edit" ? null : "edit")}
-              className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "edit" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
-            >
-              Edit
-            </button>
-            {activeMenu === "edit" && (
-              <div className="absolute left-0 top-full mt-1 w-44 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
-                <button onClick={() => { setTerminalLogs((prev) => [...prev, "[Edit] Format code executed."]); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
-                  <Code2 className="h-3.5 w-3.5 text-brand-400" /> Format Code
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-center">
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <GeezCodeLogo size={18} showWordmark={true} />
+      <header className="flex h-9 shrink-0 items-center justify-between border-b border-surface-800 bg-surface-900 px-3 select-none relative z-40 gap-2">
+        {/* Left: Brand + Full 8-Menu Bar */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Link href="/dashboard" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity shrink-0 mr-1">
+            <GeezCodeLogo size={16} showWordmark={true} />
           </Link>
+          <IDEMenuBar
+            editorRef={editorRef}
+            activeFilePath={activeFilePath}
+            hasOpenFiles={openFiles.length > 0}
+            onNewFile={handleNewFile}
+            onNewFolder={handleNewFolder}
+            onSaveFile={handleSaveFile}
+            onSaveAs={handleSaveAs}
+            onDeleteFile={handleDeleteFile}
+            onCloseFile={() => {
+              if (openFiles.length > 0) {
+                handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath);
+              }
+            }}
+            onNewProject={() => setShowIntakeModal(true)}
+            onOpenQuickOpen={() => setShowQuickOpen(true)}
+            onOpenShortcuts={() => setShowShortcutsModal(true)}
+            onOpenAbout={() => setShowAboutModal(true)}
+            setActiveActivity={setActiveActivity}
+            showLeftSidebar={showLeftSidebar}
+            setShowLeftSidebar={setShowLeftSidebar}
+            showRightDock={showRightDock}
+            setShowRightDock={setShowRightDock}
+            showBottomTerminal={showBottomTerminal}
+            setShowBottomTerminal={setShowBottomTerminal}
+            editorMinimap={editorMinimap}
+            setEditorMinimap={setEditorMinimap}
+            onRunActiveFile={handleRunActiveFile}
+            onRunTests={handleRunTests}
+            onRunSwarm={handleApproveAndBuild}
+            setTerminalTab={setTerminalTab}
+            onClearTerminal={() => setTerminalLogs([])}
+          />
         </div>
 
-        <div className="flex items-center justify-end gap-1">
+        {/* Center: Command Center Quick Open Pill */}
+        <div className="hidden md:flex items-center justify-center flex-1 max-w-sm px-2">
+          <button
+            type="button"
+            onClick={() => setShowQuickOpen(true)}
+            className="flex w-full items-center justify-between rounded-md border border-surface-750 bg-surface-950/80 px-2.5 py-1 text-xs text-surface-400 hover:border-surface-600 hover:text-surface-200 transition-colors shadow-inner"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <Search className="h-3 w-3 text-surface-500" />
+              <span className="truncate">Search files, commands...</span>
+            </div>
+            <kbd className="rounded border border-surface-800 bg-surface-900 px-1.5 py-0.2 font-mono text-[10px] text-surface-400">
+              Ctrl+P
+            </kbd>
+          </button>
+        </div>
+
+        {/* Right: Layout Panel Toggles */}
+        <div className="flex items-center justify-end gap-1 shrink-0">
           <button
             onClick={() => setShowLeftSidebar(!showLeftSidebar)}
-            title="Toggle sidebar"
+            title="Toggle sidebar (Ctrl+B)"
             className={`rounded p-1.5 transition-colors ${showLeftSidebar ? "text-surface-300 bg-surface-800" : "text-surface-500 hover:text-surface-200"}`}
           >
             <PanelLeft className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setShowRightDock(!showRightDock)}
-            title="Toggle AI assistant"
+            title="Toggle AI assistant (Ctrl+Alt+B)"
             className={`rounded p-1.5 transition-colors ${showRightDock ? "text-surface-300 bg-surface-800" : "text-surface-500 hover:text-surface-200"}`}
           >
             <PanelRight className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={() => setShowBottomTerminal(!showBottomTerminal)}
-            title="Toggle terminal"
+            title="Toggle terminal (Ctrl+J)"
             className={`rounded p-1.5 transition-colors ${showBottomTerminal ? "text-surface-300 bg-surface-800" : "text-surface-500 hover:text-surface-200"}`}
           >
             <TerminalIcon className="h-3.5 w-3.5" />
@@ -2091,6 +2128,9 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     value={editorContent}
                     onChange={(v) => setEditorContent(v || "")}
                     theme="vs-dark"
+                    onMount={(editor) => {
+                      editorRef.current = editor;
+                    }}
                     beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
                     options={{
                       fontSize: editorFontSize,
@@ -2747,6 +2787,34 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           </div>
         </div>
       )}
+      {/* ===== Quick Open File Modal (Ctrl+P) ===== */}
+      <QuickOpenModal
+        isOpen={showQuickOpen}
+        onClose={() => setShowQuickOpen(false)}
+        files={fileTree as any}
+        onSelectFile={(path) => {
+          const found = fileTree.find((f) => f.path === path);
+          if (found) {
+            if (!openFiles.some((f) => f.path === path)) {
+              setOpenFiles((prev) => [...prev, found]);
+            }
+            setActiveFilePath(path);
+            setEditorContent(found.content || "");
+          }
+        }}
+      />
+
+      {/* ===== Keyboard Shortcuts Modal (Ctrl+K Ctrl+S) ===== */}
+      <ShortcutsModal
+        isOpen={showShortcutsModal}
+        onClose={() => setShowShortcutsModal(false)}
+      />
+
+      {/* ===== About geezcodE Modal ===== */}
+      <AboutModal
+        isOpen={showAboutModal}
+        onClose={() => setShowAboutModal(false)}
+      />
     </div>
   );
 }
