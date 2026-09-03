@@ -17,9 +17,16 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest']
 
+  # 4. Build and push afroid-intake
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake:latest', '-f', 'services/intake/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake:latest']
+
 images:
   - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:latest'
   - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest'
   - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest'
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake:latest'
 
 timeout: '1200s'

@@ -13,6 +13,7 @@ FROM python:3.12-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 COPY services/shared/ services/shared/
 COPY services/intake/ services/intake/
 RUN groupadd --system app && useradd --system --gid app app

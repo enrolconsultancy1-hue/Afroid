@@ -38,8 +38,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
     # Create intake-owned tables idempotently (phase-2 evaluator tables included).
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:
+        import logging
+        logging.getLogger("uvicorn.error").warning(f"Intake DB initialization skipped/deferred: {exc}")
     yield
     await engine.dispose()
 
