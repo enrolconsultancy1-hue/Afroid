@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import React, { useState, useCallback, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -37,6 +37,7 @@ import {
   Smartphone,
   Loader2,
   Sparkles,
+  Folder,
 } from "lucide-react";
 import { GeezCodeLogo } from "@/components/geezcode-logo";
 import { QrCodeView } from "@/components/qr-code";
@@ -354,6 +355,9 @@ function GeezCodeIDEContent() {
   const [showQuickOpen, setShowQuickOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const [selectionCount, setSelectionCount] = useState(0);
+  const [tabSize, setTabSize] = useState(4);
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(260);
   const [rightDockWidth, setRightDockWidth] = useState(360);
@@ -2086,10 +2090,41 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             ))}
           </div>
 
-          <div className="flex h-6 shrink-0 items-center gap-1 border-b border-surface-800 bg-surface-900 px-3 font-mono text-[11px] text-surface-500">
-            <span>workspace</span>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-surface-300">{activeFilePath}</span>
+          {/* Breadcrumbs Bar */}
+          <div className="flex h-6 shrink-0 items-center gap-1.5 border-b border-surface-800 bg-surface-900/90 px-3 text-[11px] text-surface-400 select-none overflow-x-auto">
+            <span
+              className="flex items-center gap-1 text-surface-400 hover:text-surface-200 cursor-pointer transition-colors"
+              onClick={() => {
+                setActiveActivity("explorer");
+                setShowLeftSidebar(true);
+              }}
+              title="workspace root"
+            >
+              <Folder className="h-3 w-3 text-brand-400" />
+              <span>workspace</span>
+            </span>
+            {activeFilePath.split("/").map((part, idx, arr) => {
+              const isLast = idx === arr.length - 1;
+              return (
+                <React.Fragment key={idx}>
+                  <ChevronRight className="h-3 w-3 text-surface-600 shrink-0" />
+                  <span
+                    className={`flex items-center gap-1 transition-colors ${
+                      isLast
+                        ? "font-medium text-surface-200"
+                        : "text-surface-400 hover:text-surface-200 cursor-pointer"
+                    }`}
+                  >
+                    {isLast ? (
+                      <FileTypeIcon name={part} />
+                    ) : (
+                      <Folder className="h-3 w-3 text-surface-500" />
+                    )}
+                    <span>{part}</span>
+                  </span>
+                </React.Fragment>
+              );
+            })}
           </div>
 
           <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-950">
@@ -2138,6 +2173,16 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     theme="vs-dark"
                     onMount={(editor) => {
                       editorRef.current = editor;
+                      editor.onDidChangeCursorPosition((e) => {
+                        setCursorPos({ line: e.position.lineNumber, col: e.position.column });
+                      });
+                      editor.onDidChangeCursorSelection((e) => {
+                        const model = editor.getModel();
+                        if (model) {
+                          const text = model.getValueInRange(e.selection);
+                          setSelectionCount(text.length);
+                        }
+                      });
                     }}
                     beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
                     options={{
@@ -2347,22 +2392,120 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         )}
       </div>
 
-      {/* ===== Status bar ===== */}
-      <footer className="flex h-6 shrink-0 items-center gap-3 border-t border-surface-800 bg-surface-900 px-3 text-[11px] text-surface-500 select-none">
-        <span className="flex items-center gap-1.5">
-          <GitBranch className="h-3 w-3" /> {gitBranch}
-        </span>
-        <span className="flex items-center gap-1">
-          <CheckCircle2 className="h-3 w-3 text-surface-500" /> 0
-          <AlertCircle className="h-3 w-3 text-surface-500" /> 0
-        </span>
-        <span className="ml-auto flex items-center gap-3">
-          <span className="flex items-center gap-1"><Cpu className="h-3 w-3" /> {selectedModel}</span>
-          <span className="flex items-center gap-1"><Activity className="h-3 w-3" /> {autopilot ? "Autopilot" : "Interactive"}</span>
-          <span>{tokensUsed.toLocaleString()} tokens</span>
-          <span className="font-mono">UTF-8 · {getLanguage(activeFilePath)}</span>
-          <span className="font-mono">Ln 1, Col 1</span>
-        </span>
+      {/* ===== Professional Status bar ===== */}
+      <footer className="flex h-6 shrink-0 items-center justify-between border-t border-surface-800 bg-surface-900 px-3 text-[11px] text-surface-400 select-none overflow-x-auto">
+        {/* Left Status Controls */}
+        <div className="flex items-center gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setActiveActivity("git");
+              setShowLeftSidebar(true);
+            }}
+            title={`Git branch: ${gitBranch} (Click to open Source Control)`}
+            className="flex items-center gap-1 hover:text-surface-200 transition-colors cursor-pointer"
+          >
+            <GitBranch className="h-3 w-3 text-brand-400" />
+            <span>{gitBranch}</span>
+            <RefreshCw className="h-2.5 w-2.5 text-surface-500 ml-0.5" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTerminalTab("problems");
+              setShowBottomTerminal(true);
+            }}
+            title="0 Errors, 0 Warnings (Click to view Problems panel)"
+            className="flex items-center gap-1.5 hover:text-surface-200 transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-0.5 text-emerald-400">
+              <CheckCircle2 className="h-3 w-3" /> 0
+            </span>
+            <span className="flex items-center gap-0.5 text-surface-500">
+              <AlertCircle className="h-3 w-3" /> 0
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTerminalTab("swarm");
+              setShowBottomTerminal(true);
+            }}
+            title={`Swarm status: ${isBuilding ? "Executing swarm" : "Idle"}`}
+            className="flex items-center gap-1 hover:text-surface-200 transition-colors cursor-pointer"
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${isBuilding ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
+            <span className="text-surface-400">{isBuilding ? "Swarm: Building" : "Swarm: Ready"}</span>
+          </button>
+        </div>
+
+        {/* Right Status Controls */}
+        <div className="flex items-center gap-3 shrink-0 font-mono text-[10.5px]">
+          {/* Cursor Position (Click to Go to Line) */}
+          <button
+            type="button"
+            onClick={() => {
+              if (editorRef.current) {
+                editorRef.current.focus();
+                editorRef.current.getAction("editor.action.gotoLine")?.run();
+              }
+            }}
+            title="Go to Line/Column (Ctrl+G)"
+            className="hover:text-surface-200 hover:bg-surface-800/60 px-1 py-0.5 rounded transition-colors cursor-pointer"
+          >
+            Ln {cursorPos.line}, Col {cursorPos.col}
+            {selectionCount > 0 && ` (${selectionCount} selected)`}
+          </button>
+
+          {/* Tab Size */}
+          <button
+            type="button"
+            onClick={() => {
+              const nextSize = tabSize === 4 ? 2 : 4;
+              setTabSize(nextSize);
+              if (editorRef.current) {
+                editorRef.current.updateOptions({ tabSize: nextSize });
+              }
+            }}
+            title="Click to toggle indentation (Spaces: 2 / 4)"
+            className="hover:text-surface-200 hover:bg-surface-800/60 px-1 py-0.5 rounded transition-colors cursor-pointer"
+          >
+            Spaces: {tabSize}
+          </button>
+
+          {/* Encoding & EOL */}
+          <span className="text-surface-500">UTF-8</span>
+          <span className="text-surface-500">LF</span>
+
+          {/* Language Mode */}
+          <button
+            type="button"
+            onClick={() => {
+              if (editorRef.current) {
+                editorRef.current.focus();
+                editorRef.current.getAction("editor.action.quickCommand")?.run();
+              }
+            }}
+            title="Select Language Mode"
+            className="hover:text-surface-200 hover:bg-surface-800/60 px-1 py-0.5 rounded transition-colors cursor-pointer text-brand-400 font-medium capitalize"
+          >
+            {getLanguage(activeFilePath)}
+          </button>
+
+          {/* AI Model Badge */}
+          <span className="flex items-center gap-1 text-surface-400 font-sans text-[11px]">
+            <Cpu className="h-3 w-3 text-surface-500" />
+            <span>{selectedModel}</span>
+          </span>
+
+          {/* Prettier / Formatting Status */}
+          <span className="flex items-center gap-1 text-surface-500 font-sans text-[11px]" title="Prettier Formatter Active">
+            <Check className="h-3 w-3 text-emerald-400" />
+            <span>Prettier</span>
+          </span>
+        </div>
       </footer>
 
       {/* ===== Intake modal ===== */}
