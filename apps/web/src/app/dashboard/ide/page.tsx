@@ -36,11 +36,13 @@ import {
   QrCode,
   Smartphone,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 import { GeezCodeLogo } from "@/components/geezcode-logo";
 import { QrCodeView } from "@/components/qr-code";
 import { useAuthStore } from "@/stores/auth-store";
 import { useAgentStream } from "@/hooks/use-agent-stream";
+import { registerGeezCodeLanguage } from "@/lib/geezcode-monaco";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
 
@@ -50,6 +52,10 @@ const authHeaders = (): Record<string, string> => {
 };
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
+const MonacoDiffEditor = dynamic(
+  () => import("@monaco-editor/react").then((mod) => mod.DiffEditor),
+  { ssr: false }
+);
 
 interface FileNode {
   name: string;
@@ -138,12 +144,14 @@ interface AiDockMessage {
 interface PendingReviewFile {
   filePath: string;
   diff: string;
+  originalContent?: string;
   newContent: string;
   agentName: string;
   milestoneId: string;
 }
 
 function FileTypeIcon({ name }: { name: string }) {
+  if (name.endsWith(".geez") || name.endsWith(".geezcode")) return <Sparkles className="h-3.5 w-3.5 text-amber-400" />;
   if (name.endsWith(".py")) return <FileCode2 className="h-3.5 w-3.5 text-brand-400" />;
   if (name.endsWith(".tsx") || name.endsWith(".ts")) return <FileCode2 className="h-3.5 w-3.5 text-brand-400" />;
   if (name.endsWith(".json")) return <FileCode2 className="h-3.5 w-3.5 text-surface-400" />;
@@ -214,6 +222,55 @@ const INITIAL_FILES: FileNode[] = [
     content: `version: '3.8'\nservices:\n  api:\n    build: .\n    ports:\n      - "8000:8000"\n    environment:\n      - DATABASE_URL=postgresql://afroid:***@postgres:5432/afroid\n`,
   },
   {
+    name: "domain.geez",
+    path: "domain.geez",
+    type: "file",
+    language: "geezcode",
+    content: `domain SovereignAgritech {
+  describe "A peer-to-peer micro-lending and crop insurance platform for African smallholder farmers"
+}
+
+entity Farmer {
+  name: string @required;
+  phone: phone @unique;
+  country: string @required;
+  creditScore: number @min(300) @max(850) @default(600);
+  kycVerified: boolean @default(false);
+  createdAt: date @default(now);
+}
+
+entity LoanRequest {
+  farmer: Farmer @required;
+  amount: money @min(10);
+  currency: string @default("USD");
+  cropType: string @required;
+  status: string @default("pending");
+}
+
+flow LoanOriginationFlow {
+  step SubmitRequest {
+    action "Farmer dials USSD or submits mobile application form"
+    input LoanRequest
+    output LoanDecision
+  }
+
+  step Disbursement {
+    action "Instant automated payout via M-Pesa or Paystack"
+    condition "loan.approved == true"
+    on_error "Notify farmer via SMS and route to manual review"
+  }
+}
+
+rule AutoApproveLowRisk when loan.amount < 500 && farmer.creditScore >= 700 then approve(loan)
+
+api AgritechAPI {
+  POST   "/v1/loans/originate"    -> LoanRequest     auth authenticated
+  GET    "/v1/farmers/:id"        -> Farmer          auth authenticated
+  GET    "/v1/commodities"        -> void            auth public
+}
+`,
+  },
+  {
     name: "README.md",
     path: "README.md",
     type: "file",
@@ -274,7 +331,9 @@ function GeezCodeIDEContent() {
   >([]);
   const [workspaceProjects, setWorkspaceProjects] = useState<
     Array<{ name: string; path: string }>
-  >([]);  const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
+  >([]);
+  const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
+  const [diffSideBySide, setDiffSideBySide] = useState(true);
 
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightDock, setShowRightDock] = useState(true);
@@ -762,7 +821,7 @@ function GeezCodeIDEContent() {
     try {
       const res = await fetch(`${API_BASE}/v1/workspace/terminal`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify({ command: cmd }),
       });
       const json = await res.json();
@@ -1040,9 +1099,12 @@ function GeezCodeIDEContent() {
     ]);
     await new Promise((r) => setTimeout(r, 1400));
     if (!autopilot) {
+      const filePath = "services/api/main.py";
+      const existing = findFileContentByPath(fileTree, filePath) || `from fastapi import FastAPI\n\napp = FastAPI(title="Sovereign Agritech API", version="1.0.0")\n\n@app.get("/health")\ndef health_check():\n    return {"status": "healthy", "sovereignty": "verified"}\n`;
       setPendingReview({
-        filePath: "services/api/main.py",
+        filePath,
         diff: `+ @app.post("/v1/loans/originate")\n+ def originate_loan(req: LoanRequest):\n+     return {"loan_id": "LN-9921", "approved": True}`,
+        originalContent: existing,
         newContent: INITIAL_FILES[0].children![0].children![0].content || "",
         agentName: "CodeGen Worker 1",
         milestoneId: "MS1",
@@ -1170,9 +1232,23 @@ function GeezCodeIDEContent() {
       ts: "typescript", tsx: "typescriptreact", js: "javascript", jsx: "javascriptreact",
       py: "python", json: "json", md: "markdown", yml: "yaml", yaml: "yaml",
       css: "css", html: "html", sql: "sql", sh: "shell",
+      geez: "geezcode", geezcode: "geezcode",
     };
     return map[ext] || "plaintext";
   };
+
+  const findFileContentByPath = useCallback((nodes: FileNode[], targetPath: string): string | null => {
+    for (const node of nodes) {
+      if (node.path === targetPath && node.type === "file") {
+        return node.content || "";
+      }
+      if (node.children) {
+        const found = findFileContentByPath(node.children, targetPath);
+        if (found !== null) return found;
+      }
+    }
+    return null;
+  }, []);
 
   const toggleDirectory = (nodePath: string) => {
     const updateNodes = (nodes: FileNode[]): FileNode[] => {
@@ -1853,6 +1929,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     value={editorContent}
                     onChange={(v) => setEditorContent(v || "")}
                     theme="vs-dark"
+                    beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
                     options={{
                       fontSize: editorFontSize,
                       fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
@@ -2295,22 +2372,99 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         </div>
       )}
 
-      {/* ===== Pending review overlay ===== */}
+      {/* ===== Pending review overlay with Visual Monaco Diff Editor ===== */}
       {pendingReview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-lg border border-surface-750 bg-surface-900 shadow-2xl animate-scale-in">
-            <div className="flex items-center gap-2 border-b border-surface-800 px-4 py-3">
-              <AlertCircle className="h-4 w-4 text-amber-400" />
-              <span className="text-sm font-medium text-surface-100">Review proposed change</span>
-              <span className="ml-auto rounded bg-surface-800 px-1.5 py-0.5 font-mono text-[10px] text-surface-400">{pendingReview.filePath}</span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="flex flex-col h-[82vh] w-full max-w-5xl rounded-xl border border-surface-750 bg-surface-900 shadow-2xl overflow-hidden animate-scale-in">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-surface-800 bg-surface-950/70 px-4 py-3">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                  <GitBranch className="h-4 w-4" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-surface-100">Visual Diff Review</span>
+                    <span className="rounded bg-brand-500/15 border border-brand-500/30 px-2 py-0.5 font-mono text-[11px] text-brand-400 font-medium">
+                      {pendingReview.filePath}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-surface-400">
+                    Generated by <span className="text-surface-200 font-medium">{pendingReview.agentName}</span> · Milestone {pendingReview.milestoneId}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="flex rounded-lg border border-surface-750 bg-surface-950 p-0.5 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => setDiffSideBySide(true)}
+                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                      diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
+                    }`}
+                  >
+                    Side-by-Side
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDiffSideBySide(false)}
+                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
+                      !diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
+                    }`}
+                  >
+                    Inline Diff
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="p-4">
-              <div className="mb-1 text-xs text-surface-500">Proposed by {pendingReview.agentName} (Interactive mode)</div>
-              <pre className="rounded border border-surface-750 bg-surface-950 p-3 font-mono text-[11px] text-emerald-400 overflow-x-auto">{pendingReview.diff}</pre>
+
+            {/* Monaco Diff Editor Body */}
+            <div className="flex-1 min-h-0 bg-surface-950">
+              <MonacoDiffEditor
+                height="100%"
+                language={getLanguage(pendingReview.filePath)}
+                original={pendingReview.originalContent ?? findFileContentByPath(fileTree, pendingReview.filePath) ?? ""}
+                modified={pendingReview.newContent}
+                theme="vs-dark"
+                beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
+                options={{
+                  renderSideBySide: diffSideBySide,
+                  readOnly: true,
+                  automaticLayout: true,
+                  fontSize: editorFontSize,
+                  fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
+                  fontLigatures,
+                  minimap: { enabled: false },
+                  scrollBeyondLastLine: false,
+                  smoothScrolling: true,
+                  diffWordWrap: "on",
+                }}
+              />
             </div>
-            <div className="flex items-center justify-end gap-2 border-t border-surface-800 px-4 py-3">
-              <button onClick={handleRejectPendingFile} className="btn-secondary">Reject</button>
-              <button onClick={handleApprovePendingFile} className="btn-primary"><Check className="h-4 w-4" /> Approve</button>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between border-t border-surface-800 bg-surface-950/70 px-4 py-3">
+              <div className="text-xs text-surface-400 flex items-center gap-1.5">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+                <span>Interactive mode: founder verification required before workspace persistence.</span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleRejectPendingFile}
+                  className="rounded-lg border border-surface-700 bg-surface-800 px-3.5 py-1.5 text-xs font-medium text-surface-300 hover:bg-surface-700 hover:text-white transition-colors"
+                >
+                  Reject & Steer
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApprovePendingFile}
+                  className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 px-4 py-1.5 text-xs font-medium text-white shadow-md hover:shadow-lg transition-all"
+                >
+                  <Check className="h-4 w-4" /> Approve & Apply Changes
+                </button>
+              </div>
             </div>
           </div>
         </div>
