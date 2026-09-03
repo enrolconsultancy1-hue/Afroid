@@ -56,6 +56,8 @@ const MonacoDiffEditor = dynamic(
   () => import("@monaco-editor/react").then((mod) => mod.DiffEditor),
   { ssr: false }
 );
+const XTerminalPanel = dynamic(() => import("@/components/xterm-panel"), { ssr: false });
+const SandboxPreview = dynamic(() => import("@/components/sandbox-preview"), { ssr: false });
 
 interface FileNode {
   name: string;
@@ -343,7 +345,8 @@ function GeezCodeIDEContent() {
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightDock, setShowRightDock] = useState(true);
   const [showBottomTerminal, setShowBottomTerminal] = useState(true);
-  const [terminalTab, setTerminalTab] = useState<"terminal" | "problems" | "output" | "swarm">("terminal");
+  const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output" | "swarm">("terminal");
+  const [previewUrl, setPreviewUrl] = useState("");
 
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(260);
   const [rightDockWidth, setRightDockWidth] = useState(360);
@@ -2111,8 +2114,9 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             <>
               <div onMouseDown={() => setIsResizingBottom(true)} className="h-px shrink-0 cursor-row-resize bg-surface-800 hover:bg-brand-500" />
               <div style={{ height: `${bottomTerminalHeight}px` }} className="flex shrink-0 flex-col bg-surface-950">
+                {/* Tab bar */}
                 <div className="flex h-8 items-center gap-4 border-b border-surface-800 px-3">
-                  {(["terminal", "problems", "output", "swarm"] as const).map((t) => (
+                  {(["terminal", "preview", "problems", "output", "swarm"] as const).map((t) => (
                     <button
                       key={t}
                       onClick={() => setTerminalTab(t)}
@@ -2125,49 +2129,76 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     </button>
                   ))}
                   <div className="ml-auto flex items-center gap-2 text-surface-500">
-                    <button className="p-1 rounded hover:text-surface-200" title="Clear"><Trash2 className="h-3.5 w-3.5" /></button>
+                    <button
+                      onClick={() => setTerminalLogs([])}
+                      className="p-1 rounded hover:text-surface-200"
+                      title="Clear logs"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto p-2 font-mono text-xs">
+                {/* Tab body — fills remaining height */}
+                <div className="min-h-0 flex-1 overflow-hidden">
+                  {/* ── Live xterm.js Terminal ── */}
                   {terminalTab === "terminal" && (
-                    <>
-                      {terminalLogs.length === 0 && <div className="text-surface-500">geezcodE terminal — type a command below.</div>}
-                      {terminalLogs.map((line, i) => (
-                        <div key={i} className="whitespace-pre-wrap text-surface-300">{line}</div>
-                      ))}
-                      <div className="flex items-center gap-2 text-surface-300">
-                        <span className="text-brand-400">geezcodE@ide:~$</span>
-                        <input
-                          autoFocus
-                          value={terminalInput}
-                          onChange={(e) => setTerminalInput(e.target.value)}
-                          onKeyDown={handleTerminalCommand}
-                          className="flex-1 bg-transparent outline-none"
-                          placeholder="Type a command..."
-                        />
-                      </div>
-                    </>
+                    <XTerminalPanel className="h-full w-full" />
                   )}
+
+                  {/* ── Sandboxed Preview ── */}
+                  {terminalTab === "preview" && (
+                    <SandboxPreview
+                      initialUrl={previewUrl}
+                      className="h-full"
+                      onClose={() => setTerminalTab("terminal")}
+                    />
+                  )}
+
+                  {/* ── Problems ── */}
                   {terminalTab === "problems" && (
-                    <div className="flex items-center gap-2 text-surface-400">
+                    <div className="flex items-center gap-2 p-3 text-xs text-surface-400">
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> No problems detected in the workspace.
                     </div>
                   )}
+
+                  {/* ── Build Output ── */}
                   {terminalTab === "output" && (
-                    <div className="text-surface-400">
+                    <div className="overflow-y-auto h-full p-2 font-mono text-xs">
                       {isBuilding ? (
-                        <div className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin text-brand-400" /> {activeLiveTask}</div>
+                        <div className="flex items-center gap-2 text-surface-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-400" /> {activeLiveTask}
+                        </div>
+                      ) : terminalLogs.length > 0 ? (
+                        terminalLogs.map((line, i) => (
+                          <div key={i} className="whitespace-pre-wrap text-surface-300">{line}</div>
+                        ))
                       ) : (
-                        "Build output will appear here."
+                        <span className="text-surface-600">Build output will appear here.</span>
                       )}
                     </div>
                   )}
+
+                  {/* ── Agent Swarm Progress ── */}
                   {terminalTab === "swarm" && (
-                    <div className="flex flex-col gap-1 text-surface-400">
-                      <div>{activeLiveAgent} — {activeLiveTask}</div>
-                      <div className="mt-1 h-1 w-full rounded-full bg-surface-800">
-                        <div className="h-1 rounded-full bg-brand-500 transition-all" style={{ width: `${liveProgress}%` }} />
+                    <div className="flex flex-col gap-3 p-3 text-xs">
+                      <div className="flex items-center gap-2 text-surface-300">
+                        <Activity className="h-3.5 w-3.5 animate-pulse text-brand-400" />
+                        <span className="font-medium">{activeLiveAgent}</span>
+                        <span className="text-surface-500">—</span>
+                        <span className="text-surface-400">{activeLiveTask}</span>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-[11px] text-surface-500">
+                          <span>Execution progress</span>
+                          <span className="font-mono text-brand-400">{liveProgress}%</span>
+                        </div>
+                        <div className="h-1.5 w-full rounded-full bg-surface-800 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-300"
+                            style={{ width: `${liveProgress}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   )}
@@ -2176,6 +2207,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             </>
           )}
         </main>
+
 
         {/* Right dock (AI assistant) */}
         {showRightDock && (
