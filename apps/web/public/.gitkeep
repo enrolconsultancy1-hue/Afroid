@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 # Keeps the public directory tracked in git for Docker builds
+=======
+# Afroid Web public static assets placeholder
+>>>>>>> c9c423e (fix(prod): Dockerfile workspace build fixes, cloudbuild configs, web health route)

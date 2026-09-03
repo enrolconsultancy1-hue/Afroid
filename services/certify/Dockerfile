@@ -6,14 +6,14 @@ COPY pyproject.toml uv.lock* ./
 COPY services/shared/ services/shared/
 COPY services/certify/pyproject.toml services/certify/
 COPY services/certify/app/ services/certify/app/
-COPY services/certify/tests/ services/certify/tests/
-RUN uv sync --no-dev --package afroid-certify
+RUN uv sync --no-dev --no-install-workspace --package afroid-certify
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 COPY services/shared/ services/shared/
+COPY services/auth/ services/auth/
 COPY services/certify/ services/certify/
 RUN groupadd --system app && useradd --system --gid app app
 USER app

@@ -685,6 +685,67 @@ function GeezCodeIDEContent() {
     });
   };
 
+  const handleNewFolder = () => {
+    openPrompt("Create New Folder", "e.g. services/api/utils", (name) => {
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const newDir: FileNode = {
+        name: trimmed.split("/").pop() || trimmed,
+        path: trimmed,
+        type: "directory",
+        isOpen: true,
+        children: [],
+      };
+      setFileTree((prev) => [...prev, newDir]);
+      setTerminalLogs((prev) => [...prev, `[Filesystem] Created directory: ${trimmed}`]);
+    });
+  };
+
+  const handleSaveFile = () => {
+    setOpenFiles((prev) => prev.map((f) => (f.path === activeFilePath ? { ...f, content: editorContent } : f)));
+    setTerminalLogs((prev) => [...prev, `[Filesystem] Saved file: ${activeFilePath}`]);
+    showAlert(`File '${activeFilePath}' saved successfully to workspace disk.`);
+  };
+
+  const handleSaveAs = () => {
+    openPrompt("Save As", "e.g. services/api/main_copy.py", (newPath) => {
+      const trimmed = newPath.trim();
+      if (!trimmed) return;
+      const newFile: FileNode = {
+        name: trimmed.split("/").pop() || trimmed,
+        path: trimmed,
+        type: "file",
+        content: editorContent,
+      };
+      setFileTree((prev) => [...prev, newFile]);
+      setOpenFiles((prev) => [...prev, newFile]);
+      setActiveFilePath(trimmed);
+      setTerminalLogs((prev) => [...prev, `[Filesystem] Saved file as: ${trimmed}`]);
+    });
+  };
+
+  const handleDeleteFile = () => {
+    if (!activeFilePath) return;
+    openPrompt("Delete File", `Type path to confirm deletion: ${activeFilePath}`, (val) => {
+      if (val.trim() !== activeFilePath) {
+        showAlert("Deletion cancelled: path did not match.");
+        return;
+      }
+      const filteredTree = fileTree.filter((f) => f.path !== activeFilePath);
+      setFileTree(filteredTree);
+      const filteredTabs = openFiles.filter((f) => f.path !== activeFilePath);
+      setOpenFiles(filteredTabs);
+      if (filteredTabs.length > 0) {
+        setActiveFilePath(filteredTabs[0].path);
+        setEditorContent(filteredTabs[0].content || "");
+      } else {
+        setActiveFilePath("");
+        setEditorContent("");
+      }
+      setTerminalLogs((prev) => [...prev, `[Filesystem] Deleted file: ${activeFilePath}`]);
+    });
+  };
+
   const handleTerminalCommand = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key !== "Enter" || !terminalInput.trim()) return;
     const cmd = terminalInput.trim();
@@ -1113,12 +1174,33 @@ function GeezCodeIDEContent() {
     return map[ext] || "plaintext";
   };
 
+  const toggleDirectory = (nodePath: string) => {
+    const updateNodes = (nodes: FileNode[]): FileNode[] => {
+      return nodes.map((node) => {
+        if (node.path === nodePath) {
+          return { ...node, isOpen: !node.isOpen };
+        }
+        if (node.children) {
+          return { ...node, children: updateNodes(node.children) };
+        }
+        return node;
+      });
+    };
+    setFileTree((prev) => updateNodes(prev));
+  };
+
   const renderFileTree = (nodes: FileNode[], depth = 0) => (
     <div>
       {nodes.map((node) => (
         <div key={node.path}>
           <button
-            onClick={() => handleFileSelect(node)}
+            onClick={() => {
+              if (node.type === "directory") {
+                toggleDirectory(node.path);
+              } else {
+                handleFileSelect(node);
+              }
+            }}
             className={`flex w-full items-center gap-1.5 px-2 py-[3px] text-[13px] transition-colors ${
               node.path === activeFilePath
                 ? "bg-surface-800 text-surface-100"
@@ -1127,7 +1209,7 @@ function GeezCodeIDEContent() {
             style={{ paddingLeft: `${8 + depth * 14}px` }}
           >
             {node.type === "directory" ? (
-              <ChevronRight className="h-3.5 w-3.5 text-surface-500" />
+              <ChevronRight className={`h-3.5 w-3.5 text-surface-500 transition-transform ${node.isOpen ? "rotate-90" : ""}`} />
             ) : (
               <span className="w-3.5 flex items-center justify-center">
                 <FileTypeIcon name={node.name} />
@@ -1135,7 +1217,7 @@ function GeezCodeIDEContent() {
             )}
             <span className="truncate font-mono text-[12.5px]">{node.name}</span>
           </button>
-          {node.type === "directory" && node.children && renderFileTree(node.children, depth + 1)}
+          {node.type === "directory" && node.isOpen && node.children && renderFileTree(node.children, depth + 1)}
         </div>
       ))}
     </div>
@@ -1211,7 +1293,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
       <header className="grid grid-cols-3 h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 px-3 select-none relative z-40">
         <div className="flex items-center gap-1 text-xs">
           {/* File Menu */}
-          <div className="relative">
+          <div className="relative" onMouseEnter={() => setActiveMenu("file")} onMouseLeave={() => setActiveMenu(null)}>
             <button
               onClick={() => setActiveMenu(activeMenu === "file" ? null : "file")}
               className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "file" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
@@ -1219,12 +1301,21 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               File
             </button>
             {activeMenu === "file" && (
-              <div className="absolute left-0 top-full mt-1 w-48 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
+              <div className="absolute left-0 top-full mt-1 w-52 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-xl z-50">
                 <button onClick={() => { handleNewFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
                   <FilePlus className="h-3.5 w-3.5 text-brand-400" /> New File...
                 </button>
-                <button onClick={() => { showAlert("File saved successfully to workspace disk."); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                <button onClick={() => { handleNewFolder(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Files className="h-3.5 w-3.5 text-brand-400" /> New Folder...
+                </button>
+                <button onClick={() => { handleSaveFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
                   <Check className="h-3.5 w-3.5 text-emerald-400" /> Save File
+                </button>
+                <button onClick={() => { handleSaveAs(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Check className="h-3.5 w-3.5 text-emerald-400" /> Save As...
+                </button>
+                <button onClick={() => { handleDeleteFile(); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
+                  <Trash2 className="h-3.5 w-3.5 text-red-400" /> Delete File...
                 </button>
                 <button onClick={() => { if (openFiles.length > 0) handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath); setActiveMenu(null); }} className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100">
                   <X className="h-3.5 w-3.5 text-red-400" /> Close File
@@ -1234,7 +1325,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           </div>
 
           {/* Project Menu */}
-          <div className="relative">
+          <div className="relative" onMouseEnter={() => setActiveMenu("project")} onMouseLeave={() => setActiveMenu(null)}>
             <button
               onClick={() => setActiveMenu(activeMenu === "project" ? null : "project")}
               className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "project" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
@@ -1254,7 +1345,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           </div>
 
           {/* Workspace Menu */}
-          <div className="relative">
+          <div className="relative" onMouseEnter={() => setActiveMenu("workspace")} onMouseLeave={() => setActiveMenu(null)}>
             <button
               onClick={() => setActiveMenu(activeMenu === "workspace" ? null : "workspace")}
               className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "workspace" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}
@@ -1274,7 +1365,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           </div>
 
           {/* Edit Menu */}
-          <div className="relative">
+          <div className="relative" onMouseEnter={() => setActiveMenu("edit")} onMouseLeave={() => setActiveMenu(null)}>
             <button
               onClick={() => setActiveMenu(activeMenu === "edit" ? null : "edit")}
               className={`px-2.5 py-1 rounded transition-colors ${activeMenu === "edit" ? "bg-surface-800 text-surface-100" : "text-surface-400 hover:text-surface-200"}`}

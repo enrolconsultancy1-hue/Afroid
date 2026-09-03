@@ -1,0 +1,21 @@
+steps:
+  # Build and push afroid-web with production environment variables
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web:latest'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_API_URL=https://afroid-platform-prod-kx4jycljfa-uc.a.run.app'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_WS_URL=wss://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app'
+      - '-f'
+      - 'apps/web/Dockerfile'
+      - '.'
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web:latest']
+
+images:
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web:latest'
+
+timeout: '900s'

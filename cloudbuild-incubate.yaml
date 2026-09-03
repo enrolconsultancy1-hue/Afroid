@@ -1,0 +1,11 @@
+steps:
+  # 1. Build and push afroid-incubate
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest', '-f', 'services/incubate/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest']
+
+images:
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest'
+
+timeout: '600s'

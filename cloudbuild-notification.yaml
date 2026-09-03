@@ -1,0 +1,11 @@
+steps:
+  # Build and push afroid-notification
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest', '-f', 'services/notification/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest']
+
+images:
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest'
+
+timeout: '600s'

@@ -14,6 +14,7 @@ WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 COPY services/shared/ services/shared/
+COPY services/auth/ services/auth/
 COPY services/orchestrator/ services/orchestrator/
 RUN groupadd --system app && useradd --system --gid app app
 USER app

@@ -1,0 +1,25 @@
+steps:
+  # 1. Build and push afroid-certify
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:latest', '-f', 'services/certify/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:latest']
+
+  # 2. Build and push afroid-incubate
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest', '-f', 'services/incubate/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest']
+
+  # 3. Build and push afroid-notification
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest', '-f', 'services/notification/Dockerfile', '.']
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest']
+
+images:
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:latest'
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:latest'
+  - 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:latest'
+
+timeout: '1200s'

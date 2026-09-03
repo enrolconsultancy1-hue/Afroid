@@ -6,14 +6,14 @@ COPY pyproject.toml uv.lock* ./
 COPY services/shared/ services/shared/
 COPY services/notification/pyproject.toml services/notification/
 COPY services/notification/app/ services/notification/app/
-COPY services/notification/tests/ services/notification/tests/
-RUN uv sync --no-dev --package afroid-notification
+RUN uv sync --no-dev --no-install-workspace --package afroid-notification
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 COPY services/shared/ services/shared/
+COPY services/auth/ services/auth/
 COPY services/notification/ services/notification/
 RUN groupadd --system app && useradd --system --gid app app
 USER app

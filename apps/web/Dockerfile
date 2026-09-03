@@ -10,15 +10,19 @@ COPY apps/extension/package.json ./apps/extension/
 COPY packages/sdk/package.json ./packages/sdk/
 COPY packages/ui/package.json ./packages/ui/
 COPY packages/dsl/package.json ./packages/dsl/
-RUN npm ci
+RUN npm ci --include=dev
 
 # ---- Builder Stage ----
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG NEXT_PUBLIC_API_URL=https://afroid-platform-prod-kx4jycljfa-uc.a.run.app
+ARG NEXT_PUBLIC_WS_URL=wss://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-RUN npm run build --workspace=web
+RUN corepack enable && npm run build --workspace=web
 
 # ---- Runner Stage ----
 FROM base AS runner

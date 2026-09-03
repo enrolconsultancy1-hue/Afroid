@@ -6,14 +6,15 @@ COPY pyproject.toml uv.lock* ./
 COPY services/shared/ services/shared/
 COPY services/incubate/pyproject.toml services/incubate/
 COPY services/incubate/app/ services/incubate/app/
-COPY services/incubate/tests/ services/incubate/tests/
-RUN uv sync --no-dev --package afroid-incubate
+RUN uv sync --no-dev --no-install-workspace --package afroid-incubate
 
 FROM python:3.12-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 COPY services/shared/ services/shared/
+COPY services/auth/ services/auth/
+COPY services/platform/ services/platform/
 COPY services/incubate/ services/incubate/
 RUN groupadd --system app && useradd --system --gid app app
 USER app

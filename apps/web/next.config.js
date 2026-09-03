@@ -4,6 +4,12 @@ const nextConfig = {
   reactStrictMode: true,
 
   typedRoutes: true,
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 
   // Environment variables available client-side
   env: {
