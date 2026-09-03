@@ -1454,8 +1454,8 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
       <header className="flex h-9 shrink-0 items-center justify-between border-b border-surface-800 bg-surface-900 px-3 select-none relative z-40 gap-2">
         {/* Left: Brand + Full 8-Menu Bar */}
         <div className="flex items-center gap-2 min-w-0">
-          <Link href="/dashboard" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity shrink-0 mr-1">
-            <GeezCodeLogo size={16} showWordmark={true} />
+          <Link href="/dashboard" className="flex items-center gap-1.5 hover:opacity-80 transition-opacity shrink-0 mr-1" title="Back to Dashboard">
+            <GeezCodeLogo size={15} showWordmark={false} />
           </Link>
           <IDEMenuBar
             editorRef={editorRef}
@@ -1492,20 +1492,28 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           />
         </div>
 
-        {/* Center: Command Center Quick Open Pill */}
-        <div className="hidden md:flex items-center justify-center flex-1 max-w-sm px-2">
+        {/* Center: Dynamic Title Bar: logo geezcodE (X) */}
+        <div className="flex items-center justify-center flex-1 min-w-0 px-2">
           <button
             type="button"
             onClick={() => setShowQuickOpen(true)}
-            className="flex w-full items-center justify-between rounded-md border border-surface-750 bg-surface-950/80 px-2.5 py-1 text-xs text-surface-400 hover:border-surface-600 hover:text-surface-200 transition-colors shadow-inner"
+            title={`Active Project: ${blueprintData?.projectName || ideaForm.projectName || "Sovereign Agritech"} — Quick Open (Ctrl+P)`}
+            className="group flex items-center gap-1.5 rounded-md border border-surface-800/80 bg-surface-950/80 hover:bg-surface-850 hover:border-surface-700/80 px-3 py-1 text-xs transition-all shadow-sm cursor-pointer max-w-md truncate"
           >
-            <div className="flex items-center gap-2 truncate">
-              <Search className="h-3 w-3 text-surface-500" />
-              <span className="truncate">Search files, commands...</span>
-            </div>
-            <kbd className="rounded border border-surface-800 bg-surface-900 px-1.5 py-0.2 font-mono text-[10px] text-surface-400">
-              Ctrl+P
-            </kbd>
+            {/* Logo */}
+            <span className="shrink-0 flex items-center group-hover:scale-105 transition-transform">
+              <GeezCodeLogo size={13} showWordmark={false} />
+            </span>
+
+            {/* Unbold, Italic: geezcodE */}
+            <span className="font-normal italic text-surface-200 tracking-normal select-none">
+              geezcodE
+            </span>
+
+            {/* Unbold, Italic: (X) where X is Active Project Name */}
+            <span className="font-normal italic text-surface-400 truncate select-none">
+              ({blueprintData?.projectName || ideaForm.projectName || "Sovereign Agritech"})
+            </span>
           </button>
         </div>
 
