@@ -59,47 +59,7 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="min-h-screen">
-      {/* Top Nav */}
-      <nav className="border-b border-surface-200 dark:border-surface-800 bg-surface-0 dark:bg-surface-950">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="flex items-baseline gap-0.5 text-lg font-bold tracking-tight">
-              <span className="text-surface-900 dark:text-surface-100">Afro</span>
-              <span className="text-brand-500">ID</span>
-            </Link>
-            <div className="hidden items-center gap-1 md:flex">
-              <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-medium bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-50">
-                Dashboard
-              </Link>
-              <Link href="/dashboard/ide" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-                geezcodE
-              </Link>
-              <Link href="/dashboard/certify" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-                Certify
-              </Link>
-              <Link href="/intake" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-                Intake
-              </Link>
-              <Link href="/dashboard/incubate" className="rounded-lg px-3 py-2 text-sm font-medium text-surface-500 hover:text-surface-900 dark:hover:text-surface-50 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-                Incubate
-              </Link>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-surface-500">{user?.email || "founder@afroid.io"}</span>
-            {user ? (
-              <button onClick={logout} className="btn-ghost text-sm text-red-400 hover:text-red-300">
-                Sign Out
-              </button>
-            ) : (
-              <Link href="/login" className="btn-primary text-xs px-3 py-1.5">
-                Sign In
-              </Link>
-            )}
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen py-4">
 
       {/* Main Content */}
       <main className="mx-auto max-w-7xl px-6 py-10">
