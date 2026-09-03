@@ -171,3 +171,108 @@ async def search(
                     if len(results) >= max_results:
                         return {"data": results}
     return {"data": results}
+
+
+# --- Antigravity-Grade Agent Tools ---
+
+
+class ReplaceLinesBody(BaseModel):
+    path: str
+    start_line: int
+    end_line: int
+    target_content: str
+    replacement_content: str
+
+
+@router.post("/tools/replace-lines")
+async def tool_replace_lines(
+    body: ReplaceLinesBody, current_user: User = Depends(get_current_user)
+) -> dict[str, Any]:
+    """Surgical file edit tool: precisely replace a line range after verifying target content."""
+    base = user_workspace(str(current_user.id))
+    p = _safe_resolve(body.path, base)
+    if not p.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    text = p.read_text(encoding="utf-8", errors="replace")
+    lines = text.splitlines(keepends=True)
+    total_lines = len(lines)
+
+    if body.start_line < 1 or body.start_line > total_lines + 1:
+        raise HTTPException(
+            status_code=400,
+            detail=f"start_line {body.start_line} out of range [1, {total_lines + 1}]",
+        )
+    if body.end_line < body.start_line - 1 or body.end_line > total_lines:
+        raise HTTPException(
+            status_code=400,
+            detail=f"end_line {body.end_line} invalid for start_line {body.start_line}",
+        )
+
+    # Verify target_content matches the slice
+    target_slice = "".join(lines[body.start_line - 1 : body.end_line])
+    # Normalize newlines for robust comparison
+    if target_slice.replace("\r\n", "\n") != body.target_content.replace("\r\n", "\n"):
+        raise HTTPException(
+            status_code=409,
+            detail="Target content mismatch: lines in file do not match expected target_content.",
+        )
+
+    # Perform replacement
+    replacement = body.replacement_content
+    if replacement and not replacement.endswith("\n") and (body.end_line < total_lines or target_slice.endswith("\n")):
+        replacement += "\n"
+
+    new_content = (
+        "".join(lines[: body.start_line - 1])
+        + replacement
+        + "".join(lines[body.end_line :])
+    )
+
+    p.write_text(new_content, encoding="utf-8")
+    return {
+        "data": {
+            "path": body.path,
+            "replaced": True,
+            "start_line": body.start_line,
+            "end_line": body.end_line,
+            "new_total_lines": len(new_content.splitlines()),
+        }
+    }
+
+
+@router.get("/tools/view-file")
+async def tool_view_file(
+    path: str = Query(..., description="Workspace relative file path"),
+    start_line: int = Query(default=1, ge=1),
+    end_line: int | None = Query(default=None, ge=1),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Read a specific line range with line numbers, mirroring Antigravity view_file."""
+    base = user_workspace(str(current_user.id))
+    p = _safe_resolve(path, base)
+    if not p.is_file():
+        raise HTTPException(status_code=404, detail="File not found")
+
+    text = p.read_text(encoding="utf-8", errors="replace")
+    all_lines = text.splitlines()
+    total_lines = len(all_lines)
+
+    actual_end = min(end_line or total_lines, total_lines)
+    actual_start = min(start_line, actual_end)
+
+    slice_lines = [
+        {"line": i, "content": all_lines[i - 1]}
+        for i in range(actual_start, actual_end + 1)
+    ]
+
+    return {
+        "data": {
+            "path": path,
+            "total_lines": total_lines,
+            "start_line": actual_start,
+            "end_line": actual_end,
+            "lines": slice_lines,
+        }
+    }
+
