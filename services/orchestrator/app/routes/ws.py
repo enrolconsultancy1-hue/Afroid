@@ -135,6 +135,40 @@ async def websocket_endpoint(
                             },
                         },
                     )
+                elif msg_type in ("patch_approval", "patch_approved"):
+                    logger.info(
+                        "patch_approval_received",
+                        session_id=session_id,
+                        file_path=payload.get("filePath"),
+                    )
+                    await manager.broadcast_to_session(
+                        session_id,
+                        {
+                            "type": "agent_action",
+                            "payload": {
+                                "agentName": "Parallel Builder",
+                                "title": "Patch Approved",
+                                "detail": f"Diff for {payload.get('filePath', 'file')} approved by Founder. Applying to project.",
+                            },
+                        },
+                    )
+                elif msg_type == "patch_rejected":
+                    logger.info(
+                        "patch_rejection_received",
+                        session_id=session_id,
+                        file_path=payload.get("filePath"),
+                    )
+                    await manager.broadcast_to_session(
+                        session_id,
+                        {
+                            "type": "agent_action",
+                            "payload": {
+                                "agentName": "Parallel Builder",
+                                "title": "Patch Rejected",
+                                "detail": f"Diff for {payload.get('filePath', 'file')} rejected. Re-steering worker.",
+                            },
+                        },
+                    )
                 elif msg_type == "ping":
                     await websocket.send_json({"type": "pong"})
             except json.JSONDecodeError:

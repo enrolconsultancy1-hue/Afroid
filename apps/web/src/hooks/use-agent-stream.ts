@@ -20,11 +20,21 @@ export interface AgentEvent {
   };
 }
 
+export interface PatchReviewEvent {
+  filePath: string;
+  originalContent?: string;
+  newContent: string;
+  diff?: string;
+  agentName?: string;
+  milestoneId?: string;
+}
+
 export interface UseAgentStreamOptions {
   sessionId?: string;
   onCodeChunk?: (filePath: string, chunk: string) => void;
   onAgentAction?: (agentName: string, title: string, detail: string) => void;
   onPhaseChange?: (phase: string, progress: number) => void;
+  onPatchReview?: (patch: PatchReviewEvent) => void;
 }
 
 export function useAgentStream({
@@ -32,6 +42,7 @@ export function useAgentStream({
   onCodeChunk,
   onAgentAction,
   onPhaseChange,
+  onPatchReview,
 }: UseAgentStreamOptions = {}) {
   const [isConnected, setIsConnected] = useState(false);
   const [events, setEvents] = useState<AgentEvent[]>([]);
@@ -75,6 +86,14 @@ export function useAgentStream({
 
         if (msg.type === "code_chunk" && msg.payload.filePath && msg.payload.chunk) {
           onCodeChunk?.(msg.payload.filePath, msg.payload.chunk);
+        } else if ((msg.type === "code_patch" || msg.type === "patch_review") && msg.payload.filePath && (msg.payload.chunk || msg.payload.detail)) {
+          onPatchReview?.({
+            filePath: msg.payload.filePath,
+            newContent: msg.payload.chunk || "",
+            diff: msg.payload.detail,
+            agentName: msg.payload.agentName,
+            milestoneId: msg.payload.phase,
+          });
         } else if (msg.type === "agent_action" && msg.payload.agentName && msg.payload.title) {
           onAgentAction?.(
             msg.payload.agentName,
@@ -102,7 +121,7 @@ export function useAgentStream({
     };
 
     wsRef.current = ws;
-  }, [onCodeChunk, onAgentAction, onPhaseChange]);
+  }, [onCodeChunk, onAgentAction, onPhaseChange, onPatchReview]);
 
   const disconnect = useCallback(() => {
     if (wsRef.current) {
@@ -118,6 +137,17 @@ export function useAgentStream({
         JSON.stringify({
           type: "blueprint_approval",
           payload: { approved, feedback },
+        })
+      );
+    }
+  }, []);
+
+  const sendPatchReview = useCallback((approved: boolean, filePath: string, feedback?: string) => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: approved ? "patch_approved" : "patch_rejected",
+          payload: { filePath, approved, feedback },
         })
       );
     }
@@ -140,5 +170,6 @@ export function useAgentStream({
     connect,
     disconnect,
     sendApproval,
+    sendPatchReview,
   };
 }

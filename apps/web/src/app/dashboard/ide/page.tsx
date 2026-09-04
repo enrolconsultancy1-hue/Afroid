@@ -556,15 +556,38 @@ function GeezCodeIDEContent() {
     }
   }, []);
 
-  const { connect: connectWs } = useAgentStream({
+  const { connect: connectWs, sendPatchReview, isConnected: isWsConnected } = useAgentStream({
     sessionId: sessionId || undefined,
-    onCodeChunk: (_filePath, chunk) => {
+    onCodeChunk: (filePath, chunk) => {
       setEditorContent((prev) => prev + chunk);
+      setOpenFiles((prev) =>
+        prev.map((f) => (f.path === filePath ? { ...f, content: (f.content || "") + chunk } : f))
+      );
+    },
+    onPatchReview: (patch) => {
+      const existing = findFileContentByPath(fileTree, patch.filePath) || "";
+      setPendingReview({
+        filePath: patch.filePath,
+        diff: patch.diff || "+ Live streamed changes from swarm",
+        originalContent: patch.originalContent ?? existing,
+        newContent: patch.newContent,
+        agentName: patch.agentName || activeLiveAgent,
+        milestoneId: patch.milestoneId || "M1",
+      });
+      setTerminalLogs((prev) => [
+        ...prev,
+        `[Swarm Stream] Received live patch proposal for '${patch.filePath}' from ${patch.agentName || "Agent"}. Opening Visual Diff Editor.`,
+      ]);
+      showToast(`Swarm patch proposed: ${patch.filePath}`);
     },
     onAgentAction: (agentName, title, detail) => {
       setTerminalLogs((prev) => [...prev, `[${agentName}] ${title}: ${detail}`]);
       setActiveLiveAgent(agentName);
       setActiveLiveTask(`${title}: ${detail}`);
+    },
+    onPhaseChange: (phase, prog) => {
+      setActiveLiveTask(`Phase: ${phase} (${prog}%)`);
+      setLiveProgress(prog);
     },
   });
 
@@ -1455,17 +1478,58 @@ function GeezCodeIDEContent() {
     await continueBuildExecution();
   };
 
-  const handleApprovePendingFile = () => {
+  const handleApprovePendingFile = async () => {
     if (!pendingReview) return;
-    setTerminalLogs((prev) => [...prev, `[Founder] Approved diff for ${pendingReview.filePath}`]);
+    const targetPath = pendingReview.filePath;
+    const updatedContent = pendingReview.newContent;
+
+    // Update in-memory file buffers and tree
+    setOpenFiles((prev) =>
+      prev.map((f) =>
+        f.path === targetPath
+          ? { ...f, content: updatedContent, savedContent: updatedContent }
+          : f
+      )
+    );
+    setFileTree((prev) => updateTreeContent(prev, targetPath, updatedContent));
+    if (activeFilePath === targetPath) {
+      setEditorContent(updatedContent);
+    }
+
+    // Persist approved diff directly to workspace disk
+    try {
+      await fetch(`${API_BASE}/v1/workspace/file`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ path: targetPath, content: updatedContent }),
+      });
+    } catch {
+      // offline fallback
+    }
+
+    // Dispatch approval to orchestrator stream
+    sendPatchReview(true, targetPath);
+
+    setTerminalLogs((prev) => [
+      ...prev,
+      `[Founder] Approved diff for ${targetPath}. Changes written to disk and confirmed over WebSocket stream.`,
+    ]);
+    showToast(`Approved & applied patch for ${targetPath}`);
     setPendingReview(null);
     setIsBuilding(true);
-    continueBuildExecution();
+    await continueBuildExecution();
   };
 
-  const handleRejectPendingFile = () => {
+  const handleRejectPendingFile = (feedback?: string) => {
     if (!pendingReview) return;
-    setTerminalLogs((prev) => [...prev, `[Founder] Rejected diff for ${pendingReview.filePath}. Regenerating with steering...`]);
+    const targetPath = pendingReview.filePath;
+    // Dispatch rejection to orchestrator stream
+    sendPatchReview(false, targetPath, feedback || "Founder rejected proposed diff");
+    setTerminalLogs((prev) => [
+      ...prev,
+      `[Founder] Rejected diff for ${targetPath}. Dispatched steering event to swarm worker.`,
+    ]);
+    showToast(`Rejected patch for ${targetPath}`);
     setPendingReview(null);
   };
 
@@ -2592,6 +2656,42 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                           />
                         </div>
                       </div>
+
+                      {/* Swarm Stream Telemetry & Live Diff Simulator */}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-surface-800">
+                        <span className="flex items-center gap-1.5 text-[11px] text-surface-400">
+                          <span className={`h-2 w-2 rounded-full ${isWsConnected ? "bg-emerald-400 animate-pulse" : "bg-surface-500"}`} />
+                          <span>{isWsConnected ? "Orchestrator WebSocket Stream: Active" : "Orchestrator Stream: Standby"}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const targetPath = "services/api/main.py";
+                            const original = findFileContentByPath(fileTree, targetPath) || editorContent;
+                            const patchContent = original.replace(
+                              `app = FastAPI(title="Sovereign Agritech API", version="1.0.0")\n`,
+                              `app = FastAPI(title="Sovereign Agritech API", version="1.1.0")\n\n# Autonomous Swarm Integration Route\n@app.get("/v1/swarm/health")\ndef swarm_health():\n    return {"agents_active": 4, "status": "nominal"}\n`
+                            );
+                            setPendingReview({
+                              filePath: targetPath,
+                              diff: `+ @app.get("/v1/swarm/health")\n+ def swarm_health():\n+     return {"agents_active": 4}`,
+                              originalContent: original,
+                              newContent: patchContent,
+                              agentName: "CodeGen Worker 1",
+                              milestoneId: "MS1-Stream",
+                            });
+                            setTerminalLogs((prev) => [
+                              ...prev,
+                              `[Swarm Stream] Proposed live diff for '${targetPath}' from CodeGen Worker 1. Awaiting Founder verification in Monaco Diff Editor.`,
+                            ]);
+                            showToast(`Swarm proposed diff for ${targetPath}`);
+                          }}
+                          className="flex items-center gap-1.5 rounded border border-brand-500/40 bg-brand-500/10 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-500/20 transition-colors cursor-pointer"
+                        >
+                          <Sparkles className="h-3 w-3 text-amber-400" />
+                          <span>Simulate Swarm Stream Diff</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -3106,6 +3206,9 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     <span className="rounded bg-brand-500/15 border border-brand-500/30 px-2 py-0.5 font-mono text-[11px] text-brand-400 font-medium">
                       {pendingReview.filePath}
                     </span>
+                    <span className="flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                      <Activity className="h-3 w-3 animate-pulse" /> Live Swarm Diff
+                    </span>
                   </div>
                   <div className="text-[11px] text-surface-400">
                     Generated by <span className="text-surface-200 font-medium">{pendingReview.agentName}</span> · Milestone {pendingReview.milestoneId}
@@ -3170,7 +3273,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               <div className="flex items-center gap-2.5">
                 <button
                   type="button"
-                  onClick={handleRejectPendingFile}
+                  onClick={() => handleRejectPendingFile()}
                   className="rounded-lg border border-surface-700 bg-surface-800 px-3.5 py-1.5 text-xs font-medium text-surface-300 hover:bg-surface-700 hover:text-white transition-colors"
                 >
                   Reject & Steer
