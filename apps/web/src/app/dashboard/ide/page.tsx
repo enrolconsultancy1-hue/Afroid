@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect, useRef, Suspense } from "react";
+import React, { useState, useCallback, useEffect, useRef, useMemo, Suspense } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -38,6 +38,16 @@ import {
   Loader2,
   Sparkles,
   Folder,
+  Save,
+  Undo2,
+  Redo2,
+  Zap,
+  WrapText,
+  Eye,
+  Hash,
+  Globe,
+  Keyboard,
+  Info,
 } from "lucide-react";
 import { GeezCodeLogo } from "@/components/geezcode-logo";
 import { QrCodeView } from "@/components/qr-code";
@@ -61,6 +71,9 @@ const XTerminalPanel = dynamic(() => import("@/components/xterm-panel"), { ssr: 
 const SandboxPreview = dynamic(() => import("@/components/sandbox-preview"), { ssr: false });
 import { IDEMenuBar } from "@/components/ide-menu-bar";
 import { QuickOpenModal } from "@/components/quick-open-modal";
+import { CommandPalette, CommandItem } from "@/components/command-palette";
+import { SettingsModal, IDESettings } from "@/components/settings-modal";
+import { WelcomeScreen } from "@/components/welcome-screen";
 import { ShortcutsModal, AboutModal } from "@/components/ide-dialogs";
 
 interface FileNode {
@@ -388,8 +401,16 @@ function GeezCodeIDEContent() {
   const [previewUrl, setPreviewUrl] = useState("");
   const editorRef = useRef<any>(null);
   const [showQuickOpen, setShowQuickOpen] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [wordWrap, setWordWrap] = useState(false);
+  const [formatOnSave, setFormatOnSave] = useState(false);
+  const [autoApprovePatches, setAutoApprovePatches] = useState(false);
+  const [autopilotMode, setAutopilotMode] = useState<"guided" | "autonomous" | "strict">("guided");
+  const [terminalFontSize, setTerminalFontSize] = useState(13);
+  const [terminalCursorBlink, setTerminalCursorBlink] = useState(true);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const [selectionCount, setSelectionCount] = useState(0);
   const [tabSize, setTabSize] = useState(4);
@@ -1175,18 +1196,60 @@ function GeezCodeIDEContent() {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
 
-      if (isCtrlOrMeta && e.key.toLowerCase() === "s" && !e.shiftKey) {
+      if (isCtrlOrMeta && (e.key === "F1" || (e.shiftKey && e.key.toLowerCase() === "p"))) {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      } else if (e.key === "F1") {
+        e.preventDefault();
+        setShowCommandPalette(true);
+      } else if (isCtrlOrMeta && e.key === "," && !e.shiftKey) {
+        e.preventDefault();
+        setShowSettingsModal(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        setShowIntakeModal(true);
+      } else if (isCtrlOrMeta && e.key.toLowerCase() === "n" && !e.shiftKey) {
+        e.preventDefault();
+        handleNewFile();
+      } else if (isCtrlOrMeta && e.key.toLowerCase() === "s" && !e.shiftKey) {
         e.preventDefault();
         handleSaveFile();
       } else if (isCtrlOrMeta && e.key.toLowerCase() === "p" && !e.shiftKey) {
         e.preventDefault();
         setShowQuickOpen(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "e") {
+        e.preventDefault();
+        setActiveActivity("explorer");
+        setShowLeftSidebar(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        setActiveActivity("search");
+        setShowLeftSidebar(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "g") {
+        e.preventDefault();
+        setActiveActivity("git");
+        setShowLeftSidebar(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        setActiveActivity("plan");
+        setShowLeftSidebar(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        setActiveActivity("swarm");
+        setShowLeftSidebar(true);
+      } else if (isCtrlOrMeta && e.shiftKey && e.key.toLowerCase() === "v") {
+        e.preventDefault();
+        setTerminalTab("preview");
+        setShowBottomTerminal(true);
       } else if (isCtrlOrMeta && e.key.toLowerCase() === "b" && !e.altKey) {
         e.preventDefault();
         setShowLeftSidebar((prev) => !prev);
       } else if (isCtrlOrMeta && e.altKey && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setShowRightDock((prev) => !prev);
+      } else if (isCtrlOrMeta && e.altKey && e.key.toLowerCase() === "z") {
+        e.preventDefault();
+        setWordWrap((prev) => !prev);
       } else if (isCtrlOrMeta && e.key.toLowerCase() === "j") {
         e.preventDefault();
         setShowBottomTerminal((prev) => !prev);
@@ -1199,7 +1262,7 @@ function GeezCodeIDEContent() {
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [activeFilePath, editorContent]);
+  }, [activeFilePath, editorContent, autoSave, wordWrap]);
 
   const generateOfflineBlueprintFallback = () => {
     const slug = (ideaForm.projectName || "Sovereign").toLowerCase().replace(/\s+/g, "-");
@@ -1703,6 +1766,106 @@ function GeezCodeIDEContent() {
     </div>
   );
 
+  const ideCommands: CommandItem[] = useMemo(() => [
+    // File Commands
+    { id: "file.new", category: "File", label: "New File...", detail: "Create blank file in workspace", shortcut: "Ctrl+N", icon: FilePlus, action: handleNewFile },
+    { id: "file.newFolder", category: "File", label: "New Folder...", detail: "Create directory structure", icon: Folder, action: handleNewFolder },
+    { id: "file.quickOpen", category: "File", label: "Quick Open File...", detail: "Fuzzy search project files", shortcut: "Ctrl+P", icon: Search, action: () => setShowQuickOpen(true) },
+    { id: "file.save", category: "File", label: "Save File", detail: "Persist active dirty buffer to disk", shortcut: "Ctrl+S", icon: Save, action: () => handleSaveFile() },
+    { id: "file.saveAs", category: "File", label: "Save As...", detail: "Clone buffer into new file path", shortcut: "Ctrl+Shift+S", icon: Save, action: handleSaveAs },
+    { id: "file.saveAll", category: "File", label: "Save All Files", detail: "Flush all dirty open tabs to disk", shortcut: "Ctrl+K S", icon: Save, action: handleSaveAll },
+    { id: "file.autoSave", category: "File", label: `Toggle Auto-Save (${autoSave ? "Currently ON" : "Currently OFF"})`, detail: "Auto-persist dirty buffers after 1.5s", icon: SlidersHorizontal, action: () => setAutoSave((prev) => !prev) },
+    { id: "file.close", category: "File", label: "Close Active File", detail: "Close active editor tab with guard", shortcut: "Ctrl+W", icon: X, action: () => openFiles.length > 0 && handleCloseTabRequest({ stopPropagation: () => {} } as any, activeFilePath) },
+    { id: "file.closeAll", category: "File", label: "Close All Files", detail: "Return to Welcome Screen", icon: X, action: () => { setOpenFiles([]); setActiveFilePath(""); } },
+    { id: "file.intake", category: "File", label: "Architect Intake Wizard...", detail: "AI prompt intake to synthesize sovereign blueprint", shortcut: "Ctrl+Shift+N", icon: Sparkles, action: () => setShowIntakeModal(true) },
+
+    // Edit Commands
+    { id: "edit.undo", category: "Edit", label: "Undo", detail: "Revert previous buffer modification", shortcut: "Ctrl+Z", icon: Undo2, action: () => editorRef.current?.trigger("menu", "undo", null) },
+    { id: "edit.redo", category: "Edit", label: "Redo", detail: "Reapply undone buffer modification", shortcut: "Ctrl+Y", icon: Redo2, action: () => editorRef.current?.trigger("menu", "redo", null) },
+    { id: "edit.find", category: "Edit", label: "Find in File", detail: "Open Monaco search widget", shortcut: "Ctrl+F", icon: Search, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("actions.find")?.run(); } },
+    { id: "edit.replace", category: "Edit", label: "Find & Replace", detail: "Open Monaco replacement widget", shortcut: "Ctrl+H", icon: Search, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.startFindReplaceAction")?.run(); } },
+    { id: "edit.findInFiles", category: "Edit", label: "Search in Files (Grep)", detail: "Workspace-wide text search", shortcut: "Ctrl+Shift+F", icon: Search, action: () => { setActiveActivity("search"); setShowLeftSidebar(true); } },
+    { id: "edit.commentLine", category: "Edit", label: "Toggle Line Comment", detail: "Comment/uncomment selected lines", shortcut: "Ctrl+/", icon: Code2, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.commentLine")?.run(); } },
+    { id: "edit.format", category: "Edit", label: "Format Document", detail: "Run Monaco AST document formatter", shortcut: "Shift+Alt+F", icon: Code2, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.formatDocument")?.run(); } },
+
+    // Selection Commands
+    { id: "select.all", category: "Selection", label: "Select All", detail: "Highlight entire active buffer", shortcut: "Ctrl+A", icon: Check, action: () => { editorRef.current?.focus(); editorRef.current?.setSelection(editorRef.current?.getModel()?.getFullModelRange()); } },
+    { id: "select.expand", category: "Selection", label: "Expand Selection", detail: "Smart syntax-aware expansion", shortcut: "Shift+Alt+Right", icon: Check, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.smartSelect.expand")?.run(); } },
+    { id: "select.shrink", category: "Selection", label: "Shrink Selection", detail: "Smart syntax-aware reduction", shortcut: "Shift+Alt+Left", icon: Check, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.smartSelect.shrink")?.run(); } },
+    { id: "select.copyLineDown", category: "Selection", label: "Copy Line Down", detail: "Duplicate line directly below", shortcut: "Shift+Alt+Down", icon: Layers, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.copyLinesDownAction")?.run(); } },
+    { id: "select.moveLineUp", category: "Selection", label: "Move Line Up", detail: "Shift current line above", shortcut: "Alt+Up", icon: Layers, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.moveLinesUpAction")?.run(); } },
+    { id: "select.moveLineDown", category: "Selection", label: "Move Line Down", detail: "Shift current line below", shortcut: "Alt+Down", icon: Layers, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.moveLinesDownAction")?.run(); } },
+
+    // View Commands
+    { id: "view.commandPalette", category: "View", label: "Command Palette...", detail: "Search all IDE commands & tools", shortcut: "Ctrl+Shift+P", icon: Zap, action: () => setShowCommandPalette(true) },
+    { id: "view.explorer", category: "View", label: "View: Show Explorer", detail: "Focus project file tree dock", shortcut: "Ctrl+Shift+E", icon: Files, action: () => { setActiveActivity("explorer"); setShowLeftSidebar(true); } },
+    { id: "view.search", category: "View", label: "View: Show Search", detail: "Focus global grep dock", shortcut: "Ctrl+Shift+F", icon: Search, action: () => { setActiveActivity("search"); setShowLeftSidebar(true); } },
+    { id: "view.git", category: "View", label: "View: Show Source Control", detail: "Focus git diff & commit dock", shortcut: "Ctrl+Shift+G", icon: GitBranch, action: () => { setActiveActivity("git"); setShowLeftSidebar(true); } },
+    { id: "view.planning", category: "View", label: "View: Show Planning Mode", detail: "Focus milestones & task matrix", shortcut: "Ctrl+Shift+D", icon: FileText, action: () => { setActiveActivity("plan"); setShowLeftSidebar(true); } },
+    { id: "view.swarm", category: "View", label: "View: Show Swarm Agent", detail: "Focus multi-agent build stream", shortcut: "Ctrl+Shift+A", icon: Bot, action: () => { setActiveActivity("swarm"); setShowLeftSidebar(true); } },
+    { id: "view.toggleSidebar", category: "View", label: "Toggle Primary Sidebar", detail: "Expand or collapse left navigation", shortcut: "Ctrl+B", icon: PanelLeft, action: () => setShowLeftSidebar((p) => !p) },
+    { id: "view.toggleRightDock", category: "View", label: "Toggle AI Assistant Dock", detail: "Expand or collapse right copilot", shortcut: "Ctrl+Alt+B", icon: PanelRight, action: () => setShowRightDock((p) => !p) },
+    { id: "view.toggleTerminal", category: "View", label: "Toggle Terminal Panel", detail: "Expand or collapse bottom drawer", shortcut: "Ctrl+J", icon: TerminalIcon, action: () => setShowBottomTerminal((p) => !p) },
+    { id: "view.toggleWordWrap", category: "View", label: `Toggle Word Wrap (${wordWrap ? "ON" : "OFF"})`, detail: "Wrap long lines at viewport edge", shortcut: "Alt+Z", icon: WrapText, action: () => setWordWrap((p) => !p) },
+    { id: "view.toggleMinimap", category: "View", label: `Toggle Minimap (${editorMinimap ? "ON" : "OFF"})`, detail: "Toggle code minimap column", icon: Eye, action: () => setEditorMinimap((p) => !p) },
+
+    // Go Commands
+    { id: "go.file", category: "Go", label: "Go to File...", detail: "Jump to file in project", shortcut: "Ctrl+P", icon: Search, action: () => setShowQuickOpen(true) },
+    { id: "go.line", category: "Go", label: "Go to Line/Column...", detail: "Jump cursor to specific line:col", shortcut: "Ctrl+G", icon: Hash, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.gotoLine")?.run(); } },
+    { id: "go.definition", category: "Go", label: "Go to Definition", detail: "Jump to symbol declaration", shortcut: "F12", icon: Code2, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.revealDefinition")?.run(); } },
+    { id: "go.references", category: "Go", label: "Go to References", detail: "Find all usages across file", shortcut: "Shift+F12", icon: Code2, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.referenceSearch.trigger")?.run(); } },
+    { id: "go.nextProblem", category: "Go", label: "Go to Next Problem", detail: "Navigate to next syntax error/marker", shortcut: "F8", icon: AlertCircle, action: () => { editorRef.current?.focus(); editorRef.current?.getAction("editor.action.marker.next")?.run(); } },
+
+    // Run Commands
+    { id: "run.file", category: "Run", label: "Run Active File", detail: "Execute active script in terminal runtime", shortcut: "F5", icon: Play, action: handleRunActiveFile },
+    { id: "run.tests", category: "Run", label: "Run Test Suite (pytest)", detail: "Execute pytest across workspace", shortcut: "Ctrl+F5", icon: CheckCircle2, action: handleRunTests },
+    { id: "run.swarm", category: "Run", label: "Run Autonomous Swarm Build", detail: "Kick off AI generation swarm for blueprint", shortcut: "Ctrl+Shift+B", icon: Sparkles, action: handleApproveAndBuild },
+    { id: "run.preview", category: "Run", label: "Open Sandboxed Live Preview", detail: "Launch web preview iframe", shortcut: "Ctrl+Shift+V", icon: Globe, action: () => { setTerminalTab("preview"); setShowBottomTerminal(true); } },
+
+    // Terminal Commands
+    { id: "terminal.focus", category: "Terminal", label: "Focus Terminal", detail: "Bring Canvas PTY terminal to focus", shortcut: "Ctrl+`", icon: TerminalIcon, action: () => { setTerminalTab("terminal"); setShowBottomTerminal(true); } },
+    { id: "terminal.clear", category: "Terminal", label: "Clear Terminal Buffer", detail: "Reset terminal output log", shortcut: "Ctrl+K", icon: Trash2, action: () => setTerminalLogs([]) },
+
+    // Preferences & Help Commands
+    { id: "pref.settings", category: "Preferences", label: "Preferences: Open Settings", detail: "Configure editor ergonomics & swarm sovereignty", shortcut: "Ctrl+,", icon: Settings, action: () => setShowSettingsModal(true) },
+    { id: "help.shortcuts", category: "Help", label: "Help: Keyboard Shortcuts Cheat Sheet", detail: "View all hotkeys and commands", shortcut: "Ctrl+K Ctrl+S", icon: Keyboard, action: () => setShowShortcutsModal(true) },
+    { id: "help.welcome", category: "Help", label: "Help: Welcome & Overview", detail: "Open geezcodE Quickstart Hub", icon: Sparkles, action: () => { setOpenFiles([]); setActiveFilePath(""); } },
+    { id: "help.about", category: "Help", label: "Help: About geezcodE IDE", detail: "Inspect version, engines & stack topology", icon: Info, action: () => setShowAboutModal(true) },
+  ], [activeFilePath, autoSave, editorMinimap, handleApproveAndBuild, handleCloseTabRequest, handleNewFile, handleNewFolder, handleRunActiveFile, handleRunTests, handleSaveAs, handleSaveFile, handleSaveAll, openFiles.length, wordWrap]);
+
+  const ideSettings: IDESettings = {
+    editorFontSize,
+    tabSize,
+    fontLigatures,
+    editorMinimap,
+    wordWrap,
+    autoSave,
+    autoSaveDelay: 1500,
+    formatOnSave,
+    lineNumbers: "on",
+    cursorBlinking: "smooth",
+    autoApprovePatches,
+    autopilotMode,
+    swarmVerbosity: "standard",
+    terminalFontSize,
+    terminalCursorBlink,
+    apiBase: API_BASE,
+  };
+
+  const handleUpdateSettings = (updated: Partial<IDESettings>) => {
+    if (updated.editorFontSize !== undefined) setEditorFontSize(updated.editorFontSize);
+    if (updated.tabSize !== undefined) setTabSize(updated.tabSize);
+    if (updated.fontLigatures !== undefined) setFontLigatures(updated.fontLigatures);
+    if (updated.editorMinimap !== undefined) setEditorMinimap(updated.editorMinimap);
+    if (updated.wordWrap !== undefined) setWordWrap(updated.wordWrap);
+    if (updated.autoSave !== undefined) setAutoSave(updated.autoSave);
+    if (updated.formatOnSave !== undefined) setFormatOnSave(updated.formatOnSave);
+    if (updated.autoApprovePatches !== undefined) setAutoApprovePatches(updated.autoApprovePatches);
+    if (updated.autopilotMode !== undefined) setAutopilotMode(updated.autopilotMode);
+    if (updated.terminalFontSize !== undefined) setTerminalFontSize(updated.terminalFontSize);
+    if (updated.terminalCursorBlink !== undefined) setTerminalCursorBlink(updated.terminalCursorBlink);
+  };
+
   const activityItems: Array<{ id: string; label: string; icon: React.ReactNode }> = [
     { id: "explorer", label: "Explorer", icon: <Files className="h-[18px] w-[18px]" /> },
     { id: "search", label: "Search", icon: <Search className="h-[18px] w-[18px]" /> },
@@ -1796,8 +1959,14 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             }}
             onNewProject={() => setShowIntakeModal(true)}
             onOpenQuickOpen={() => setShowQuickOpen(true)}
+            onOpenCommandPalette={() => setShowCommandPalette(true)}
             onOpenShortcuts={() => setShowShortcutsModal(true)}
             onOpenAbout={() => setShowAboutModal(true)}
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onOpenWelcome={() => {
+              setOpenFiles([]);
+              setActiveFilePath("");
+            }}
             setActiveActivity={setActiveActivity}
             showLeftSidebar={showLeftSidebar}
             setShowLeftSidebar={setShowLeftSidebar}
@@ -2483,28 +2652,53 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
 
           <div className="relative min-h-0 flex-1 overflow-hidden bg-surface-950">
             {openFiles.length === 0 ? (
-              <div className="relative z-10 flex h-full flex-col items-center justify-center gap-7 px-6 text-center">
-                <GeezCodeLogo size={72} showWordmark={true} showTagline={true} />
-                <p className="max-w-md text-sm leading-relaxed text-surface-400">
-                  Welcome to{" "}
-                  <span className="font-semibold text-surface-200">geezcodE</span> — the
-                  sovereign autonomous startup factory. Open a file to start building.
-                </p>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleNewFile}
-                    className="flex items-center gap-2 rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
-                  >
-                    <FilePlus className="h-4 w-4" /> New File
-                  </button>
-                  <button
-                    onClick={() => setActiveActivity("explorer")}
-                    className="flex items-center gap-2 rounded-md border border-surface-700 bg-surface-900 px-4 py-2 text-sm font-medium text-surface-200 transition-colors hover:bg-surface-800"
-                  >
-                    <Files className="h-4 w-4" /> Explore Files
-                  </button>
-                </div>
-              </div>
+              <WelcomeScreen
+                projectName={blueprintData?.projectName || ideaForm.projectName || "Sovereign Agritech"}
+                onNewFile={handleNewFile}
+                onOpenQuickOpen={() => setShowQuickOpen(true)}
+                onOpenIntake={() => setShowIntakeModal(true)}
+                onOpenTerminal={() => {
+                  setTerminalTab("terminal");
+                  setShowBottomTerminal(true);
+                }}
+                onOpenShortcuts={() => setShowShortcutsModal(true)}
+                onOpenFileByPath={(path) => {
+                  const found = fileTree.find((f) => f.path === path);
+                  if (found) {
+                    if (!openFiles.some((f) => f.path === path)) {
+                      setOpenFiles((prev) => [...prev, found]);
+                    }
+                    setActiveFilePath(path);
+                    setEditorContent(found.content || "");
+                  } else {
+                    // Fallback create sample node
+                    const sampleNode: FileNode = {
+                      name: path.split("/").pop() || "file",
+                      path,
+                      type: "file",
+                      content: path.endsWith(".geez")
+                        ? `# geezcodE Domain Definition\nentity AgritechProducer {\n  id: UUID primary_key\n  name: string required\n  sovereignty_score: float default 1.0\n}\n`
+                        : `# Sovereign Stack File: ${path}\n`,
+                    };
+                    setFileTree((prev) => [...prev, sampleNode]);
+                    setOpenFiles((prev) => [...prev, sampleNode]);
+                    setActiveFilePath(path);
+                    setEditorContent(sampleNode.content || "");
+                  }
+                }}
+                onOpenPlanning={() => {
+                  setActiveActivity("plan");
+                  setShowLeftSidebar(true);
+                }}
+                onOpenSwarm={() => {
+                  setActiveActivity("swarm");
+                  setShowLeftSidebar(true);
+                }}
+                onOpenPreview={() => {
+                  setTerminalTab("preview");
+                  setShowBottomTerminal(true);
+                }}
+              />
             ) : (
               <>
                 <div
@@ -2553,12 +2747,13 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       fontFamily: "'JetBrains Mono', 'Fira Code', monospace",
                       fontLigatures,
                       minimap: { enabled: editorMinimap },
+                      wordWrap: wordWrap ? "on" : "off",
                       automaticLayout: true,
                       scrollBeyondLastLine: false,
                       smoothScrolling: true,
                       cursorBlinking: "smooth",
                       renderLineHighlight: "all",
-                      tabSize: 4,
+                      tabSize: tabSize,
                     }}
                   />
                 </div>
@@ -3392,6 +3587,21 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             setEditorContent(found.content || "");
           }
         }}
+      />
+
+      {/* ===== Command Palette (Ctrl+Shift+P / F1) ===== */}
+      <CommandPalette
+        isOpen={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        commands={ideCommands}
+      />
+
+      {/* ===== Settings Modal (Ctrl+,) ===== */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        settings={ideSettings}
+        onUpdateSettings={handleUpdateSettings}
       />
 
       {/* ===== Keyboard Shortcuts Modal (Ctrl+K Ctrl+S) ===== */}

@@ -52,6 +52,7 @@ import {
   Hash,
   AlertCircle,
   WrapText,
+  Sparkles,
 } from "lucide-react";
 
 export type MenuId =
@@ -79,8 +80,11 @@ export interface IDEMenuBarProps {
   onCloseFile: () => void;
   onNewProject: () => void;
   onOpenQuickOpen: () => void;
+  onOpenCommandPalette?: () => void;
   onOpenShortcuts: () => void;
   onOpenAbout: () => void;
+  onOpenSettings?: () => void;
+  onOpenWelcome?: () => void;
   // View controls
   setActiveActivity: (act: any) => void;
   showLeftSidebar: boolean;
@@ -115,8 +119,11 @@ export function IDEMenuBar({
   onCloseFile,
   onNewProject,
   onOpenQuickOpen,
+  onOpenCommandPalette,
   onOpenShortcuts,
   onOpenAbout,
+  onOpenSettings,
+  onOpenWelcome,
   setActiveActivity,
   showLeftSidebar,
   setShowLeftSidebar,
@@ -275,8 +282,12 @@ export function IDEMenuBar({
             {renderItem("Delete File...", undefined, Trash2, onDeleteFile, !hasOpenFiles)}
             {renderDivider()}
             {renderItem("Preferences / Settings", "Ctrl+,", Settings, () => {
-              setActiveActivity("settings");
-              setShowLeftSidebar(true);
+              if (onOpenSettings) {
+                onOpenSettings();
+              } else {
+                setActiveActivity("settings");
+                setShowLeftSidebar(true);
+              }
             })}
           </div>
         )}
@@ -372,7 +383,11 @@ export function IDEMenuBar({
         {activeMenu === "view" && (
           <div className="absolute left-0 top-full mt-1 w-64 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 duration-100">
             {renderItem("Command Palette...", "Ctrl+Shift+P", Code2, () => {
-              execEditorAction("editor.action.quickCommand");
+              if (onOpenCommandPalette) {
+                onOpenCommandPalette();
+              } else {
+                execEditorAction("editor.action.quickCommand");
+              }
             })}
             {renderDivider()}
             {renderItem("Explorer", "Ctrl+Shift+E", Files, () => {
@@ -522,6 +537,7 @@ export function IDEMenuBar({
         </button>
         {activeMenu === "help" && (
           <div className="absolute left-0 top-full mt-1 w-60 rounded-lg border border-surface-750 bg-surface-900 p-1 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 duration-100">
+            {onOpenWelcome && renderItem("Welcome & Overview", undefined, Sparkles, onOpenWelcome)}
             {renderItem("Keyboard Shortcuts", "Ctrl+K Ctrl+S", Keyboard, onOpenShortcuts)}
             {renderItem("geezcodE DSL Reference", undefined, BookOpen, () => {
               // Open domain.geez in workspace if present
