@@ -36,6 +36,11 @@ export default function DashboardLayout({
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
+  // geezcodE IDE provides its own full-screen professional top bar, activity bar, and status bar
+  if (pathname?.startsWith("/dashboard/ide")) {
+    return <ErrorBoundary>{children}</ErrorBoundary>;
+  }
+
   return (
     <div className="min-h-screen bg-surface-0 text-surface-900 dark:bg-surface-950 dark:text-surface-100">
       {/* Top Navbar */}
