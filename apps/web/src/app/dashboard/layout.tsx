@@ -47,8 +47,9 @@ export default function DashboardLayout({
       <header className="sticky top-0 z-40 border-b border-surface-200 bg-surface-0/90 backdrop-blur-md dark:border-surface-800 dark:bg-surface-950/90">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-6">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <GeezCodeLogo size={32} showWordmark={true} />
+            <Link href="/dashboard" className="flex items-baseline gap-0.5 text-xl font-bold tracking-tight">
+              <span className="text-surface-900 dark:text-surface-100">Afro</span>
+              <span className="text-brand-500">ID</span>
             </Link>
 
             {/* Desktop Navigation */}

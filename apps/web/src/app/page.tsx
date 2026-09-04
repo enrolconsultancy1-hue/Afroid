@@ -122,8 +122,9 @@ export default function HomePage() {
       {/* Navigation */}
       <nav className="glass fixed top-0 z-50 w-full border-b border-surface-200/60 backdrop-blur-xl dark:border-surface-800/60">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link href="/" className="flex items-center gap-2">
-            <GeezCodeLogo size={34} showWordmark={true} />
+          <Link href="/" className="flex items-baseline gap-0.5 text-2xl font-bold tracking-tight">
+            <span className="text-surface-900 dark:text-surface-100">Afro</span>
+            <span className="text-brand-500">ID</span>
           </Link>
 
           {/* Desktop Links */}
@@ -501,7 +502,10 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6">
           <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
             <div>
-              <GeezCodeLogo size={32} showWordmark={true} />
+              <Link href="/" className="flex items-baseline gap-0.5 text-2xl font-bold tracking-tight">
+                <span className="text-surface-900 dark:text-surface-100">Afro</span>
+                <span className="text-brand-500">ID</span>
+              </Link>
               <p className="mt-4 text-xs leading-relaxed text-surface-500">
                 The Sovereign AI Startup Factory for African founders. Build, certify, and fund without permission.
               </p>
