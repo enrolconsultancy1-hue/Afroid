@@ -70,6 +70,7 @@ interface FileNode {
   language?: string;
   children?: FileNode[];
   content?: string;
+  savedContent?: string;
   isOpen?: boolean;
 }
 
@@ -316,16 +317,50 @@ const GRANT_CATALOG = [
   { id: "g5", title: "develoPPP Ventures", funder: "DEG / GIZ", amount: "€100,000", region: "Pan-African", sector: "Impact" },
 ];
 
+function updateTreeContent(nodes: FileNode[], path: string, newContent: string): FileNode[] {
+  return nodes.map((n) => {
+    if (n.path === path) {
+      return { ...n, content: newContent };
+    }
+    if (n.children) {
+      return { ...n, children: updateTreeContent(n.children, path, newContent) };
+    }
+    return n;
+  });
+}
+
+function findNodeInTree(nodes: FileNode[], path: string): FileNode | null {
+  for (const n of nodes) {
+    if (n.path === path) return n;
+    if (n.children) {
+      const found = findNodeInTree(n.children, path);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 function GeezCodeIDEContent() {
   const { user } = useAuthStore();
 
   const [activeActivity, setActiveActivity] = useState<string>("explorer");
   const [fileTree, setFileTree] = useState<FileNode[]>(INITIAL_FILES);
+  const initialMainPy = INITIAL_FILES[0].children![0].children![0].content || "";
   const [openFiles, setOpenFiles] = useState<FileNode[]>([
-    { name: "main.py", path: "services/api/main.py", type: "file", language: "python", content: INITIAL_FILES[0].children![0].children![0].content },
+    {
+      name: "main.py",
+      path: "services/api/main.py",
+      type: "file",
+      language: "python",
+      content: initialMainPy,
+      savedContent: initialMainPy,
+    },
   ]);
   const [activeFilePath, setActiveFilePath] = useState<string>("services/api/main.py");
-  const [editorContent, setEditorContent] = useState<string>(INITIAL_FILES[0].children![0].children![0].content || "");
+  const [editorContent, setEditorContent] = useState<string>(initialMainPy);
+  const [autoSave, setAutoSave] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [dirtyCloseTarget, setDirtyCloseTarget] = useState<string | null>(null);
 
   const [autopilot, setAutopilot] = useState(true);
   const [selectedModel, setSelectedModel] = useState("gemini-3.6-flash");
@@ -584,18 +619,53 @@ function GeezCodeIDEContent() {
     }
     let cancelled = false;
     const run = async () => {
+      const q = searchQuery.trim();
+      let found: Array<{ file: string; line: number; text: string }> = [];
       try {
-        const res = await fetch(`${API_BASE}/v1/workspace/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        if (!res.ok) return;
-        const json = await res.json();
-        if (!cancelled) setSearchResults(Array.isArray(json.data) ? json.data : []);
+        const res = await fetch(`${API_BASE}/v1/workspace/search?q=${encodeURIComponent(q)}`, {
+          headers: { ...authHeaders() },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (Array.isArray(json.data) && json.data.length > 0) {
+            found = json.data;
+          }
+        }
       } catch {
-        if (!cancelled) setSearchResults([]);
+        // fallback to tree
       }
+
+      if (found.length === 0) {
+        const needle = q.toLowerCase();
+        function recurse(list: FileNode[]) {
+          for (const node of list) {
+            if (node.type === "file" && node.content) {
+              const lines = node.content.split("\n");
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].toLowerCase().includes(needle)) {
+                  found.push({
+                    file: node.path,
+                    line: i + 1,
+                    text: lines[i].trim().slice(0, 160),
+                  });
+                  if (found.length >= 100) return;
+                }
+              }
+            }
+            if (node.children) recurse(node.children);
+          }
+        }
+        recurse(fileTree);
+      }
+
+      if (!cancelled) setSearchResults(found);
     };
-    const t = setTimeout(run, 250);
-    return () => { cancelled = true; clearTimeout(t); };
-  }, [searchQuery]);
+    const t = setTimeout(run, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [searchQuery, fileTree]);
 
   const fetchWorkspaceTree = useCallback(async () => {
     try {
@@ -705,61 +775,113 @@ function GeezCodeIDEContent() {
     fetchModels();
   }, [fetchModels]);
 
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 2400);
+  }, []);
+
+  const isFileDirty = useCallback((f: FileNode) => {
+    const current = f.content ?? "";
+    const saved = f.savedContent ?? f.content ?? "";
+    return current !== saved;
+  }, []);
+
+  const activeFileNode = openFiles.find((f) => f.path === activeFilePath);
+  const isActiveDirty = Boolean(activeFileNode && isFileDirty(activeFileNode));
+  const dirtyFilesCount = openFiles.filter(isFileDirty).length;
+
   const handleFileSelect = async (node: FileNode) => {
     if (node.type !== "file") return;
-    if (!openFiles.some((f) => f.path === node.path)) {
-      setOpenFiles((prev) => [...prev, { ...node, content: "" }]);
-    }
-    setActiveFilePath(node.path);
-    if (node.content) {
-      setEditorContent(node.content);
+    const existing = openFiles.find((f) => f.path === node.path);
+    if (existing) {
+      setActiveFilePath(node.path);
+      setEditorContent(existing.content || "");
       return;
     }
-    try {
-      const res = await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(node.path)}`);
-      if (res.ok) {
-        const json = await res.json();
-        const content = json.data?.content ?? "";
-        setEditorContent(content);
-        setOpenFiles((prev) => prev.map((f) => (f.path === node.path ? { ...f, content } : f)));
-      } else {
-        setEditorContent(`// Unable to load ${node.path}`);
+
+    let content = node.content;
+    if (content === undefined) {
+      try {
+        const res = await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(node.path)}`, {
+          headers: { ...authHeaders() },
+        });
+        if (res.ok) {
+          const json = await res.json();
+          content = json.data?.content ?? "";
+        } else {
+          content = `// Unable to load ${node.path}`;
+        }
+      } catch {
+        content = `// Unable to load ${node.path}`;
       }
-    } catch {
-      setEditorContent(`// Unable to load ${node.path}`);
     }
+
+    const newNode: FileNode = {
+      ...node,
+      content: content || "",
+      savedContent: content || "",
+    };
+    setOpenFiles((prev) => [...prev, newNode]);
+    setActiveFilePath(node.path);
+    setEditorContent(content || "");
   };
 
-  const handleCloseTab = (e: React.MouseEvent, path: string) => {
-    e.stopPropagation();
+  const executeCloseTab = useCallback((path: string) => {
     const filtered = openFiles.filter((f) => f.path !== path);
     setOpenFiles(filtered);
     if (activeFilePath === path) {
       if (filtered.length > 0) {
-        setActiveFilePath(filtered[filtered.length - 1].path);
-        setEditorContent(filtered[filtered.length - 1].content || "");
+        const next = filtered[filtered.length - 1];
+        setActiveFilePath(next.path);
+        setEditorContent(next.content || "");
       } else {
         setActiveFilePath("");
         setEditorContent("");
       }
     }
-  };
+    setDirtyCloseTarget(null);
+  }, [openFiles, activeFilePath]);
+
+  const handleCloseTabRequest = useCallback((e: React.MouseEvent, path: string) => {
+    e.stopPropagation();
+    const fileNode = openFiles.find((f) => f.path === path);
+    if (fileNode && isFileDirty(fileNode)) {
+      setDirtyCloseTarget(path);
+      return;
+    }
+    executeCloseTab(path);
+  }, [openFiles, isFileDirty, executeCloseTab]);
 
   const handleNewFile = () => {
-    openPrompt("Create New File", "e.g. services/api/utils.py", (name) => {
+    openPrompt("Create New File", "e.g. services/api/utils.py", async (name) => {
       const trimmed = name.trim();
       if (!trimmed) return;
+      const initialText = "# New file\n";
       const newFile: FileNode = {
         name: trimmed.split("/").pop() || trimmed,
         path: trimmed,
         type: "file",
-        content: "# New file\n",
+        content: initialText,
+        savedContent: initialText,
       };
+      // Persist to workspace disk
+      try {
+        await fetch(`${API_BASE}/v1/workspace/file`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ path: trimmed, content: initialText }),
+        });
+      } catch {
+        // local fallback
+      }
       setFileTree((prev) => [...prev, newFile]);
       setOpenFiles((prev) => [...prev, newFile]);
       setActiveFilePath(trimmed);
-      setEditorContent("# New file\n");
+      setEditorContent(initialText);
       setTerminalLogs((prev) => [...prev, `[Filesystem] Created file: ${trimmed}`]);
+      showToast(`Created ${trimmed}`);
     });
   };
 
@@ -776,17 +898,135 @@ function GeezCodeIDEContent() {
       };
       setFileTree((prev) => [...prev, newDir]);
       setTerminalLogs((prev) => [...prev, `[Filesystem] Created directory: ${trimmed}`]);
+      showToast(`Created folder ${trimmed}`);
     });
   };
 
-  const handleSaveFile = () => {
-    setOpenFiles((prev) => prev.map((f) => (f.path === activeFilePath ? { ...f, content: editorContent } : f)));
-    setTerminalLogs((prev) => [...prev, `[Filesystem] Saved file: ${activeFilePath}`]);
-    showAlert(`File '${activeFilePath}' saved successfully to workspace disk.`);
-  };
+  const handleSaveFile = useCallback(async (targetPath?: string) => {
+    const path = targetPath || activeFilePath;
+    if (!path) return;
+    const targetNode = openFiles.find((f) => f.path === path);
+    const contentToWrite = path === activeFilePath ? editorContent : (targetNode?.content ?? "");
+
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/file`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ path, content: contentToWrite }),
+      });
+      if (res.ok) {
+        setOpenFiles((prev) =>
+          prev.map((f) => (f.path === path ? { ...f, content: contentToWrite, savedContent: contentToWrite } : f))
+        );
+        setFileTree((prev) => updateTreeContent(prev, path, contentToWrite));
+        setTerminalLogs((prev) => [...prev, `[Filesystem] Saved to disk: ${path}`]);
+        showToast(`Saved ${path}`);
+        return;
+      }
+    } catch {
+      // offline fallback
+    }
+
+    setOpenFiles((prev) =>
+      prev.map((f) => (f.path === path ? { ...f, content: contentToWrite, savedContent: contentToWrite } : f))
+    );
+    setFileTree((prev) => updateTreeContent(prev, path, contentToWrite));
+    setTerminalLogs((prev) => [...prev, `[Filesystem (local)] Saved ${path}`]);
+    showToast(`Saved ${path} (local)`);
+  }, [activeFilePath, editorContent, openFiles, showToast]);
+
+  const handleSaveAll = useCallback(async () => {
+    const dirtyList = openFiles.filter(isFileDirty);
+    if (dirtyList.length === 0) {
+      showToast("All files are saved");
+      return;
+    }
+    for (const f of dirtyList) {
+      await handleSaveFile(f.path);
+    }
+    showToast(`Saved ${dirtyList.length} files`);
+  }, [openFiles, isFileDirty, handleSaveFile, showToast]);
+
+  // Auto-Save effect (debounced at 1.5s)
+  useEffect(() => {
+    if (!autoSave || !activeFilePath) return;
+    const activeNode = openFiles.find((f) => f.path === activeFilePath);
+    if (!activeNode || !isFileDirty(activeNode)) return;
+
+    const timer = setTimeout(() => {
+      handleSaveFile(activeFilePath);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [autoSave, editorContent, activeFilePath, openFiles, isFileDirty, handleSaveFile]);
+
+  // Global keyboard shortcuts (Ctrl+S, Ctrl+K S)
+  useEffect(() => {
+    let chordK = false;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        chordK = true;
+        setTimeout(() => { chordK = false; }, 1200);
+        return;
+      }
+      if (chordK && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        chordK = false;
+        handleSaveAll();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        handleSaveFile();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleSaveFile, handleSaveAll]);
+
+  const handleSearchResultClick = useCallback(async (result: { file: string; line: number; text: string }) => {
+    let targetNode = openFiles.find((f) => f.path === result.file);
+    if (!targetNode) {
+      const foundInTree = findNodeInTree(fileTree, result.file);
+      let content = foundInTree?.content;
+      if (content === undefined) {
+        try {
+          const res = await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(result.file)}`, {
+            headers: { ...authHeaders() },
+          });
+          if (res.ok) {
+            const json = await res.json();
+            content = json.data?.content || "";
+          } else {
+            content = `// Unable to load ${result.file}`;
+          }
+        } catch {
+          content = `// Unable to load ${result.file}`;
+        }
+      }
+      targetNode = {
+        name: result.file.split("/").pop() || result.file,
+        path: result.file,
+        type: "file",
+        content,
+        savedContent: content,
+      };
+      setOpenFiles((prev) => [...prev, targetNode!]);
+    }
+    setActiveFilePath(result.file);
+    setEditorContent(targetNode.content || "");
+
+    setTimeout(() => {
+      if (editorRef.current) {
+        editorRef.current.revealLineInCenter(result.line);
+        editorRef.current.setPosition({ lineNumber: result.line, column: 1 });
+        editorRef.current.focus();
+      }
+    }, 80);
+  }, [openFiles, fileTree]);
 
   const handleSaveAs = () => {
-    openPrompt("Save As", "e.g. services/api/main_copy.py", (newPath) => {
+    openPrompt("Save As", "e.g. services/api/main_copy.py", async (newPath) => {
       const trimmed = newPath.trim();
       if (!trimmed) return;
       const newFile: FileNode = {
@@ -794,33 +1034,45 @@ function GeezCodeIDEContent() {
         path: trimmed,
         type: "file",
         content: editorContent,
+        savedContent: editorContent,
       };
+      try {
+        await fetch(`${API_BASE}/v1/workspace/file`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ path: trimmed, content: editorContent }),
+        });
+      } catch {
+        // fallback
+      }
       setFileTree((prev) => [...prev, newFile]);
       setOpenFiles((prev) => [...prev, newFile]);
       setActiveFilePath(trimmed);
       setTerminalLogs((prev) => [...prev, `[Filesystem] Saved file as: ${trimmed}`]);
+      showToast(`Saved as ${trimmed}`);
     });
   };
 
   const handleDeleteFile = () => {
     if (!activeFilePath) return;
-    openPrompt("Delete File", `Type path to confirm deletion: ${activeFilePath}`, (val) => {
+    openPrompt("Delete File", `Type path to confirm deletion: ${activeFilePath}`, async (val) => {
       if (val.trim() !== activeFilePath) {
         showAlert("Deletion cancelled: path did not match.");
         return;
       }
+      try {
+        await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(activeFilePath)}`, {
+          method: "DELETE",
+          headers: { ...authHeaders() },
+        });
+      } catch {
+        // offline fallback
+      }
       const filteredTree = fileTree.filter((f) => f.path !== activeFilePath);
       setFileTree(filteredTree);
-      const filteredTabs = openFiles.filter((f) => f.path !== activeFilePath);
-      setOpenFiles(filteredTabs);
-      if (filteredTabs.length > 0) {
-        setActiveFilePath(filteredTabs[0].path);
-        setEditorContent(filteredTabs[0].content || "");
-      } else {
-        setActiveFilePath("");
-        setEditorContent("");
-      }
+      executeCloseTab(activeFilePath);
       setTerminalLogs((prev) => [...prev, `[Filesystem] Deleted file: ${activeFilePath}`]);
+      showToast(`Deleted ${activeFilePath}`);
     });
   };
 
@@ -1469,10 +1721,13 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             onNewFolder={handleNewFolder}
             onSaveFile={handleSaveFile}
             onSaveAs={handleSaveAs}
+            onSaveAll={handleSaveAll}
+            autoSave={autoSave}
+            onToggleAutoSave={() => setAutoSave(!autoSave)}
             onDeleteFile={handleDeleteFile}
             onCloseFile={() => {
               if (openFiles.length > 0) {
-                handleCloseTab({ stopPropagation: () => {} } as any, activeFilePath);
+                handleCloseTabRequest({ stopPropagation: () => {} } as any, activeFilePath);
               }
             }}
             onNewProject={() => setShowIntakeModal(true)}
@@ -1662,10 +1917,14 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     </div>
                     <div>
                       {searchResults.map((r, i) => (
-                        <button key={i} className="flex w-full flex-col gap-0.5 px-3 py-1.5 text-left hover:bg-surface-850">
+                        <button
+                          key={i}
+                          onClick={() => handleSearchResultClick(r)}
+                          className="flex w-full flex-col gap-0.5 px-3 py-1.5 text-left hover:bg-surface-850 cursor-pointer transition-colors"
+                        >
                           <span className="font-mono text-[11px] text-surface-300">{r.file}</span>
                           <span className="font-mono text-[11px] text-surface-500 truncate">
-                            <span className="text-brand-400">{r.line}</span>: {r.text}
+                            <span className="text-brand-400 font-semibold">{r.line}</span>: {r.text}
                           </span>
                         </button>
                       ))}
@@ -2073,21 +2332,52 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         {/* Editor column */}
         <main className="flex min-w-0 flex-1 flex-col">
           <div className="flex h-9 shrink-0 items-center border-b border-surface-800 bg-surface-900 overflow-x-auto">
-            {openFiles.map((f) => (
-              <div
-                key={f.path}
-                onClick={() => { setActiveFilePath(f.path); setEditorContent(f.content || ""); }}
-                className={`group flex h-full items-center gap-2 border-r border-surface-800 px-3 text-xs font-mono cursor-pointer transition-colors ${
-                  f.path === activeFilePath ? "bg-surface-950 text-surface-100" : "text-surface-500 hover:text-surface-200"
-                }`}
-              >
-                <FileTypeIcon name={f.name} />
-                <span className="whitespace-nowrap">{f.name}</span>
-                <button onClick={(e) => handleCloseTab(e, f.path)} className="rounded p-0.5 text-surface-500 opacity-0 group-hover:opacity-100 hover:bg-surface-800 hover:text-surface-200">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ))}
+            {openFiles.map((f) => {
+              const dirty = isFileDirty(f);
+              const isActive = f.path === activeFilePath;
+              return (
+                <div
+                  key={f.path}
+                  onClick={() => {
+                    if (f.path !== activeFilePath) {
+                      setActiveFilePath(f.path);
+                      setEditorContent(f.content || "");
+                    }
+                  }}
+                  className={`group flex h-full items-center gap-2 border-r border-surface-800 px-3 text-xs font-mono cursor-pointer transition-colors ${
+                    isActive ? "bg-surface-950 text-surface-100" : "text-surface-500 hover:text-surface-200"
+                  }`}
+                >
+                  <FileTypeIcon name={f.name} />
+                  <span className="whitespace-nowrap">{f.name}</span>
+                  <div className="flex items-center justify-center w-3.5 h-3.5 ml-0.5">
+                    {dirty ? (
+                      <>
+                        <span
+                          className="h-2 w-2 rounded-full bg-brand-400 group-hover:hidden"
+                          title="Unsaved changes"
+                        />
+                        <button
+                          onClick={(e) => handleCloseTabRequest(e, f.path)}
+                          className="hidden group-hover:flex items-center justify-center rounded p-0.5 text-surface-400 hover:bg-surface-800 hover:text-surface-200"
+                          title="Close (Unsaved changes)"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={(e) => handleCloseTabRequest(e, f.path)}
+                        className="rounded p-0.5 text-surface-500 opacity-0 group-hover:opacity-100 hover:bg-surface-800 hover:text-surface-200"
+                        title="Close"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Breadcrumbs Bar */}
@@ -2169,10 +2459,19 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     height="100%"
                     language={getLanguage(activeFilePath)}
                     value={editorContent}
-                    onChange={(v) => setEditorContent(v || "")}
+                    onChange={(v) => {
+                      const val = v || "";
+                      setEditorContent(val);
+                      setOpenFiles((prev) =>
+                        prev.map((f) => (f.path === activeFilePath ? { ...f, content: val } : f))
+                      );
+                    }}
                     theme="vs-dark"
-                    onMount={(editor) => {
+                    onMount={(editor, monaco) => {
                       editorRef.current = editor;
+                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+                        handleSaveFile();
+                      });
                       editor.onDidChangeCursorPosition((e) => {
                         setCursorPos({ line: e.position.lineNumber, col: e.position.column });
                       });
@@ -2438,6 +2737,43 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           >
             <span className={`h-1.5 w-1.5 rounded-full ${isBuilding ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
             <span className="text-surface-400">{isBuilding ? "Swarm: Building" : "Swarm: Ready"}</span>
+          </button>
+
+          {/* Save Status / Dirty Indicator */}
+          <button
+            type="button"
+            onClick={() => handleSaveFile()}
+            title={dirtyFilesCount > 0 ? `${dirtyFilesCount} unsaved file(s) — Click to Save (Ctrl+S)` : "All changes saved to disk"}
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
+              dirtyFilesCount > 0
+                ? "text-brand-300 hover:bg-surface-800/80 hover:text-brand-200"
+                : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200"
+            }`}
+          >
+            {dirtyFilesCount > 0 ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-brand-400 animate-pulse" />
+                <span className="font-sans font-medium text-[11px]">{dirtyFilesCount} unsaved</span>
+              </>
+            ) : (
+              <>
+                <Check className="h-3 w-3 text-emerald-400" />
+                <span className="font-sans text-[11px] text-surface-400">Saved</span>
+              </>
+            )}
+          </button>
+
+          {/* Auto-Save toggle */}
+          <button
+            type="button"
+            onClick={() => setAutoSave(!autoSave)}
+            title="Toggle Auto-Save (1.5s debounce)"
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors cursor-pointer font-sans text-[11px] ${
+              autoSave ? "text-emerald-400 hover:bg-surface-800/60" : "text-surface-500 hover:text-surface-300"
+            }`}
+          >
+            <span>Auto-Save:</span>
+            <span className="font-medium">{autoSave ? "ON" : "OFF"}</span>
           </button>
         </div>
 
@@ -2966,6 +3302,57 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         isOpen={showAboutModal}
         onClose={() => setShowAboutModal(false)}
       />
+
+      {/* ===== Unsaved Changes Confirmation Modal ===== */}
+      {dirtyCloseTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-100">
+          <div className="w-full max-w-sm rounded-xl border border-surface-750 bg-surface-900 p-5 shadow-2xl animate-in zoom-in-95">
+            <div className="flex items-center gap-2 text-amber-400 mb-2">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              <h3 className="text-sm font-semibold text-surface-100">Unsaved Changes</h3>
+            </div>
+            <p className="text-xs text-surface-300 mb-5 leading-relaxed">
+              Do you want to save the changes you made to{" "}
+              <span className="font-mono text-brand-400 font-semibold">{dirtyCloseTarget}</span>?
+              Your changes will be lost if you don&apos;t save them.
+            </p>
+            <div className="flex items-center justify-end gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setDirtyCloseTarget(null)}
+                className="rounded px-3 py-1.5 text-surface-400 hover:bg-surface-800 hover:text-surface-200 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => executeCloseTab(dirtyCloseTarget)}
+                className="rounded border border-surface-700 bg-surface-800 px-3 py-1.5 text-surface-200 hover:bg-surface-750 transition-colors cursor-pointer"
+              >
+                Don&apos;t Save
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  await handleSaveFile(dirtyCloseTarget);
+                  executeCloseTab(dirtyCloseTarget);
+                }}
+                className="rounded bg-brand-600 px-3 py-1.5 font-medium text-white hover:bg-brand-500 transition-colors shadow-sm cursor-pointer"
+              >
+                Save & Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Non-intrusive Save Toast ===== */}
+      {toastMessage && (
+        <div className="fixed bottom-8 right-6 z-50 flex items-center gap-2 rounded-md border border-brand-500/40 bg-surface-900/95 px-3 py-2 text-xs text-surface-200 shadow-xl backdrop-blur animate-in fade-in slide-in-from-bottom-2">
+          <Check className="h-4 w-4 text-brand-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
     </div>
   );
 }

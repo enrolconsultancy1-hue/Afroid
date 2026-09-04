@@ -72,6 +72,9 @@ export interface IDEMenuBarProps {
   onNewFolder: () => void;
   onSaveFile: () => void;
   onSaveAs: () => void;
+  onSaveAll?: () => void;
+  autoSave?: boolean;
+  onToggleAutoSave?: () => void;
   onDeleteFile: () => void;
   onCloseFile: () => void;
   onNewProject: () => void;
@@ -105,6 +108,9 @@ export function IDEMenuBar({
   onNewFolder,
   onSaveFile,
   onSaveAs,
+  onSaveAll,
+  autoSave,
+  onToggleAutoSave,
   onDeleteFile,
   onCloseFile,
   onNewProject,
@@ -257,6 +263,13 @@ export function IDEMenuBar({
             {renderDivider()}
             {renderItem("Save File", "Ctrl+S", Save, onSaveFile, !hasOpenFiles)}
             {renderItem("Save As...", "Ctrl+Shift+S", Save, onSaveAs, !hasOpenFiles)}
+            {onSaveAll && renderItem("Save All", "Ctrl+K S", Save, onSaveAll, !hasOpenFiles)}
+            {onToggleAutoSave && (
+              <>
+                {renderDivider()}
+                {renderItem(autoSave ? "✓ Auto Save (1.5s)" : "Auto Save", undefined, SlidersHorizontal, onToggleAutoSave)}
+              </>
+            )}
             {renderDivider()}
             {renderItem("Close File", "Ctrl+W", X, onCloseFile, !hasOpenFiles)}
             {renderItem("Delete File...", undefined, Trash2, onDeleteFile, !hasOpenFiles)}

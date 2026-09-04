@@ -176,10 +176,14 @@ version = "1.0.0"
 source = { editable = "services/notification" }
 dependencies = [
     { name = "afroid-shared" },
+    { name = "email-validator" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "afroid-shared", editable = "services/shared" }]
+requires-dist = [
+    { name = "afroid-shared", editable = "services/shared" },
+    { name = "email-validator", specifier = ">=2.2.0" },
+]
 
 [[package]]
 name = "afroid-orchestrator"

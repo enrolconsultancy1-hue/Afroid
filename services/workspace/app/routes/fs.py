@@ -134,6 +134,24 @@ async def write_file(
     return {"data": {"path": body.path, "written": True}}
 
 
+@router.delete("/file")
+async def delete_file(
+    path: str = Query(..., description="Relative path to file or directory to delete"),
+    current_user: User = Depends(get_current_user),
+) -> dict[str, Any]:
+    base = user_workspace(str(current_user.id))
+    p = _safe_resolve(path, base)
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="File or directory not found")
+    if p.is_dir():
+        import shutil
+
+        shutil.rmtree(p)
+    else:
+        p.unlink()
+    return {"data": {"path": path, "deleted": True}}
+
+
 @router.get("/search")
 async def search(
     current_user: User = Depends(get_current_user),

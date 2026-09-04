@@ -73,3 +73,26 @@ def test_tool_view_file_and_replace_lines(client: tuple[TestClient, Path]) -> No
     # 4. Verify modified content on disk
     updated_text = target.read_text(encoding="utf-8")
     assert updated_text == "line1\nNEW_LINE_2\nNEW_LINE_3\nline4\nline5\n"
+
+
+def test_write_and_delete_file(client: tuple[TestClient, Path]) -> None:
+    c, ws = client
+    # 1. Write file
+    res = c.post(
+        "/v1/workspace/file",
+        json={"path": "services/demo.py", "content": "print('hello from workspace')\n"},
+    )
+    assert res.status_code == 200
+    assert (ws / "services" / "demo.py").is_file()
+    assert (ws / "services" / "demo.py").read_text(encoding="utf-8") == "print('hello from workspace')\n"
+
+    # 2. Read file back
+    res_get = c.get("/v1/workspace/file?path=services/demo.py")
+    assert res_get.status_code == 200
+    assert res_get.json()["data"]["content"] == "print('hello from workspace')\n"
+
+    # 3. Delete file
+    res_del = c.delete("/v1/workspace/file?path=services/demo.py")
+    assert res_del.status_code == 200
+    assert res_del.json()["data"]["deleted"] is True
+    assert not (ws / "services" / "demo.py").exists()
