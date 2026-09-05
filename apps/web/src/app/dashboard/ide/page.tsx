@@ -48,6 +48,14 @@ import {
   Globe,
   Keyboard,
   Info,
+  Copy,
+  ThumbsUp,
+  ThumbsDown,
+  ChevronDown,
+  Maximize2,
+  Minimize2,
+  Columns,
+  AtSign,
 } from "lucide-react";
 import { GeezCodeLogo } from "@/components/geezcode-logo";
 import { QrCodeView } from "@/components/qr-code";
@@ -398,6 +406,13 @@ function GeezCodeIDEContent() {
   const [showRightDock, setShowRightDock] = useState(true);
   const [showBottomTerminal, setShowBottomTerminal] = useState(true);
   const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output" | "swarm">("terminal");
+  const [terminalSessions, setTerminalSessions] = useState<Array<{ id: string; title: string; shell: "powershell" | "bash" | "cmd" | "wsl" }>>([
+    { id: "term-1", title: "1: powershell", shell: "powershell" },
+  ]);
+  const [activeSessionId, setActiveSessionId] = useState("term-1");
+  const [isSplitTerminal, setIsSplitTerminal] = useState(false);
+  const [showShellDropdown, setShowShellDropdown] = useState(false);
+  const [showNewShellDropdown, setShowNewShellDropdown] = useState(false);
   const [previewUrl, setPreviewUrl] = useState("");
   const editorRef = useRef<any>(null);
   const [showQuickOpen, setShowQuickOpen] = useState(false);
@@ -2764,37 +2779,267 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           {showBottomTerminal && (
             <>
               <div onMouseDown={() => setIsResizingBottom(true)} className="h-px shrink-0 cursor-row-resize bg-surface-800 hover:bg-brand-500" />
-              <div style={{ height: `${bottomTerminalHeight}px` }} className="flex shrink-0 flex-col bg-surface-950">
-                {/* Tab bar */}
-                <div className="flex h-8 items-center gap-4 border-b border-surface-800 px-3">
-                  {(["terminal", "preview", "problems", "output", "swarm"] as const).map((t) => (
+              <div style={{ height: `${bottomTerminalHeight}px` }} className="flex shrink-0 flex-col bg-[#121214]">
+                {/* Antigravity Desktop Terminal Header & Tab bar */}
+                <div className="flex h-8 items-center justify-between border-b border-surface-800/80 px-3 bg-surface-900/70 select-none text-xs">
+                  {/* Left: Tab System */}
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { id: "problems", label: "Problems", badge: 0 },
+                      { id: "output", label: "Output" },
+                      { id: "terminal", label: "Terminal" },
+                      { id: "preview", label: "Preview" },
+                      { id: "swarm", label: "Swarm" },
+                    ].map((t) => {
+                      const isActive = terminalTab === t.id;
+                      return (
+                        <button
+                          key={t.id}
+                          onClick={() => setTerminalTab(t.id as any)}
+                          className={`flex items-center gap-1.5 rounded-[4px] px-2.5 py-0.5 text-xs transition-colors ${
+                            isActive
+                              ? "bg-surface-800 text-surface-100 font-medium"
+                              : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/40"
+                          }`}
+                        >
+                          <span>{t.label}</span>
+                          {t.badge !== undefined && (
+                            <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-blue-600/80 px-1 font-mono text-[10px] font-semibold text-white">
+                              {t.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Right: Desktop Shell & Window Action Bar */}
+                  <div className="relative flex items-center gap-1 text-surface-400">
+                    {/* Active Shell Selector Badge */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowShellDropdown((prev) => !prev);
+                          setShowNewShellDropdown(false);
+                        }}
+                        className="flex items-center gap-1.5 rounded bg-surface-800/80 border border-surface-700/60 px-2 py-0.5 text-[11px] font-mono text-surface-200 hover:bg-surface-750 transition-colors"
+                        title="Active Terminal Shell (Click to switch)"
+                      >
+                        <TerminalIcon className="h-3 w-3 text-brand-400" />
+                        <span>{terminalSessions.find((s) => s.id === activeSessionId)?.title || "1: powershell"}</span>
+                        <ChevronDown className="h-2.5 w-2.5 text-surface-400" />
+                      </button>
+
+                      {/* Shell Selector Dropdown */}
+                      {showShellDropdown && (
+                        <div className="absolute right-0 top-full mt-1 w-52 rounded-lg border border-surface-750 bg-surface-900/98 backdrop-blur-md p-1 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 duration-100 text-xs">
+                          <div className="px-2 py-1 text-[10px] font-semibold uppercase text-surface-500 tracking-wider">
+                            Active Terminals
+                          </div>
+                          {terminalSessions.map((s) => (
+                            <button
+                              key={s.id}
+                              type="button"
+                              onClick={() => {
+                                setActiveSessionId(s.id);
+                                setTerminalTab("terminal");
+                                setShowShellDropdown(false);
+                              }}
+                              className={`flex w-full items-center justify-between px-2 py-1.5 rounded text-left text-xs transition-colors ${
+                                activeSessionId === s.id
+                                  ? "bg-surface-800 text-surface-100 font-medium"
+                                  : "text-surface-300 hover:bg-surface-800/60 hover:text-surface-100"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <TerminalIcon className="h-3 w-3 text-brand-400" />
+                                <span>{s.title}</span>
+                              </div>
+                              {activeSessionId === s.id && <Check className="h-3.5 w-3.5 text-primary-400" />}
+                            </button>
+                          ))}
+                          <div className="my-1 border-t border-surface-800" />
+                          <div className="px-2 py-1 text-[10px] font-semibold uppercase text-surface-500 tracking-wider">
+                            Switch Shell Profile
+                          </div>
+                          {(["powershell", "bash", "cmd", "wsl"] as const).map((sh) => (
+                            <button
+                              key={sh}
+                              type="button"
+                              onClick={() => {
+                                setTerminalSessions((prev) =>
+                                  prev.map((s) =>
+                                    s.id === activeSessionId ? { ...s, shell: sh, title: `${s.title.split(":")[0]}: ${sh}` } : s
+                                  )
+                                );
+                                setShowShellDropdown(false);
+                                showToast(`Switched shell to ${sh}`);
+                              }}
+                              className="flex w-full items-center gap-2 px-2 py-1 rounded text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                            >
+                              <span className="font-mono text-[11px] lowercase text-surface-400">›</span>
+                              <span>{sh === "cmd" ? "Command Prompt" : sh === "wsl" ? "WSL (Ubuntu)" : sh === "powershell" ? "PowerShell" : "Git Bash"}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* New Instance (+) with Split Dropdown */}
+                    <div className="relative flex items-center">
+                      <button
+                        onClick={() => {
+                          const newNum = terminalSessions.length + 1;
+                          const newId = `term-${Date.now()}`;
+                          const newTitle = `${newNum}: powershell`;
+                          setTerminalSessions((prev) => [...prev, { id: newId, title: newTitle, shell: "powershell" }]);
+                          setActiveSessionId(newId);
+                          setTerminalTab("terminal");
+                          showToast(`Spawned ${newTitle}`);
+                        }}
+                        className="rounded-l p-1 hover:bg-surface-800 hover:text-surface-200 transition-colors"
+                        title="New Terminal Instance (Ctrl+`)"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setShowNewShellDropdown((prev) => !prev);
+                          setShowShellDropdown(false);
+                        }}
+                        className="rounded-r p-1 hover:bg-surface-800 hover:text-surface-200 transition-colors -ml-0.5"
+                        title="Select Shell to Launch"
+                      >
+                        <ChevronDown className="h-2.5 w-2.5" />
+                      </button>
+
+                      {/* New Shell Profile Launcher Dropdown */}
+                      {showNewShellDropdown && (
+                        <div className="absolute right-0 top-full mt-1 w-48 rounded-lg border border-surface-750 bg-surface-900/98 backdrop-blur-md p-1 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 duration-100 text-xs">
+                          <div className="px-2 py-1 text-[10px] font-semibold uppercase text-surface-500 tracking-wider">
+                            Launch Shell
+                          </div>
+                          {[
+                            { shell: "powershell", label: "PowerShell" },
+                            { shell: "bash", label: "Git Bash" },
+                            { shell: "cmd", label: "Command Prompt" },
+                            { shell: "wsl", label: "WSL (Linux)" },
+                          ].map((item) => (
+                            <button
+                              key={item.shell}
+                              type="button"
+                              onClick={() => {
+                                const newNum = terminalSessions.length + 1;
+                                const newId = `term-${Date.now()}`;
+                                const newTitle = `${newNum}: ${item.shell}`;
+                                setTerminalSessions((prev) => [...prev, { id: newId, title: newTitle, shell: item.shell as any }]);
+                                setActiveSessionId(newId);
+                                setTerminalTab("terminal");
+                                setShowNewShellDropdown(false);
+                                showToast(`Spawned ${newTitle}`);
+                              }}
+                              className="flex w-full items-center gap-2 px-2 py-1.5 rounded text-left text-xs text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                            >
+                              <TerminalIcon className="h-3 w-3 text-brand-400" />
+                              <span>{item.label}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Agent Context Reference (@) */}
                     <button
-                      key={t}
-                      onClick={() => setTerminalTab(t)}
-                      className={`text-[11px] font-medium uppercase tracking-wide transition-colors ${
-                        terminalTab === t ? "text-surface-100 border-b border-brand-500" : "text-surface-500 hover:text-surface-300"
-                      }`}
-                      style={{ paddingBottom: 8, marginBottom: -1 }}
+                      onClick={() => {
+                        setShowRightDock(true);
+                        setDockInput((prev) =>
+                          prev
+                            ? `${prev} @terminal`
+                            : "@terminal Please inspect the current terminal session output for any errors or status updates."
+                        );
+                        showToast("Referenced Terminal context in geez-agent");
+                      }}
+                      className="rounded p-1 hover:bg-surface-800 hover:text-brand-400 transition-colors"
+                      title="Reference Terminal in AI Assistant (@)"
                     >
-                      {t}
+                      <AtSign className="h-3.5 w-3.5" />
                     </button>
-                  ))}
-                  <div className="ml-auto flex items-center gap-2 text-surface-500">
+
+                    {/* Split Terminal Pane */}
                     <button
-                      onClick={() => setTerminalLogs([])}
-                      className="p-1 rounded hover:text-surface-200"
-                      title="Clear logs"
+                      onClick={() => {
+                        setIsSplitTerminal((prev) => {
+                          const next = !prev;
+                          showToast(next ? "Terminal split view enabled (Dual View)" : "Terminal split view disabled");
+                          return next;
+                        });
+                      }}
+                      className={`rounded p-1 transition-colors ${
+                        isSplitTerminal
+                          ? "bg-surface-800 text-brand-400 font-semibold"
+                          : "hover:bg-surface-800 hover:text-surface-200"
+                      }`}
+                      title={isSplitTerminal ? "Unsplit Terminal" : "Split Terminal View (Side-by-Side)"}
+                    >
+                      <Columns className="h-3.5 w-3.5" />
+                    </button>
+
+                    {/* Kill Terminal / Clear Logs */}
+                    <button
+                      onClick={() => {
+                        if (terminalSessions.length > 1) {
+                          const filtered = terminalSessions.filter((s) => s.id !== activeSessionId);
+                          setTerminalSessions(filtered);
+                          setActiveSessionId(filtered[0]?.id || "term-1");
+                          showToast("Killed active terminal session");
+                        } else {
+                          setTerminalLogs([]);
+                          setActiveSessionId(`term-${Date.now()}`);
+                          setTerminalSessions([{ id: `term-${Date.now()}`, title: "1: powershell", shell: "powershell" }]);
+                          showToast("Terminal buffer cleared and reinitialized");
+                        }
+                      }}
+                      className="rounded p-1 hover:bg-surface-800 hover:text-rose-400 transition-colors"
+                      title="Kill Active Terminal Session / Clear Buffer"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+
+                    <div className="h-3 w-px bg-surface-800 mx-0.5" />
+
+                    {/* Maximize / Restore Panel Size */}
+                    <button
+                      onClick={() => {
+                        setBottomTerminalHeight((prev) => (prev > 300 ? 180 : 420));
+                      }}
+                      className="rounded p-1 hover:bg-surface-800 hover:text-surface-200 transition-colors"
+                      title={bottomTerminalHeight > 300 ? "Restore Panel Size" : "Maximize Terminal Panel"}
+                    >
+                      {bottomTerminalHeight > 300 ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+                    </button>
+
+                    {/* Close Panel */}
+                    <button
+                      onClick={() => setShowBottomTerminal(false)}
+                      className="rounded p-1 hover:bg-surface-800 hover:text-surface-200 transition-colors"
+                      title="Close Panel (Ctrl+J)"
+                    >
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
 
-                {/* Tab body — fills remaining height */}
+                {/* Tab body — fills remaining height with Split Terminal Support */}
                 <div className="min-h-0 flex-1 overflow-hidden">
-                  {/* ── Live xterm.js Terminal ── */}
+                  {/* ── Live xterm.js Terminal with Split Support ── */}
                   {terminalTab === "terminal" && (
-                    <XTerminalPanel className="h-full w-full" />
+                    <div className={`h-full w-full ${isSplitTerminal ? "grid grid-cols-2 divide-x divide-surface-800" : ""}`}>
+                      <XTerminalPanel key={activeSessionId} className="h-full w-full" />
+                      {isSplitTerminal && (
+                        <XTerminalPanel key="term-split-dual" className="h-full w-full" />
+                      )}
+                    </div>
                   )}
 
                   {/* ── Sandboxed Preview ── */}
@@ -2900,50 +3145,185 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
         {showRightDock && (
           <>
             <div onMouseDown={() => setIsResizingRight(true)} className="w-px shrink-0 cursor-col-resize bg-surface-800 hover:bg-brand-500" />
-            <aside style={{ width: `${rightDockWidth}px` }} className="flex shrink-0 flex-col border-l border-surface-800 bg-surface-900">
-              <div className="flex h-8 items-center justify-between border-b border-surface-800 px-3">
+            <aside style={{ width: `${rightDockWidth}px` }} className="flex shrink-0 flex-col border-l border-surface-800 bg-[#121214]">
+              {/* AI Dock Header */}
+              <div className="flex h-9 items-center justify-between border-b border-surface-800/80 px-3 bg-surface-900/60 select-none">
                 <div className="flex items-center gap-2">
-                  <Bot className="h-3.5 w-3.5 text-brand-400" />
-                  <span className="text-xs font-medium text-surface-200">geez-agent</span>
+                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-500/15 text-brand-400 border border-brand-500/30">
+                    <Bot className="h-3 w-3" />
+                  </div>
+                  <span className="text-xs font-semibold text-surface-200">geez-agent</span>
+                  <span className="flex items-center gap-1 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-medium text-emerald-400 border border-emerald-500/30">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active
+                  </span>
                 </div>
-                <span className="text-[10px] text-surface-500">{tokensUsed.toLocaleString()} tokens</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] text-surface-400">{tokensUsed.toLocaleString()} tokens</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRightDock(false)}
+                    className="rounded p-0.5 text-surface-400 hover:bg-surface-800 hover:text-surface-200 transition-colors"
+                    title="Close AI Panel"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-3 space-y-3">
+              {/* Message Stream */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-4 text-xs">
                 {dockMessages.map((m) => (
-                  <div key={m.id} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
-                    <div className={`max-w-[90%] rounded-lg px-3 py-2 text-xs leading-relaxed ${
-                      m.sender === "user" ? "bg-brand-600/90 text-white" : "bg-surface-950 border border-surface-750 text-surface-200"
-                    }`}>
-                      {m.agentName && <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-brand-400">{m.agentName}</div>}
-                      {m.text}
-                      {m.thought && <div className="mt-1.5 border-l-2 border-surface-700 pl-2 text-[11px] text-surface-400 italic">{m.thought}</div>}
-                      {m.filesModified && (
-                        <div className="mt-1.5 space-y-0.5">
-                          {m.filesModified.map((f) => <div key={f} className="font-mono text-[10px] text-surface-500">{f}</div>)}
+                  <div key={m.id} className="group space-y-2">
+                    {m.sender === "user" ? (
+                      /* User Prompt Pill */
+                      <div className="flex justify-end">
+                        <div className="max-w-[85%] rounded-xl bg-[#27272a] border border-surface-700/60 px-3 py-2 text-xs text-surface-100 shadow-sm leading-relaxed">
+                          {m.text}
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      /* Assistant Canvas Flow */
+                      <div className="space-y-2 text-surface-200 leading-relaxed">
+                        {/* Collapsible Reasoning / Thought */}
+                        {m.thought && (
+                          <details className="group/thought rounded-md bg-surface-950/60 border border-surface-800/80 text-[11px] text-surface-400">
+                            <summary className="flex items-center gap-1.5 px-2.5 py-1.5 cursor-pointer select-none text-surface-400 hover:text-surface-200 transition-colors">
+                              <ChevronRight className="h-3 w-3 transition-transform group-open/thought:rotate-90 text-surface-500 shrink-0" />
+                              <span className="font-medium text-surface-300">Worked for a moment</span>
+                              <span className="ml-auto font-mono text-[10px] text-surface-500">1m</span>
+                            </summary>
+                            <div className="px-3 pb-2 pt-1 border-t border-surface-800/50 font-mono text-[10.5px] italic text-surface-400/90 whitespace-pre-wrap leading-relaxed">
+                              {m.thought}
+                            </div>
+                          </details>
+                        )}
+
+                        {/* Direct Markdown / Response Text */}
+                        <div className="text-surface-200 whitespace-pre-wrap leading-relaxed">
+                          {m.text}
+                        </div>
+
+                        {/* Interactive File Modifications / Diff Cards */}
+                        {m.filesModified && m.filesModified.length > 0 && (
+                          <div className="rounded-lg border border-surface-800 bg-[#161618] p-2 space-y-1.5 my-2">
+                            <div className="flex items-center justify-between text-[11px] text-surface-400 px-1">
+                              <span className="font-medium text-surface-300">
+                                {m.filesModified.length} {m.filesModified.length === 1 ? "file" : "files"} changed
+                              </span>
+                              <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                                <span className="text-emerald-400 font-semibold">+42</span>
+                                <span className="text-rose-400 font-semibold">-12</span>
+                              </div>
+                            </div>
+                            {m.filesModified.map((f) => (
+                              <div key={f} className="flex items-center justify-between rounded-md bg-surface-900/90 border border-surface-800 px-2.5 py-1.5 text-[11px]">
+                                <span className="font-mono text-surface-300 truncate max-w-[180px]" title={f}>{f}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const existing = openFiles.find((x) => x.path === f);
+                                    if (!existing) {
+                                      const content = findFileContentByPath(fileTree, f) || "";
+                                      setOpenFiles((prev) => [...prev, { name: f.split("/").pop() || f, path: f, content, savedContent: content, isDirty: false }]);
+                                    }
+                                    setActiveFilePath(f);
+                                  }}
+                                  className="flex items-center gap-1 rounded border border-surface-700 bg-surface-800 px-2 py-0.5 text-[10px] font-medium text-surface-200 hover:bg-surface-700 transition-colors shrink-0"
+                                >
+                                  <FileText className="h-2.5 w-2.5" /> Review
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Micro-actions Bar */}
+                        <div className="flex items-center gap-3 pt-1 text-surface-500 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(m.text);
+                              showToast("Copied response to clipboard");
+                            }}
+                            className="hover:text-surface-200 transition-colors"
+                            title="Copy response"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </button>
+                          <button type="button" className="hover:text-surface-200 transition-colors" title="Good response">
+                            <ThumbsUp className="h-3 w-3" />
+                          </button>
+                          <button type="button" className="hover:text-surface-200 transition-colors" title="Poor response">
+                            <ThumbsDown className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 <div ref={dockEndRef} />
               </div>
 
-              <form onSubmit={handleSendDockMessage} className="border-t border-surface-800 p-2 pt-3">
-                <div className="relative group flex flex-col gap-1 rounded-lg border border-surface-750 bg-surface-950 px-2.5 py-2 pt-3">
-                  {/* Model Selector at middle prompt text input upper frame, visible only on hovering */}
-                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
-                    <div className="flex items-center gap-1 rounded-full border border-surface-700 bg-surface-900 px-2.5 py-0.5 text-[10px] font-mono text-surface-200 shadow-md">
-                      <Cpu className="h-3 w-3 text-brand-400" />
+              {/* Sticky Batch Review & Approval Bar (Antigravity Signature UX) */}
+              {pendingReview && (
+                <div className="flex items-center justify-between border-t border-surface-800 bg-[#16161a] px-3 py-2 text-xs shadow-lg animate-in slide-in-from-bottom-2 duration-150">
+                  <div className="flex items-center gap-2 text-surface-300 min-w-0">
+                    <FileText className="h-3.5 w-3.5 text-brand-400 shrink-0" />
+                    <span className="font-mono text-[11px] truncate text-surface-200 font-medium" title={pendingReview.filePath}>
+                      {pendingReview.filePath}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRejectPendingFile()}
+                      className="text-xs text-surface-400 hover:text-surface-100 font-medium px-2 py-1 transition-colors"
+                    >
+                      Reject all
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApprovePendingFile()}
+                      className="flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-500 shadow transition-colors"
+                    >
+                      Accept all
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Integrated Modern Input Form */}
+              <form onSubmit={handleSendDockMessage} className="border-t border-surface-800 p-2.5 bg-surface-900">
+                <div className="rounded-xl border border-surface-750/80 bg-[#151517] p-2.5 shadow-inner focus-within:border-brand-500/60 transition-colors">
+                  {/* Card Header Controls */}
+                  <div className="flex items-center justify-between pb-1.5 mb-1 border-b border-surface-800/60 select-none">
+                    {/* Autopilot Mode Pill */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAutopilot(!autopilot);
+                        if (!autopilot) setPendingReview(null);
+                      }}
+                      className="flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-medium text-surface-300 hover:bg-surface-800 hover:text-surface-100 transition-colors"
+                      title={autopilot ? "Autopilot active: Autonomous code generation" : "Interactive active: Requires manual approval"}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${autopilot ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                      <span>{autopilot ? "Autopilot" : "Interactive"}</span>
+                      <ChevronDown className="h-2.5 w-2.5 text-surface-500" />
+                    </button>
+
+                    {/* Model Selector Pill */}
+                    <div className="flex items-center gap-1 text-[10px] font-mono text-surface-400">
+                      <Cpu className="h-3 w-3 text-brand-400 shrink-0" />
                       <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-transparent text-[10px] text-surface-200 outline-none cursor-pointer font-mono"
+                        className="bg-transparent text-[10px] text-surface-300 outline-none cursor-pointer font-mono hover:text-surface-100"
                       >
                         {(models.length > 0 ? models : [
-                          { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash (current)" },
-                          { id: "gemini-pro-latest", name: "Gemini Pro (latest)" },
-                          { id: "gemini-3-flash-preview", name: "Gemini 3 Flash (preview)" },
+                          { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
+                          { id: "gemini-pro-latest", name: "Gemini Pro" },
+                          { id: "gemini-3-flash-preview", name: "Gemini 3 Flash" },
                         ]).map((m: any) => (
                           <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
                         ))}
@@ -2951,31 +3331,27 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     </div>
                   </div>
 
-                  {/* Autopilot / Interactive mode toggle with colored indicator mark at left top corner of border frame */}
-                  <div className="absolute -top-2.5 left-3 z-10">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAutopilot(!autopilot);
-                        if (!autopilot) setPendingReview(null);
-                      }}
-                      className="flex items-center gap-1.5 rounded-full border border-surface-700 bg-surface-900 px-2.5 py-0.5 text-[10px] font-medium text-surface-200 shadow-md hover:border-surface-500 transition-colors"
-                      title={autopilot ? "Autopilot mode active (click to switch to Interactive)" : "Interactive mode active (click to switch to Autopilot)"}
-                    >
-                      <span className={`h-2 w-2 rounded-full ${autopilot ? "bg-emerald-500 animate-pulse" : "bg-amber-500"}`} />
-                      <span>{autopilot ? "Autopilot" : "Interactive"}</span>
-                      <ChevronRight className="h-2.5 w-2.5 text-surface-400 rotate-90" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-2 mt-1">
-                    <input
+                  {/* Multi-line Prompt Input */}
+                  <div className="flex items-end gap-2">
+                    <textarea
                       value={dockInput}
                       onChange={(e) => setDockInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendDockMessage(e);
+                        }
+                      }}
+                      rows={2}
                       placeholder="Ask or steer the agent..."
-                      className="flex-1 bg-transparent text-xs outline-none placeholder:text-surface-500"
+                      className="flex-1 resize-none bg-transparent text-xs text-surface-100 outline-none placeholder:text-surface-500 leading-relaxed max-h-28 overflow-y-auto font-sans"
                     />
-                    <button type="submit" className="rounded p-1 text-brand-400 hover:bg-surface-800" title="Send">
+                    <button
+                      type="submit"
+                      disabled={!dockInput.trim()}
+                      className="rounded-lg p-1.5 bg-brand-600 text-white hover:bg-brand-500 disabled:opacity-30 disabled:hover:bg-brand-600 transition-all shrink-0 shadow-sm"
+                      title="Send message (Enter)"
+                    >
                       <Send className="h-3.5 w-3.5" />
                     </button>
                   </div>

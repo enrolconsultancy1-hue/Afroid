@@ -54,31 +54,31 @@ export default function XTerminalPanel({ className = "" }: XTerminalPanelProps) 
         fontSize: 12,
         lineHeight: 1.4,
         theme: {
-          background: "#0a0a0f",
-          foreground: "#e2e2e8",
-          cursor: "#7c6af7",
-          cursorAccent: "#0a0a0f",
-          selectionBackground: "#7c6af730",
-          black: "#1a1a2e",
-          red: "#ff6b6b",
-          green: "#51cf66",
-          yellow: "#ffd43b",
-          blue: "#748ffc",
-          magenta: "#cc5de8",
-          cyan: "#22d3ee",
-          white: "#e2e2e8",
-          brightBlack: "#4c4f69",
-          brightRed: "#ff8787",
-          brightGreen: "#69db7c",
-          brightYellow: "#ffe066",
-          brightBlue: "#91a7ff",
-          brightMagenta: "#da77f2",
-          brightCyan: "#67e8f9",
+          background: "#121214",
+          foreground: "#e4e4e7",
+          cursor: "#a1a1aa",
+          cursorAccent: "#121214",
+          selectionBackground: "#3f3f4680",
+          black: "#18181b",
+          red: "#f87171",
+          green: "#4ade80",
+          yellow: "#facc15",
+          blue: "#60a5fa",
+          magenta: "#c084fc",
+          cyan: "#38bdf8",
+          white: "#f4f4f5",
+          brightBlack: "#71717a",
+          brightRed: "#fca5a5",
+          brightGreen: "#86efac",
+          brightYellow: "#fde047",
+          brightBlue: "#93c5fd",
+          brightMagenta: "#e879f9",
+          brightCyan: "#7dd3fc",
           brightWhite: "#ffffff",
         },
         cursorBlink: true,
-        cursorStyle: "bar",
-        scrollback: 2000,
+        cursorStyle: "block",
+        scrollback: 5000,
         allowTransparency: true,
       });
 
@@ -92,19 +92,7 @@ export default function XTerminalPanel({ className = "" }: XTerminalPanelProps) 
       termRef.current = term;
       fitRef.current = fit;
 
-      // Welcome banner
-      term.writeln(
-        "\x1b[38;5;99m╔═══════════════════════════════════════╗\x1b[0m"
-      );
-      term.writeln(
-        "\x1b[38;5;99m║\x1b[0m  \x1b[1;37mgeezcodE\x1b[0m\x1b[38;5;99m IDE Terminal  v2.0\x1b[0m         \x1b[38;5;99m║\x1b[0m"
-      );
-      term.writeln(
-        "\x1b[38;5;99m╚═══════════════════════════════════════╝\x1b[0m"
-      );
-      term.writeln("\x1b[2mAllowlisted commands: git, ls, pytest, npm, uv, ruff…\x1b[0m");
-      term.writeln("");
-
+      // Clean Antigravity-style native shell initialization
       printPrompt(term);
 
       // Input handler
@@ -200,7 +188,7 @@ export default function XTerminalPanel({ className = "" }: XTerminalPanelProps) 
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function printPrompt(term: import("@xterm/xterm").Terminal) {
-    term.write("\x1b[38;5;135m❯\x1b[0m \x1b[38;5;99mgeezcodE\x1b[0m\x1b[2m@ide\x1b[0m:\x1b[38;5;33m~\x1b[0m$ ");
+    term.write("\x1b[38;5;244mo\x1b[0m \x1b[1;37mPS C:\\Users\\HP\\Projects\\Afroid\x1b[0m\x1b[1;37m>\x1b[0m ");
   }
 
   function clearInputLine(term: import("@xterm/xterm").Terminal, len: number) {
@@ -266,9 +254,9 @@ export default function XTerminalPanel({ className = "" }: XTerminalPanelProps) 
 
   /* ── Render ─────────────────────────────────────────────── */
   return (
-    <div className={`relative h-full w-full bg-[#0a0a0f] ${className}`}>
+    <div className={`relative h-full w-full bg-[#121214] p-2 font-mono overflow-hidden ${className}`}>
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center bg-[#121214] z-10">
           <span className="text-xs text-surface-500 animate-pulse">Initializing terminal…</span>
         </div>
       )}

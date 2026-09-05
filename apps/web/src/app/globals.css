@@ -135,3 +135,63 @@
 .geezcodE-editor .monaco-editor .margin {
   background-color: transparent !important;
 }
+
+/* ── xterm.js Core CSS Fixes ───────────────────────────────── */
+.xterm {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.xterm.focus, .xterm:focus {
+  outline: none;
+}
+.xterm .xterm-helpers {
+  position: absolute;
+  top: 0;
+  opacity: 0;
+  height: 0;
+  width: 0;
+  z-index: -16;
+  overflow: hidden;
+}
+.xterm .xterm-helper-textarea {
+  position: absolute !important;
+  opacity: 0 !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  width: 0 !important;
+  height: 0 !important;
+  z-index: -16 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  outline: none !important;
+}
+.xterm .xterm-viewport {
+  background-color: transparent;
+  overflow-y: auto;
+  position: absolute;
+  right: 0;
+  left: 0;
+  top: 0;
+  bottom: 0;
+}
+.xterm .xterm-screen {
+  position: relative;
+}
+.xterm .xterm-screen canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.xterm-char-measure-element {
+  display: inline-block;
+  visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: -9999em;
+  line-height: normal;
+}
+
