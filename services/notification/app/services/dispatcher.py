@@ -1,5 +1,4 @@
 """Notification Service — Notification & Webhook Dispatcher."""
-
 from __future__ import annotations
 
 import hashlib
@@ -14,6 +13,8 @@ import structlog
 from services.notification.app.config import settings
 
 logger = structlog.get_logger()
+
+SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send"
 
 
 class NotificationDispatcher:
@@ -31,14 +32,67 @@ class NotificationDispatcher:
         body_text: str,
         body_html: str | None = None,
     ) -> bool:
-        """Send email via configured email provider (or logger in dev)."""
-        logger.info(
-            "email_dispatched",
-            to_email=to_email,
-            subject=subject,
-            provider="sendgrid" if settings.sendgrid_api_key else "mock",
-        )
-        return True
+        """Send email via SendGrid v3 API, falling back to log-only in dev."""
+        if not settings.sendgrid_api_key:
+            logger.info(
+                "email_mock_sent",
+                to_email=to_email,
+                subject=subject,
+                reason="no_sendgrid_api_key",
+            )
+            return True
+
+        sg_payload: dict[str, Any] = {
+            "personalizations": [{"to": [{"email": to_email}]}],
+            "from": {"email": settings.default_from_email, "name": "Afroid"},
+            "subject": subject,
+            "content": [{"type": "text/plain", "value": body_text}],
+        }
+        if body_html:
+            sg_payload["content"].append({"type": "text/html", "value": body_html})
+
+        headers = {
+            "Authorization": f"Bearer {settings.sendgrid_api_key}",
+            "Content-Type": "application/json",
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                resp = await client.post(
+                    SENDGRID_API_URL,
+                    json=sg_payload,
+                    headers=headers,
+                )
+
+            if resp.status_code in (200, 201, 202):
+                logger.info(
+                    "email_sent",
+                    to_email=to_email,
+                    subject=subject,
+                    status_code=resp.status_code,
+                    provider="sendgrid",
+                )
+                return True
+
+            logger.error(
+                "email_send_failed",
+                to_email=to_email,
+                subject=subject,
+                status_code=resp.status_code,
+                response=resp.text[:500],
+                provider="sendgrid",
+            )
+            return False
+
+        except httpx.HTTPError as e:
+            logger.error(
+                "email_send_error",
+                to_email=to_email,
+                subject=subject,
+                error=str(e),
+                provider="sendgrid",
+            )
+            return False
 
     async def send_sms(self, phone_number: str, message: str) -> bool:
         """Send SMS via Africa's Talking / Twilio provider."""
