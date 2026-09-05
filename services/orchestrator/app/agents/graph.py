@@ -1,5 +1,4 @@
-"""Orchestrator Service — LangGraph workflow definition."""
-
+"""Orchestrator Service — LangGraph workflow definition with WebSocket streaming."""
 from __future__ import annotations
 
 import json
@@ -26,13 +25,66 @@ from services.orchestrator.app.services.model_registry import model_registry
 logger = structlog.get_logger()
 
 
+# ============================================
+# WebSocket Event Helper
+# ============================================
+
+
+async def _broadcast_agent_event(
+    state: OrchestrationState,
+    agent_name: str,
+    title: str,
+    detail: str = "",
+) -> None:
+    """Broadcast an agent_action event to all WebSocket clients for this session.
+
+    Imports manager lazily to avoid circular imports.
+    """
+    try:
+        from services.orchestrator.app.routes.ws import manager
+
+        await manager.broadcast_to_session(state.session_id, {
+            "type": "agent_action",
+            "payload": {
+                "agentName": agent_name,
+                "title": title,
+                "detail": detail,
+                "phase": state.phase.value if hasattr(state.phase, "value") else str(state.phase),
+                "progress": {"current": state.progress, "total": 4},
+            },
+        })
+    except Exception as e:
+        # WebSocket broadcast is best-effort — never block the pipeline
+        logger.debug("ws_broadcast_skipped", error=str(e))
+
+
+async def _broadcast_phase_change(
+    state: OrchestrationState,
+    phase: str,
+    message: str,
+) -> None:
+    """Broadcast a phase_change event."""
+    try:
+        from services.orchestrator.app.routes.ws import manager
+
+        await manager.broadcast_to_session(state.session_id, {
+            "type": "phase_change",
+            "payload": {
+                "phase": phase,
+                "message": message,
+                "progress": {"current": state.progress, "total": 4},
+            },
+        })
+    except Exception as e:
+        logger.debug("ws_broadcast_skipped", error=str(e))
+
+
 def _create_llm(
     agent_name: str,
     state: OrchestrationState,
     temperature: float = 0.1,
 ) -> BaseChatModel:
     """Dynamically resolve and instantiate the LLM for the given agent."""
-    # Combine state-level model_config with concept model_preferences
     merged_config = {
         **state.concept.model_preferences,
         **state.models_config,
@@ -68,7 +120,11 @@ async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
     state.progress = 1
     _log_agent_event(state, "analyst", "started", "Analyzing business concept")
 
+    await _broadcast_phase_change(state, "analyzing", "Analyzing your business concept...")
+    await _broadcast_agent_event(state, "Analyst", "Concept Analysis", "Extracting domain, features, and technical requirements")
+
     llm = _create_llm("analyst", state, temperature=0.2)
+
     messages = [
         SystemMessage(
             content=(
@@ -81,12 +137,15 @@ async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
     ]
 
     response = await llm.ainvoke(messages)
+
     try:
         state.analysis = json.loads(response.content)
     except json.JSONDecodeError:
         state.analysis = {"raw_analysis": response.content}
 
     _log_agent_event(state, "analyst", "completed", "Concept analysis complete")
+    await _broadcast_agent_event(state, "Analyst", "Analysis Complete", "Business concept analyzed successfully")
+
     logger.info("concept_analyzed", job_id=state.job_id)
     return state
 
@@ -103,7 +162,11 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
     state.progress = 2
     _log_agent_event(state, "architect", "started", "Generating architecture blueprint")
 
+    await _broadcast_phase_change(state, "architecting", "Generating system architecture blueprint...")
+    await _broadcast_agent_event(state, "Architect", "Blueprint Generation", "Designing tech stack, services, and data models")
+
     llm = _create_llm("architect", state, temperature=0.1)
+
     messages = [
         SystemMessage(content=ARCHITECT_SYSTEM_PROMPT),
         HumanMessage(
@@ -117,6 +180,7 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
     ]
 
     response = await llm.ainvoke(messages)
+
     try:
         arch_data = json.loads(response.content)
         state.architecture = ArchitectureBlueprint(**arch_data)
@@ -136,6 +200,28 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
     _log_agent_event(
         state, "architect", "completed", f"Blueprint: {state.architecture.project_name}"
     )
+    await _broadcast_agent_event(
+        state, "Architect", "Blueprint Ready",
+        f"Architecture for '{state.architecture.project_name}' generated with {len(state.architecture.file_structure)} files planned"
+    )
+
+    # Broadcast the blueprint preview to the IDE
+    try:
+        from services.orchestrator.app.routes.ws import manager
+
+        await manager.broadcast_to_session(state.session_id, {
+            "type": "blueprint_preview",
+            "payload": {
+                "projectName": state.architecture.project_name,
+                "techStack": state.architecture.tech_stack,
+                "services": state.architecture.services,
+                "fileStructure": state.architecture.file_structure,
+                "overview": state.architecture.overview,
+            },
+        })
+    except Exception:
+        pass
+
     logger.info(
         "architecture_generated", job_id=state.job_id, project=state.architecture.project_name
     )
@@ -159,6 +245,9 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
     state.progress = 3
     _log_agent_event(state, "codegen", "started", "Generating source code")
 
+    await _broadcast_phase_change(state, "generating", "Generating source code from blueprint...")
+    await _broadcast_agent_event(state, "CodeGen", "Code Generation", "Writing source files from architecture blueprint")
+
     llm = _create_llm("codegen", state, temperature=0.0)
 
     # Generate files in batches by service/module
@@ -166,6 +255,10 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
 
     for group_name, file_paths in file_groups.items():
         _log_agent_event(state, "codegen", "generating", f"Module: {group_name}")
+        await _broadcast_agent_event(
+            state, "CodeGen Worker", f"Module: {group_name}",
+            f"Generating {len(file_paths)} files for {group_name}"
+        )
 
         messages = [
             SystemMessage(content=CODEGEN_SYSTEM_PROMPT),
@@ -181,22 +274,45 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
         ]
 
         response = await llm.ainvoke(messages)
+
         try:
             files_data = json.loads(response.content)
             if isinstance(files_data, list):
                 for fd in files_data:
-                    state.generated_files.append(
-                        GeneratedFile(
-                            path=fd.get("path", "unknown"),
-                            content=fd.get("content", ""),
-                            language=fd.get("language", "text"),
-                            size_bytes=len(fd.get("content", "").encode()),
-                        )
+                    gf = GeneratedFile(
+                        path=fd.get("path", "unknown"),
+                        content=fd.get("content", ""),
+                        language=fd.get("language", "text"),
+                        size_bytes=len(fd.get("content", "").encode()),
                     )
+                    state.generated_files.append(gf)
+
+                    # Stream each file to the IDE as it's generated
+                    try:
+                        from services.orchestrator.app.routes.ws import manager
+
+                        await manager.broadcast_to_session(state.session_id, {
+                            "type": "code_chunk",
+                            "payload": {
+                                "filePath": gf.path,
+                                "language": gf.language,
+                                "content": gf.content,
+                                "sizeBytes": gf.size_bytes,
+                                "module": group_name,
+                            },
+                        })
+                    except Exception:
+                        pass
+
         except json.JSONDecodeError:
             logger.warning("codegen_parse_warning", group=group_name, job_id=state.job_id)
 
     _log_agent_event(state, "codegen", "completed", f"Generated {len(state.generated_files)} files")
+    await _broadcast_agent_event(
+        state, "CodeGen", "Generation Complete",
+        f"Successfully generated {len(state.generated_files)} source files"
+    )
+
     logger.info("code_generated", job_id=state.job_id, file_count=len(state.generated_files))
     return state
 
@@ -213,12 +329,21 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
     state.progress = 4
     _log_agent_event(state, "reviewer", "started", "Reviewing generated code")
 
+    await _broadcast_phase_change(state, "reviewing", "Reviewing code quality and security...")
+    await _broadcast_agent_event(state, "Reviewer", "Code Review", "Analyzing quality, security, and best practices")
+
     llm = _create_llm("reviewer", state, temperature=0.0)
 
     # Review in batches of 5 files
     batch_size = 5
     for i in range(0, len(state.generated_files), batch_size):
         batch = state.generated_files[i : i + batch_size]
+
+        await _broadcast_agent_event(
+            state, "Reviewer", f"Reviewing batch {i // batch_size + 1}",
+            f"Checking {len(batch)} files for issues"
+        )
+
         messages = [
             SystemMessage(content=REVIEWER_SYSTEM_PROMPT),
             HumanMessage(
@@ -229,6 +354,7 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
         ]
 
         response = await llm.ainvoke(messages)
+
         try:
             reviews = json.loads(response.content)
             if isinstance(reviews, list):
@@ -248,6 +374,12 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
     state.phase = AgentPhase.COMPLETE
     state.completed_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     _log_agent_event(state, "reviewer", "completed", f"Reviewed {len(state.review_results)} files")
+
+    await _broadcast_agent_event(
+        state, "Reviewer", "Review Complete",
+        f"Reviewed {len(state.review_results)} files. Pipeline finished."
+    )
+
     logger.info("review_completed", job_id=state.job_id, reviews=len(state.review_results))
     return state
 
@@ -295,6 +427,7 @@ def build_orchestration_graph():
                 return "codegen"
             if state.phase == AgentPhase.ERROR:
                 return END
+            # Auto-approve for autopilot mode
             return "codegen"
 
         workflow.add_conditional_edges(
@@ -304,6 +437,7 @@ def build_orchestration_graph():
         workflow.add_edge("review", END)
 
         return workflow.compile()
+
     except ImportError:
         logger.warning("langgraph_not_installed", msg="LangGraph not available, returning None")
         return None
