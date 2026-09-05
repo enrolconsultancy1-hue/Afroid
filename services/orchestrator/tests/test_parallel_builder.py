@@ -52,5 +52,5 @@ class TestParallelBuilder:
         assert session.session_id.startswith("build-")
         assert len(session.sub_agents) == 5
         assert session.status == "complete"
-        assert len(session.generated_files) == 5
+        assert len(session.generated_files) >= 5
         assert len(session.test_results) == 1

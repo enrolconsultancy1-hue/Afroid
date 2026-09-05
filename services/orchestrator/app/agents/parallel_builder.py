@@ -1,15 +1,15 @@
-"""Orchestrator Service — Parallel Sub-Agent Builder Core (geezcodE ፩</> Engine).
+"""Orchestrator Service -- Parallel Sub-Agent Builder Core (geezcodE </> Engine).
 
 Extracts and orchestrates:
-1. 🏗️ Zero-Question Architect Intake Engine (Business Idea -> Complete Full-Stack Blueprint)
-2. ⚡ Parallel Sub-Agent Swarm (Architect, CodeGen Workers 1 & 2, QA Runner, RegTech Auditor)
-3. 🧪 AST Syntax & Clean Code Test Runner
-4. 📁 Project Workspace Directory & Milestone-Based File Creation
+1. Zero-Question Architect Intake Engine (Business Idea -> Complete Full-Stack Blueprint)
+2. Parallel Sub-Agent Swarm (Architect, CodeGen Workers 1 & 2, QA Runner, RegTech Auditor)
+3. AST Syntax & Clean Code Test Runner
+4. Project Workspace Directory & Milestone-Based File Creation
 """
-
 from __future__ import annotations
 
 import ast
+import asyncio
 import json
 import os
 import time
@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 from services.orchestrator.app.agents.prompts import (
     ARCHITECT_SYSTEM_PROMPT,
+    CODEGEN_SYSTEM_PROMPT,
 )
 from services.orchestrator.app.schemas.state import (
     ArchitectureBlueprint,
@@ -83,7 +84,6 @@ class ZeroQuestionIntakeEngine:
             )
 
         slug = idea.projectName.strip().lower().replace(" ", "-")
-
         modules = [
             CoreModule(
                 id="M1",
@@ -162,7 +162,6 @@ class ZeroQuestionIntakeEngine:
                 dependsOn=["M1", "M2"],
             ),
         ]
-
         milestones = [
             Milestone(
                 id="MS1",
@@ -278,18 +277,17 @@ class ZeroQuestionIntakeEngine:
             "Journey 2 (Transaction): User originates transaction -> Core API validates schema -> M-Pesa STK Push triggered -> Webhook receives payment -> Ledger updated.\n"
             "Journey 3 (Compliance Audit): System snapshots codebase -> MinHash IP verifier calculates originality -> SHA-256 block cryptographically linked to audit chain."
         )
-
         dir_tree = (
             f"{slug}/\n"
-            "├── apps/\n"
-            "│   └── web/ (Next.js 15 App Router)\n"
-            "├── services/\n"
-            "│   ├── api/ (FastAPI Core Backend)\n"
-            "│   ├── db/ (PostgreSQL & pgvector Schemas)\n"
-            "│   └── integrations/ (M-Pesa, Paystack, SMS)\n"
-            "├── tests/ (Automated AST QA Suite)\n"
-            "├── docker-compose.yml\n"
-            "└── pyproject.toml"
+            "+-- apps/\n"
+            "|   +-- web/ (Next.js 15 App Router)\n"
+            "+-- services/\n"
+            "|   +-- api/ (FastAPI Core Backend)\n"
+            "|   +-- db/ (PostgreSQL & pgvector Schemas)\n"
+            "|   +-- integrations/ (M-Pesa, Paystack, SMS)\n"
+            "+-- tests/ (Automated AST QA Suite)\n"
+            "+-- docker-compose.yml\n"
+            "+-- pyproject.toml"
         )
 
         return ArchitectureBlueprint(
@@ -432,7 +430,6 @@ class ZeroQuestionIntakeEngine:
             llm = model_registry.create_llm(
                 agent_name="architect", model_id=model_id, temperature=0.1
             )
-
             prompt_data = {
                 "projectName": idea.projectName,
                 "oneLiner": idea.oneLiner,
@@ -449,12 +446,10 @@ class ZeroQuestionIntakeEngine:
                 "additionalContext": idea.additionalContext,
                 "directive": "Generate a COMPLETE, non-ambiguous ArchitectureBlueprint with zero questions to ask.",
             }
-
             messages = [
                 {"role": "system", "content": ARCHITECT_SYSTEM_PROMPT},
                 {"role": "user", "content": json.dumps(prompt_data)},
             ]
-
             response = await llm.ainvoke(messages)
             data = json.loads(response.content)
             return ArchitectureBlueprint(**data)
@@ -463,13 +458,267 @@ class ZeroQuestionIntakeEngine:
             return self.offline_blueprint(idea)
 
 
+# ============================================
+# Parallel Builder Core — LLM-Powered
+# ============================================
+
+
 class ParallelBuilderCore:
-    """Dispatches concurrent sub-agents to build the project milestone by milestone."""
+    """Dispatches concurrent sub-agents to build the project milestone by milestone.
+
+    Uses LLM code generation for each milestone's files, with an offline
+    scaffold fallback when the API is unavailable.
+    """
 
     def __init__(self, workspace_root: str | None = None) -> None:
         self.workspace_root = workspace_root or str(
             Path(__file__).resolve().parents[4] / "projects"
         )
+
+    # ------------------------------------------------------------------
+    # LLM-powered file generation for a single milestone
+    # ------------------------------------------------------------------
+
+    async def _generate_milestone_files_llm(
+        self,
+        blueprint: ArchitectureBlueprint,
+        milestone: Milestone,
+        model_id: str | None = None,
+    ) -> list[GeneratedFile]:
+        """Call the LLM to generate production-quality source files for one milestone."""
+        llm = model_registry.create_llm(
+            agent_name="codegen", model_id=model_id, temperature=0.0
+        )
+
+        prompt_payload = json.dumps({
+            "project_name": blueprint.project_name,
+            "summary": blueprint.summary,
+            "tech_stack": blueprint.tech_stack,
+            "database_schema": blueprint.database_schema,
+            "api_design": getattr(blueprint, "api_design", blueprint.api_endpoints),
+            "milestone": {
+                "id": milestone.id,
+                "name": milestone.name,
+                "objective": milestone.objective,
+                "tasks": milestone.tasks,
+                "files_to_generate": milestone.filesToCreate,
+                "definitions_of_done": milestone.definitionsOfDone,
+            },
+            "core_modules": [m.model_dump() for m in (blueprint.core_modules or [])],
+            "directive": (
+                "Generate COMPLETE, production-ready source code for every file in "
+                "files_to_generate. Return a JSON array where each element has: "
+                '{"path": "<file_path>", "content": "<full source code>", '
+                '"language": "<python|typescript|typescriptreact|yaml|sql|markdown|dockerfile>"}. '
+                "Return ONLY the JSON array, no markdown fences."
+            ),
+        })
+
+        messages = [
+            {"role": "system", "content": CODEGEN_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_payload},
+        ]
+
+        response = await llm.ainvoke(messages)
+
+        # Parse the response — strip markdown fences if present
+        content = response.content.strip()
+        if content.startswith("```"):
+            # Remove ```json ... ``` wrapper
+            lines = content.split("\n")
+            content = "\n".join(lines[1:-1]) if len(lines) > 2 else content
+
+        files_data = json.loads(content)
+        generated: list[GeneratedFile] = []
+
+        if isinstance(files_data, list):
+            for fd in files_data:
+                file_content = fd.get("content", "")
+                gf = GeneratedFile(
+                    path=fd.get("path", "unknown"),
+                    content=file_content,
+                    language=fd.get("language", "text"),
+                    size_bytes=len(file_content.encode("utf-8")),
+                )
+                generated.append(gf)
+
+        return generated
+
+    # ------------------------------------------------------------------
+    # Offline scaffold fallback (no LLM needed)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _generate_scaffold_files(
+        blueprint: ArchitectureBlueprint,
+    ) -> list[GeneratedFile]:
+        """Generate minimal but valid scaffold files without calling any LLM."""
+        scaffolds: list[tuple[str, str, str]] = [
+            (
+                "services/api/main.py",
+                (
+                    "from fastapi import FastAPI\n\n"
+                    f"app = FastAPI(title='{blueprint.project_name}')\n\n\n"
+                    "@app.get('/health')\n"
+                    "def health():\n"
+                    "    return {'status': 'healthy', 'sovereignty': 'verified'}\n"
+                ),
+                "python",
+            ),
+            (
+                "services/api/routes.py",
+                (
+                    "from fastapi import APIRouter\n\n"
+                    "router = APIRouter()\n\n\n"
+                    "@router.get('/v1/status')\n"
+                    "def status():\n"
+                    "    return {'active': True}\n"
+                ),
+                "python",
+            ),
+            (
+                "services/api/models.py",
+                (
+                    "from pydantic import BaseModel\n"
+                    "from uuid import UUID\n"
+                    "from datetime import datetime\n\n\n"
+                    "class UserBase(BaseModel):\n"
+                    "    email: str\n"
+                    "    phone: str | None = None\n\n\n"
+                    "class UserCreate(UserBase):\n"
+                    "    password: str\n\n\n"
+                    "class UserRead(UserBase):\n"
+                    "    id: UUID\n"
+                    "    created_at: datetime\n"
+                ),
+                "python",
+            ),
+            (
+                "apps/web/src/app/page.tsx",
+                (
+                    f"export default function Page() {{\n"
+                    f"  return (\n"
+                    f"    <main className=\"min-h-screen flex items-center justify-center\">\n"
+                    f"      <h1 className=\"text-4xl font-bold\">{blueprint.project_name}</h1>\n"
+                    f"    </main>\n"
+                    f"  );\n"
+                    f"}}\n"
+                ),
+                "typescriptreact",
+            ),
+            (
+                "apps/web/src/app/dashboard/page.tsx",
+                (
+                    "'use client';\n\n"
+                    "import { useEffect, useState } from 'react';\n\n"
+                    "export default function Dashboard() {\n"
+                    "  const [status, setStatus] = useState<string>('loading');\n\n"
+                    "  useEffect(() => {\n"
+                    "    fetch('/api/v1/status').then(r => r.json()).then(d => setStatus(d.active ? 'active' : 'inactive'));\n"
+                    "  }, []);\n\n"
+                    "  return (\n"
+                    "    <div className=\"p-8\">\n"
+                    "      <h2 className=\"text-2xl font-semibold\">Dashboard</h2>\n"
+                    "      <p>System status: {status}</p>\n"
+                    "    </div>\n"
+                    "  );\n"
+                    "}\n"
+                ),
+                "typescriptreact",
+            ),
+            (
+                "docker-compose.yml",
+                (
+                    "version: '3.8'\n"
+                    "services:\n"
+                    "  api:\n"
+                    "    build: .\n"
+                    "    ports:\n"
+                    "      - '8000:8000'\n"
+                    "    environment:\n"
+                    "      - DATABASE_URL=postgresql://afroid:afroid_dev@postgres:5432/afroid\n"
+                    "    depends_on:\n"
+                    "      - postgres\n"
+                    "  postgres:\n"
+                    "    image: pgvector/pgvector:pg16\n"
+                    "    environment:\n"
+                    "      POSTGRES_USER: afroid\n"
+                    "      POSTGRES_PASSWORD: afroid_dev\n"
+                    "      POSTGRES_DB: afroid\n"
+                    "    ports:\n"
+                    "      - '5432:5432'\n"
+                ),
+                "yaml",
+            ),
+            (
+                "Dockerfile",
+                (
+                    "FROM python:3.12-slim\n"
+                    "WORKDIR /app\n"
+                    "COPY pyproject.toml .\n"
+                    "RUN pip install --no-cache-dir .\n"
+                    "COPY . .\n"
+                    "EXPOSE 8000\n"
+                    'CMD ["uvicorn", "services.api.main:app", "--host", "0.0.0.0", "--port", "8000"]\n'
+                ),
+                "dockerfile",
+            ),
+            (
+                "tests/test_api.py",
+                (
+                    "from fastapi.testclient import TestClient\n"
+                    "from services.api.main import app\n\n"
+                    "client = TestClient(app)\n\n\n"
+                    "def test_health():\n"
+                    "    response = client.get('/health')\n"
+                    "    assert response.status_code == 200\n"
+                    "    assert response.json()['status'] == 'healthy'\n\n\n"
+                    "def test_status():\n"
+                    "    response = client.get('/v1/status')\n"
+                    "    assert response.status_code == 200\n"
+                ),
+                "python",
+            ),
+            (
+                "README.md",
+                f"# {blueprint.project_name}\n\n{blueprint.summary}\n\n"
+                "## Quick Start\n\n"
+                "```bash\ndocker compose up -d\ncurl http://localhost:8000/health\n```\n",
+                "markdown",
+            ),
+        ]
+
+        result: list[GeneratedFile] = []
+        for path, content, lang in scaffolds:
+            result.append(
+                GeneratedFile(
+                    path=path,
+                    content=content,
+                    language=lang,
+                    size_bytes=len(content.encode("utf-8")),
+                )
+            )
+        return result
+
+    # ------------------------------------------------------------------
+    # Emit event helper
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    async def _emit(on_event: Any | None, event: dict[str, Any]) -> None:
+        """Fire an event callback if provided (sync or async)."""
+        if on_event is None:
+            return
+        try:
+            result = on_event(event)
+            if asyncio.iscoroutine(result):
+                await result
+        except Exception as e:
+            logger.debug("on_event_error", error=str(e))
+
+    # ------------------------------------------------------------------
+    # Main build orchestration
+    # ------------------------------------------------------------------
 
     async def execute_parallel_build(
         self,
@@ -477,8 +726,18 @@ class ParallelBuilderCore:
         blueprint: ArchitectureBlueprint,
         autopilot: bool = True,
         on_event: Any | None = None,
+        model_id: str | None = None,
     ) -> ParallelBuildSession:
-        """Execute parallel milestone-based build."""
+        """Execute milestone-based build using LLM code generation.
+
+        For each milestone in the blueprint, calls the Gemini LLM to generate
+        production-quality source files. Falls back to offline scaffolds if the
+        LLM is unavailable.
+
+        Events emitted via on_event callback:
+            - build_started, milestone_started, file_generated,
+              milestone_completed, ast_results, build_complete, build_error
+        """
         slug = blueprint.project_name
         project_dir = os.path.join(self.workspace_root, slug)
         os.makedirs(project_dir, exist_ok=True)
@@ -503,16 +762,16 @@ class ParallelBuilderCore:
                     name="CodeGen Worker 1",
                     type="codegen",
                     status="running",
-                    current_task="Writing backend services",
-                    progress=20,
+                    current_task="Generating backend services",
+                    progress=0,
                 ),
                 SubAgentStatus(
                     id="sa-codegen-2",
                     name="CodeGen Worker 2",
                     type="codegen",
                     status="running",
-                    current_task="Writing frontend components",
-                    progress=20,
+                    current_task="Generating frontend components",
+                    progress=0,
                 ),
                 SubAgentStatus(
                     id="sa-qa",
@@ -534,69 +793,180 @@ class ParallelBuilderCore:
         )
 
         logger.info("parallel_build_started", session_id=session_id, project_path=project_dir)
+        session.status = "building"
 
-        # Milestone 1: Create foundational files
-        files_to_create = [
-            (
-                "services/api/main.py",
-                f"from fastapi import FastAPI\n\napp = FastAPI(title='{blueprint.project_name}')\n\n@app.get('/health')\ndef health():\n    return {{'status': 'healthy', 'sovereignty': 'verified'}}\n",
-                "python",
-            ),
-            (
-                "services/api/routes.py",
-                "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get('/v1/status')\ndef status():\n    return {'active': True}\n",
-                "python",
-            ),
-            (
-                "apps/web/page.tsx",
-                f"export default function Page() {{\n  return <div>Welcome to {blueprint.project_name}</div>;\n}}\n",
-                "typescriptreact",
-            ),
-            (
-                "docker-compose.yml",
-                "version: '3.8'\nservices:\n  api:\n    build: .\n    ports:\n      - '8000:8000'\n",
-                "yaml",
-            ),
-            ("README.md", f"# {blueprint.project_name}\n\n{blueprint.summary}\n", "markdown"),
-        ]
+        await self._emit(on_event, {
+            "type": "build_started",
+            "payload": {
+                "session_id": session_id,
+                "project_name": slug,
+                "total_milestones": len(blueprint.milestones),
+            },
+        })
 
-        for rel_path, content, lang in files_to_create:
-            full_path = os.path.join(project_dir, rel_path)
-            os.makedirs(os.path.dirname(full_path), exist_ok=True)
-            with open(full_path, "w", encoding="utf-8") as f:  # noqa: ASYNC230
-                f.write(content)
+        milestones = blueprint.milestones or []
+        used_llm = False
 
-            session.generated_files.append(
-                GeneratedFile(
-                    path=rel_path,
-                    content=content,
-                    language=lang,
-                    size_bytes=len(content.encode("utf-8")),
-                )
+        for idx, milestone in enumerate(milestones):
+            ms_progress = int(((idx) / max(len(milestones), 1)) * 100)
+
+            await self._emit(on_event, {
+                "type": "milestone_started",
+                "payload": {
+                    "milestone_id": milestone.id,
+                    "milestone_name": milestone.name,
+                    "objective": milestone.objective,
+                    "files_planned": milestone.filesToCreate,
+                    "progress": ms_progress,
+                },
+            })
+
+            logger.info(
+                "milestone_started",
+                session_id=session_id,
+                milestone=milestone.id,
+                name=milestone.name,
+                files=len(milestone.filesToCreate),
             )
 
-        # Run QA AST Test
+            # ----- Try LLM generation -----
+            milestone_files: list[GeneratedFile] = []
+            try:
+                milestone_files = await self._generate_milestone_files_llm(
+                    blueprint, milestone, model_id=model_id
+                )
+                if milestone_files:
+                    used_llm = True
+                    logger.info(
+                        "milestone_llm_generated",
+                        milestone=milestone.id,
+                        file_count=len(milestone_files),
+                    )
+            except Exception as e:
+                logger.warning(
+                    "milestone_llm_fallback",
+                    milestone=milestone.id,
+                    error=str(e),
+                )
+                # LLM failed — milestone_files stays empty, scaffold fills in below
+
+            # ----- Write generated files to disk -----
+            for gf in milestone_files:
+                full_path = os.path.join(project_dir, gf.path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                with open(full_path, "w", encoding="utf-8") as f:  # noqa: ASYNC230
+                    f.write(gf.content)
+                session.generated_files.append(gf)
+
+                await self._emit(on_event, {
+                    "type": "file_generated",
+                    "payload": {
+                        "milestone_id": milestone.id,
+                        "path": gf.path,
+                        "language": gf.language,
+                        "size_bytes": gf.size_bytes,
+                        "source": "llm",
+                    },
+                })
+
+            await self._emit(on_event, {
+                "type": "milestone_completed",
+                "payload": {
+                    "milestone_id": milestone.id,
+                    "milestone_name": milestone.name,
+                    "files_generated": len(milestone_files),
+                    "progress": int(((idx + 1) / max(len(milestones), 1)) * 100),
+                },
+            })
+
+            # Update sub-agent progress
+            agent_progress = int(((idx + 1) / max(len(milestones), 1)) * 100)
+            for sa in session.sub_agents:
+                if sa.type == "codegen":
+                    sa.progress = agent_progress
+                    sa.current_task = f"Completed {milestone.name}"
+
+        # ----- Scaffold fallback if LLM produced nothing -----
+        if not session.generated_files:
+            logger.info("parallel_build_scaffold_fallback", session_id=session_id)
+            scaffold_files = self._generate_scaffold_files(blueprint)
+            for gf in scaffold_files:
+                full_path = os.path.join(project_dir, gf.path)
+                os.makedirs(os.path.dirname(full_path), exist_ok=True)
+                with open(full_path, "w", encoding="utf-8") as f:  # noqa: ASYNC230
+                    f.write(gf.content)
+                session.generated_files.append(gf)
+
+                await self._emit(on_event, {
+                    "type": "file_generated",
+                    "payload": {
+                        "path": gf.path,
+                        "language": gf.language,
+                        "size_bytes": gf.size_bytes,
+                        "source": "scaffold",
+                    },
+                })
+
+        # ----- AST Syntax Validation -----
+        session.status = "testing"
+        for sa in session.sub_agents:
+            if sa.type == "test_runner":
+                sa.status = "running"
+                sa.current_task = "Running AST syntax verification"
+
         ast_passed = True
+        ast_errors: list[dict[str, str]] = []
         for gf in session.generated_files:
             if gf.language == "python":
                 try:
                     ast.parse(gf.content)
-                except SyntaxError:
+                except SyntaxError as e:
                     ast_passed = False
+                    ast_errors.append({"file": gf.path, "error": str(e)})
 
-        session.test_results.append(
-            {
-                "test_suite": "AST Syntax Verification",
+        session.test_results.append({
+            "test_suite": "AST Syntax Verification",
+            "passed": ast_passed,
+            "files_scanned": len([f for f in session.generated_files if f.language == "python"]),
+            "errors": ast_errors,
+            "source": "llm" if used_llm else "scaffold",
+        })
+
+        await self._emit(on_event, {
+            "type": "ast_results",
+            "payload": {
                 "passed": ast_passed,
-                "files_scanned": len(session.generated_files),
-            }
-        )
+                "errors": ast_errors,
+                "python_files_scanned": len([f for f in session.generated_files if f.language == "python"]),
+            },
+        })
 
+        # ----- Finalize -----
         for sa in session.sub_agents:
             sa.status = "completed"
             sa.progress = 100
 
         session.status = "complete"
+
+        await self._emit(on_event, {
+            "type": "build_complete",
+            "payload": {
+                "session_id": session_id,
+                "total_files": len(session.generated_files),
+                "total_lines": sum(gf.content.count("\n") + 1 for gf in session.generated_files),
+                "ast_passed": ast_passed,
+                "source": "llm" if used_llm else "scaffold",
+            },
+        })
+
+        logger.info(
+            "parallel_build_complete",
+            session_id=session_id,
+            total_files=len(session.generated_files),
+            used_llm=used_llm,
+            ast_passed=ast_passed,
+        )
+
         return session
 
 
