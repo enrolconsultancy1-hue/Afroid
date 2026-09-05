@@ -8,6 +8,7 @@ env:
   PROJECT_ID: "afroid-506916"
   REGION: "us-central1"
   REGISTRY: "us-central1-docker.pkg.dev/afroid-506916/afroid-containers"
+  SERVICE_ACCOUNT: "afroid-cloudrun-prod@afroid-506916.iam.gserviceaccount.com"
 
 jobs:
   deploy:
@@ -36,26 +37,51 @@ jobs:
 
       - name: Build and Deploy Microservices
         run: |
+          # Services that must be publicly accessible (allUsers invoker)
+          PUBLIC_SERVICES=("gateway" "web")
+
+          # All backend microservices
           SERVICES=("auth" "platform" "orchestrator" "certify" "incubate" "vector-store" "codegen" "notification" "workspace" "intake" "gateway")
-          
+
+          # Shared secrets from Secret Manager (name:version)
+          SECRET_ENV="JWT_SECRET_KEY=afroid-jwt-secret-prod:latest"
+          SECRET_ENV="$SECRET_ENV,DATABASE_URL=afroid-db-password-prod:latest"
+          SECRET_ENV="$SECRET_ENV,GEMINI_API_KEY=afroid-gemini-api-key-prod:latest"
+          SECRET_ENV="$SECRET_ENV,SENDGRID_API_KEY=afroid-sendgrid-api-key-prod:latest"
+
+          # Shared env vars
+          ENV_VARS="APP_ENV=production,VERTEX_REGION=${REGION}"
+
           for svc in "${SERVICES[@]}"; do
             echo "===================================================="
             echo "🚀 Building & Deploying service: $svc"
             echo "===================================================="
-            
+
             SVC_DIR="${svc//-/_}"
             IMAGE_URI="${REGISTRY}/${svc}:${GITHUB_SHA}"
-            
+
             # Build container image
             docker build -t "$IMAGE_URI" -f "services/${SVC_DIR}/Dockerfile" .
             docker push "$IMAGE_URI"
-            
-            # Deploy to Google Cloud Run
+
+            # Determine auth flag
+            AUTH_FLAG="--no-allow-unauthenticated"
+            for pub in "${PUBLIC_SERVICES[@]}"; do
+              if [ "$svc" = "$pub" ]; then
+                AUTH_FLAG="--allow-unauthenticated"
+                break
+              fi
+            done
+
+            # Deploy to Google Cloud Run with secrets and env vars
             gcloud run deploy "afroid-${svc}-prod" \
               --image "$IMAGE_URI" \
               --region "$REGION" \
               --platform managed \
-              --allow-unauthenticated \
+              --service-account "$SERVICE_ACCOUNT" \
+              --set-env-vars "$ENV_VARS" \
+              --set-secrets "$SECRET_ENV" \
+              $AUTH_FLAG \
               --quiet
           done
 
@@ -72,5 +98,6 @@ jobs:
             --region "$REGION" \
             --port 3000 \
             --platform managed \
+            --set-env-vars "APP_ENV=production" \
             --allow-unauthenticated \
             --quiet

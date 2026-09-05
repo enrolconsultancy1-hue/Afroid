@@ -127,6 +127,6 @@ class NotificationDispatcher:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 res = await client.post(target_url, content=body_bytes, headers=headers)
                 return res.is_success, res.status_code, res.text
-        except Exception as e:
+        except (httpx.HTTPError, httpx.TimeoutException, OSError) as e:
             logger.warning("webhook_dispatch_failed", url=target_url, error=str(e))
             return False, 0, str(e)

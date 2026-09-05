@@ -121,8 +121,8 @@ class CodeGenEngine:
                 "syntax_valid": valid,
                 "errors": errors,
             }
-        except Exception as e:
-            logger.error("codegen_llm_failure", error=str(e), path=path)
+        except (RuntimeError, ValueError, TimeoutError, OSError) as e:
+            logger.error("codegen_llm_failure", error=str(e), error_type=type(e).__name__, path=path)
             # Fallback generated stub
             content = f"# Generated code for {path}\n# {description}\n"
             return {

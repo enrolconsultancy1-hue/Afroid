@@ -1,13 +1,18 @@
 """Base configuration for all Afroid services using Pydantic Settings."""
 
+from __future__ import annotations
+
 from pathlib import Path
 
 from dotenv import load_dotenv
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Load repo-root .env (gitignored) into os.environ so secrets like GOOGLE_API_KEY
 # are available to every service without being committed to the repo.
 load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
+_DEV_JWT_SECRET = "dev-secret-key-change-in-production-afroid-jwt-token-signing"
 
 
 class BaseAppSettings(BaseSettings):
@@ -22,11 +27,11 @@ class BaseAppSettings(BaseSettings):
 
     # --- Application ---
     app_env: str = "development"
-    app_debug: bool = True
+    app_debug: bool = False
     app_secret_key: str = ""
 
     # --- Auth (JWT) ---
-    jwt_secret_key: str = "dev-secret-key-change-in-production-afroid-jwt-token-signing"
+    jwt_secret_key: str = _DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
 
     # --- Observability ---
@@ -49,6 +54,16 @@ class BaseAppSettings(BaseSettings):
     # --- GCP ---
     gcp_project_id: str = "afroid-dev"
     gcp_region: str = "us-central1"
+
+    @model_validator(mode="after")
+    def _enforce_production_secrets(self) -> BaseAppSettings:
+        """Block startup if production still has the dev JWT secret."""
+        if self.is_production and self.jwt_secret_key == _DEV_JWT_SECRET:
+            raise ValueError(
+                "FATAL: JWT_SECRET_KEY must be set to a secure random value "
+                "in production. The default dev key is not allowed."
+            )
+        return self
 
     @property
     def is_production(self) -> bool:

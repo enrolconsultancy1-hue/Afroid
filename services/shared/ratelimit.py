@@ -6,15 +6,18 @@ from fastapi import Request
 
 
 def get_client_ip(request: Request) -> str:
-    """Resolve the real client IP, honoring X-Forwarded-For.
+    """Resolve the real client IP from X-Forwarded-For.
 
-    The API gateway (and Kong / Cloud Endpoints in production) prepend the
-    original client IP to X-Forwarded-For. Return that first hop when present,
-    otherwise fall back to the direct socket peer address.
+    Cloud Run (and any reverse proxy in front of the service) *appends* the
+    true client IP as the rightmost entry in X-Forwarded-For.  The leftmost
+    entry is user-supplied and trivially spoofable — always use the rightmost
+    trusted hop.  When no XFF header is present, fall back to the direct
+    socket peer address.
     """
     xff = request.headers.get("x-forwarded-for")
     if xff:
-        first = xff.split(",")[0].strip()
-        if first:
-            return first
+        # Rightmost entry is the one appended by the trusted proxy
+        last = xff.rsplit(",", 1)[-1].strip()
+        if last:
+            return last
     return request.client.host if request.client else "127.0.0.1"

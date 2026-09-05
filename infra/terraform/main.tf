@@ -144,10 +144,11 @@ locals {
   image_prefix = "${var.primary_region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.docker_repo.repository_id}"
 
   # Shared secret env vars for all backend services
+  # NOTE: env var names must match BaseAppSettings field names (case-insensitive)
   shared_secret_env = {
-    DATABASE_URL     = module.cloud_sql.db_password_secret_id
-    JWT_SECRET       = google_secret_manager_secret.jwt_secret.secret_id
-    GEMINI_API_KEY   = google_secret_manager_secret.gemini_api_key.secret_id
+    DATABASE_URL    = module.cloud_sql.db_password_secret_id
+    JWT_SECRET_KEY  = google_secret_manager_secret.jwt_secret.secret_id
+    GEMINI_API_KEY  = google_secret_manager_secret.gemini_api_key.secret_id
   }
 
   services = {

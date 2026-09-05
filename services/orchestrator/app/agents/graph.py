@@ -1,6 +1,7 @@
 """Orchestrator Service — LangGraph workflow definition with WebSocket streaming."""
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 
@@ -96,6 +97,72 @@ def _create_llm(
     )
 
 
+_LLM_TIMEOUT_SECONDS = 90
+_LLM_MAX_RETRIES = 3
+_LLM_RETRY_BASE_DELAY = 2.0
+
+
+async def _invoke_llm_with_retry(
+    llm: BaseChatModel,
+    messages: list,
+    *,
+    state: OrchestrationState,
+    agent_name: str,
+) -> str:
+    """Invoke an LLM with timeout, retry with exponential backoff, and error broadcasting.
+
+    Returns the response content string.  On exhausted retries, sets state.phase
+    to ERROR, records the error, and re-raises so the calling node can bail out.
+    """
+    last_exc: Exception | None = None
+
+    for attempt in range(1, _LLM_MAX_RETRIES + 1):
+        try:
+            async with asyncio.timeout(_LLM_TIMEOUT_SECONDS):
+                response = await llm.ainvoke(messages)
+            return response.content
+        except TimeoutError:
+            last_exc = TimeoutError(
+                f"LLM call timed out after {_LLM_TIMEOUT_SECONDS}s "
+                f"(attempt {attempt}/{_LLM_MAX_RETRIES})"
+            )
+            logger.warning(
+                "llm_timeout",
+                agent=agent_name,
+                attempt=attempt,
+                timeout=_LLM_TIMEOUT_SECONDS,
+                job_id=state.job_id,
+            )
+        except Exception as exc:
+            last_exc = exc
+            logger.warning(
+                "llm_invoke_error",
+                agent=agent_name,
+                attempt=attempt,
+                error=str(exc),
+                error_type=type(exc).__name__,
+                job_id=state.job_id,
+            )
+
+        if attempt < _LLM_MAX_RETRIES:
+            delay = _LLM_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+            await _broadcast_agent_event(
+                state,
+                agent_name,
+                f"Retry {attempt}/{_LLM_MAX_RETRIES}",
+                f"Retrying in {delay:.0f}s — {last_exc}",
+            )
+            await asyncio.sleep(delay)
+
+    # All retries exhausted
+    error_msg = f"{agent_name} LLM call failed after {_LLM_MAX_RETRIES} attempts: {last_exc}"
+    state.phase = AgentPhase.ERROR
+    state.error_message = error_msg
+    _log_agent_event(state, agent_name, "error", error_msg)
+    await _broadcast_agent_event(state, agent_name, "Error", error_msg)
+    raise RuntimeError(error_msg) from last_exc
+
+
 def _log_agent_event(state: OrchestrationState, agent: str, action: str, detail: str = "") -> None:
     """Append an event to the agent history."""
     state.agent_history.append(
@@ -136,12 +203,14 @@ async def analyze_concept(state: OrchestrationState) -> OrchestrationState:
         HumanMessage(content=json.dumps(state.concept.model_dump())),
     ]
 
-    response = await llm.ainvoke(messages)
+    content = await _invoke_llm_with_retry(
+        llm, messages, state=state, agent_name="analyst"
+    )
 
     try:
-        state.analysis = json.loads(response.content)
+        state.analysis = json.loads(content)
     except json.JSONDecodeError:
-        state.analysis = {"raw_analysis": response.content}
+        state.analysis = {"raw_analysis": content}
 
     _log_agent_event(state, "analyst", "completed", "Concept analysis complete")
     await _broadcast_agent_event(state, "Analyst", "Analysis Complete", "Business concept analyzed successfully")
@@ -179,16 +248,18 @@ async def generate_architecture(state: OrchestrationState) -> OrchestrationState
         ),
     ]
 
-    response = await llm.ainvoke(messages)
+    content = await _invoke_llm_with_retry(
+        llm, messages, state=state, agent_name="architect"
+    )
 
     try:
-        arch_data = json.loads(response.content)
+        arch_data = json.loads(content)
         state.architecture = ArchitectureBlueprint(**arch_data)
     except (json.JSONDecodeError, Exception) as e:
         logger.error("architecture_parse_error", error=str(e), job_id=state.job_id)
         state.architecture = ArchitectureBlueprint(
             project_name=state.concept.description[:50].lower().replace(" ", "-"),
-            overview=response.content[:500],
+            overview=content[:500],
             tech_stack={},
             services=[],
             database_schema={},
@@ -273,10 +344,12 @@ async def generate_code(state: OrchestrationState) -> OrchestrationState:
             ),
         ]
 
-        response = await llm.ainvoke(messages)
+        content = await _invoke_llm_with_retry(
+            llm, messages, state=state, agent_name="codegen"
+        )
 
         try:
-            files_data = json.loads(response.content)
+            files_data = json.loads(content)
             if isinstance(files_data, list):
                 for fd in files_data:
                     gf = GeneratedFile(
@@ -353,10 +426,12 @@ async def review_code(state: OrchestrationState) -> OrchestrationState:
             ),
         ]
 
-        response = await llm.ainvoke(messages)
+        content = await _invoke_llm_with_retry(
+            llm, messages, state=state, agent_name="reviewer"
+        )
 
         try:
-            reviews = json.loads(response.content)
+            reviews = json.loads(content)
             if isinstance(reviews, list):
                 for r in reviews:
                     state.review_results.append(
