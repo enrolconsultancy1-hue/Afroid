@@ -73,7 +73,7 @@ async def validate_blueprint_json(
                 "completeness": blueprint.completeness,
             }
         }
-    except Exception as e:
+    except (ValueError, TypeError, KeyError) as e:
         return {
             "data": {
                 "valid": False,

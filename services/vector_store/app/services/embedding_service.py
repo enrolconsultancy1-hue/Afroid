@@ -58,8 +58,8 @@ class EmbeddingService:
                 ):
                     results[idx] = emb
                     self._cache[self._hash_text(txt)] = emb
-            except Exception as e:
-                logger.warning("embedding_api_fallback", error=str(e))
+            except (RuntimeError, ValueError, TimeoutError, OSError) as e:
+                logger.warning("embedding_api_fallback", error=str(e), error_type=type(e).__name__)
                 # Fallback deterministic pseudo-embedding for testing or fallback
                 for idx, txt in zip(uncached_indices, uncached_texts, strict=False):
                     pseudo_emb = self._generate_pseudo_embedding(txt)

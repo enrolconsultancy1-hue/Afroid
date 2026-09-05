@@ -132,8 +132,8 @@ async def _run_pipeline(state: OrchestrationState) -> None:
             reviews=len(state.review_results),
         )
 
-    except Exception as e:
-        logger.error("pipeline_failed", job_id=state.job_id, error=str(e))
+    except (RuntimeError, ValueError, TimeoutError, OSError) as e:
+        logger.error("pipeline_failed", job_id=state.job_id, error=str(e), error_type=type(e).__name__)
         state.phase = AgentPhase.ERROR
         state.error_message = str(e)
         await job_store.put(state)

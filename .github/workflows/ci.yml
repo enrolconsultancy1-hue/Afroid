@@ -39,6 +39,8 @@ jobs:
           - codegen
           - notification
           - intake
+          - gateway
+          - workspace
     steps:
       - name: Checkout Codebase
         uses: actions/checkout@v7
@@ -81,6 +83,45 @@ jobs:
           SVC_DIR="services/${{ matrix.service }}"
           SVC_DIR="${SVC_DIR//-/_}"
           uv run pytest "$SVC_DIR" -v
+
+  security-scan:
+    name: Security Scanning (SAST + Dependency Audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v7
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install uv Package Manager
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "latest"
+
+      - name: Install Security Tools
+        run: |
+          uv tool install bandit
+          uv tool install pip-audit
+
+      - name: Run Bandit SAST Scan
+        run: |
+          uv tool run bandit -r services/ -c pyproject.toml --severity-level medium -f json -o bandit-report.json || true
+          uv tool run bandit -r services/ -c pyproject.toml --severity-level high
+        continue-on-error: false
+
+      - name: Run pip-audit Dependency CVE Scan
+        run: |
+          uv tool run pip-audit --require-hashes=false --desc 2>/dev/null || true
+
+      - name: Upload Bandit Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
 
   typescript-monorepo:
     name: Test TypeScript Packages & Web App

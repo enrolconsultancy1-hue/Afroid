@@ -202,9 +202,10 @@ class ModelRegistry:
                         self._models[clean_id] = new_descriptor
                         discovered_count += 1
                         logger.info("gemini_model_discovered", model_id=clean_id)
-        except Exception as e:
+        except (RuntimeError, ValueError, ImportError, OSError) as e:
             logger.warning(
-                "model_sync_partial_failure", error=str(e), msg="Using registered catalog."
+                "model_sync_partial_failure", error=str(e), error_type=type(e).__name__,
+                msg="Using registered catalog."
             )
 
         logger.info(

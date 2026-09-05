@@ -84,7 +84,7 @@ async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
             )
             response.raise_for_status()
             return response.json().get("data", {}).get("blueprint")
-    except Exception as error:
+    except (httpx.HTTPError, httpx.TimeoutException, OSError) as error:
         logger.warning("draft_blueprint_generation_failed: %s", error)
         return None
 
@@ -102,7 +102,7 @@ async def _request_certification(payload: dict[str, Any], token: str) -> dict[st
                 logger.warning("certify_error: %s %s", response.status_code, response.text[:300])
                 return None
             return response.json().get("data")
-    except Exception as error:
+    except (httpx.HTTPError, httpx.TimeoutException, OSError) as error:
         logger.warning("certify_request_failed: %s", error)
         return None
 
@@ -276,7 +276,7 @@ async def _request_start_project(name: str, idea_id: str, token: str) -> dict[st
                 )
                 return None
             return response.json()
-    except Exception as error:
+    except (httpx.HTTPError, httpx.TimeoutException, OSError) as error:
         logger.warning("start_project_failed: %s", error)
         return None
 

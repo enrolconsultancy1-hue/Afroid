@@ -118,7 +118,7 @@ async def run_terminal(
                 "exit_code": 124,
             }
         }
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         return {"data": {"stdout": "", "stderr": str(exc), "exit_code": 1}}
 
     return {"data": {"stdout": proc.stdout, "stderr": proc.stderr, "exit_code": proc.returncode}}
