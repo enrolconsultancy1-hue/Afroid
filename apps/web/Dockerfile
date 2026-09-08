@@ -16,7 +16,7 @@ RUN npm ci --include=dev
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_URL=https://afroid-platform-prod-kx4jycljfa-uc.a.run.app
+ARG NEXT_PUBLIC_API_URL=https://afroid-gateway-prod-kx4jycljfa-uc.a.run.app
 ARG NEXT_PUBLIC_WS_URL=wss://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_WS_URL=$NEXT_PUBLIC_WS_URL

@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.intake.app.auth import get_current_user, get_optional_user
 from services.intake.app.config import settings
+from services.shared.event_bus import event_bus
 from services.intake.app.models.intake import (
     IDEA_STATUS_BLUEPRINT_READY,
     IDEA_STATUS_CLAIMED,
@@ -77,7 +78,7 @@ async def _generate_draft_blueprint(idea: IdeaSubmission) -> dict | None:
         "additionalContext": idea.extended or {},
     }
     try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=1.5)) as client:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(300.0, connect=5.0)) as client:
             response = await client.post(
                 f"{settings.orchestrator_url}/v1/builder/intake",
                 json={"idea": idea_dict},
@@ -150,6 +151,20 @@ async def submit_idea(
     session.add(idea)
     await session.flush()
     await session.refresh(idea)
+
+    # Notify builder queue: new idea submitted
+    await event_bus.publish(
+        topic_name="intake.ideas",
+        event_type="idea.submitted",
+        payload={
+            "idea_id": str(idea.id),
+            "project_name": idea.project_name,
+            "founder_name": idea.founder_name,
+            "founder_email": idea.founder_email,
+            "status": idea.status,
+        },
+    )
+
     return IdeaResponse.model_validate(idea)
 
 
@@ -219,6 +234,19 @@ async def claim_idea(
         idea.draft_blueprint = blueprint
         await session.flush()
         await session.refresh(idea)
+
+    # Notify founder & IDE: idea claimed, blueprint ready
+    await event_bus.publish(
+        topic_name="intake.ideas",
+        event_type="idea.claimed",
+        payload={
+            "idea_id": str(idea.id),
+            "project_name": idea.project_name,
+            "claimed_by": str(user_id),
+            "blueprint_ready": blueprint is not None,
+            "status": idea.status,
+        },
+    )
 
     return IdeaResponse.model_validate(idea)
 
@@ -303,6 +331,19 @@ async def start_project(
     result = await _request_start_project(idea.project_name, str(idea.id), token)
     if result is None:
         raise ServiceUnavailableError(detail="Workspace service unavailable.")
+
+    # Notify IDE: workspace project created, ready to open
+    await event_bus.publish(
+        topic_name="intake.projects",
+        event_type="project.started",
+        payload={
+            "idea_id": str(idea.id),
+            "project_name": idea.project_name,
+            "started_by": str(user_id),
+            "workspace": result,
+        },
+    )
+
     return result
 
 
@@ -329,4 +370,18 @@ async def update_status(
         idea.evaluated_at = datetime.now(UTC)
     await session.flush()
     await session.refresh(idea)
+
+    # Notify all listeners: idea status changed
+    await event_bus.publish(
+        topic_name="intake.ideas",
+        event_type="idea.status_changed",
+        payload={
+            "idea_id": str(idea.id),
+            "project_name": idea.project_name,
+            "new_status": body.status,
+            "updated_by": str(user_id),
+            "blueprint_attached": body.draft_blueprint is not None,
+        },
+    )
+
     return IdeaResponse.model_validate(idea)

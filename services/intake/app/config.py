@@ -14,6 +14,7 @@ class IntakeSettings(BaseAppSettings):
     orchestrator_url: str = "http://127.0.0.1:8014"
     certify_url: str = "http://127.0.0.1:8012"
     workspace_url: str = "http://127.0.0.1:8018"
+    notification_url: str = "http://127.0.0.1:8017"
 
 
 settings = IntakeSettings()

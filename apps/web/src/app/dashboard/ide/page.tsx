@@ -405,7 +405,7 @@ function GeezCodeIDEContent() {
   const [showLeftSidebar, setShowLeftSidebar] = useState(true);
   const [showRightDock, setShowRightDock] = useState(true);
   const [showBottomTerminal, setShowBottomTerminal] = useState(true);
-  const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output" | "swarm">("terminal");
+  const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output">("terminal");
   const [terminalSessions, setTerminalSessions] = useState<Array<{ id: string; title: string; shell: "powershell" | "bash" | "cmd" | "wsl" }>>([
     { id: "term-1", title: "1: powershell", shell: "powershell" },
   ]);
@@ -1993,6 +1993,34 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             setEditorMinimap={setEditorMinimap}
             onRunActiveFile={handleRunActiveFile}
             onRunTests={handleRunTests}
+            onRevertFile={() => {
+              // Revert active file to its last saved content
+              const activeFile = openFiles.find((f) => f.path === activeFilePath);
+              if (activeFile && activeFile.savedContent !== undefined) {
+                setOpenFiles((prev) =>
+                  prev.map((f) =>
+                    f.path === activeFilePath
+                      ? { ...f, content: f.savedContent ?? f.content, isDirty: false }
+                      : f
+                  )
+                );
+                // Also reset the Monaco editor model
+                if (editorRef.current) {
+                  const model = editorRef.current.getModel();
+                  if (model) {
+                    model.setValue(activeFile.savedContent ?? activeFile.content ?? "");
+                  }
+                }
+              }
+            }}
+            onDuplicateWorkspace={() => {
+              // Open a new IDE window with same project context
+              const projectName = blueprintData?.projectName || ideaForm.projectName || "";
+              const url = projectName
+                ? `/dashboard/ide?project=${encodeURIComponent(projectName)}`
+                : "/dashboard/ide";
+              window.open(url, "_blank");
+            }}
             onRunSwarm={handleApproveAndBuild}
             setTerminalTab={setTerminalTab}
             onClearTerminal={() => setTerminalLogs([])}
@@ -2781,15 +2809,14 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
               <div onMouseDown={() => setIsResizingBottom(true)} className="h-px shrink-0 cursor-row-resize bg-surface-800 hover:bg-brand-500" />
               <div style={{ height: `${bottomTerminalHeight}px` }} className="flex shrink-0 flex-col bg-[#121214]">
                 {/* Antigravity Desktop Terminal Header & Tab bar */}
-                <div className="flex h-8 items-center justify-between border-b border-surface-800/80 px-3 bg-surface-900/70 select-none text-xs">
+                <div className="flex h-8 items-center justify-between border-b border-surface-800/80 px-3 bg-surface-900/70 select-none text-xs min-w-0 overflow-hidden">
                   {/* Left: Tab System */}
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto shrink">
                     {[
                       { id: "problems", label: "Problems", badge: 0 },
                       { id: "output", label: "Output" },
                       { id: "terminal", label: "Terminal" },
                       { id: "preview", label: "Preview" },
-                      { id: "swarm", label: "Swarm" },
                     ].map((t) => {
                       const isActive = terminalTab === t.id;
                       return (
@@ -2814,7 +2841,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                   </div>
 
                   {/* Right: Desktop Shell & Window Action Bar */}
-                  <div className="relative flex items-center gap-1 text-surface-400">
+                  <div className="relative flex items-center gap-1 text-surface-400 shrink-0">
                     {/* Active Shell Selector Badge */}
                     <div className="relative">
                       <button
@@ -3075,65 +3102,6 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     </div>
                   )}
 
-                  {/* ── Agent Swarm Progress ── */}
-                  {terminalTab === "swarm" && (
-                    <div className="flex flex-col gap-3 p-3 text-xs">
-                      <div className="flex items-center gap-2 text-surface-300">
-                        <Activity className="h-3.5 w-3.5 animate-pulse text-brand-400" />
-                        <span className="font-medium">{activeLiveAgent}</span>
-                        <span className="text-surface-500">—</span>
-                        <span className="text-surface-400">{activeLiveTask}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-[11px] text-surface-500">
-                          <span>Execution progress</span>
-                          <span className="font-mono text-brand-400">{liveProgress}%</span>
-                        </div>
-                        <div className="h-1.5 w-full rounded-full bg-surface-800 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-brand-500 to-emerald-500 transition-all duration-300"
-                            style={{ width: `${liveProgress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Swarm Stream Telemetry & Live Diff Simulator */}
-                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-surface-800">
-                        <span className="flex items-center gap-1.5 text-[11px] text-surface-400">
-                          <span className={`h-2 w-2 rounded-full ${isWsConnected ? "bg-emerald-400 animate-pulse" : "bg-surface-500"}`} />
-                          <span>{isWsConnected ? "Orchestrator WebSocket Stream: Active" : "Orchestrator Stream: Standby"}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const targetPath = "services/api/main.py";
-                            const original = findFileContentByPath(fileTree, targetPath) || editorContent;
-                            const patchContent = original.replace(
-                              `app = FastAPI(title="Sovereign Agritech API", version="1.0.0")\n`,
-                              `app = FastAPI(title="Sovereign Agritech API", version="1.1.0")\n\n# Autonomous Swarm Integration Route\n@app.get("/v1/swarm/health")\ndef swarm_health():\n    return {"agents_active": 4, "status": "nominal"}\n`
-                            );
-                            setPendingReview({
-                              filePath: targetPath,
-                              diff: `+ @app.get("/v1/swarm/health")\n+ def swarm_health():\n+     return {"agents_active": 4}`,
-                              originalContent: original,
-                              newContent: patchContent,
-                              agentName: "CodeGen Worker 1",
-                              milestoneId: "MS1-Stream",
-                            });
-                            setTerminalLogs((prev) => [
-                              ...prev,
-                              `[Swarm Stream] Proposed live diff for '${targetPath}' from CodeGen Worker 1. Awaiting Founder verification in Monaco Diff Editor.`,
-                            ]);
-                            showToast(`Swarm proposed diff for ${targetPath}`);
-                          }}
-                          className="flex items-center gap-1.5 rounded border border-brand-500/40 bg-brand-500/10 px-2.5 py-1 text-[11px] font-medium text-brand-300 hover:bg-brand-500/20 transition-colors cursor-pointer"
-                        >
-                          <Sparkles className="h-3 w-3 text-amber-400" />
-                          <span>Simulate Swarm Stream Diff</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </>
@@ -3400,14 +3368,14 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           <button
             type="button"
             onClick={() => {
-              setTerminalTab("swarm");
-              setShowBottomTerminal(true);
+              setActiveActivity("swarm");
+              setShowLeftSidebar(true);
             }}
-            title={`Swarm status: ${isBuilding ? "Executing swarm" : "Idle"}`}
+            title={`Build status: ${isBuilding ? "Executing" : "Idle"}`}
             className="flex items-center gap-1 hover:text-surface-200 transition-colors cursor-pointer"
           >
             <span className={`h-1.5 w-1.5 rounded-full ${isBuilding ? "bg-amber-400 animate-ping" : "bg-emerald-400"}`} />
-            <span className="text-surface-400">{isBuilding ? "Swarm: Building" : "Swarm: Ready"}</span>
+            <span className="text-surface-400">{isBuilding ? "Build: Running" : "Build: Ready"}</span>
           </button>
 
           {/* Save Status / Dirty Indicator */}

@@ -48,6 +48,10 @@ export interface IDEMenuBarProps {
   onOpenAbout: () => void;
   onOpenSettings?: () => void;
   onOpenWelcome?: () => void;
+  /** Reverts active file to last saved content */
+  onRevertFile?: () => void;
+  /** Duplicates current workspace into a new window/project */
+  onDuplicateWorkspace?: () => void;
   // View controls
   setActiveActivity: (act: any) => void;
   showLeftSidebar: boolean;
@@ -87,6 +91,8 @@ export function IDEMenuBar({
   onOpenAbout,
   onOpenSettings,
   onOpenWelcome,
+  onRevertFile,
+  onDuplicateWorkspace,
   setActiveActivity,
   showLeftSidebar,
   setShowLeftSidebar,
@@ -105,7 +111,9 @@ export function IDEMenuBar({
   const [activeMenu, setActiveMenu] = useState<MenuId | null>(null);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const menuBarRef = useRef<HTMLDivElement>(null);
+  const submenuTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [wordWrap, setWordWrap] = useState(false);
+  const [submenuFlip, setSubmenuFlip] = useState(false);
 
   // Close menus on outside click or Escape
   useEffect(() => {
@@ -202,10 +210,15 @@ export function IDEMenuBar({
       <div
         className="relative"
         onMouseEnter={() => {
+          if (submenuTimerRef.current) {
+            clearTimeout(submenuTimerRef.current);
+            submenuTimerRef.current = null;
+          }
           if (submenuId) {
             setActiveSubmenu(submenuId);
           } else {
-            setActiveSubmenu(null);
+            // Delay clearing submenu to allow diagonal mouse movement to submenu
+            submenuTimerRef.current = setTimeout(() => setActiveSubmenu(null), 120);
           }
         }}
       >
@@ -283,7 +296,19 @@ export function IDEMenuBar({
             {/* Open Recent Submenu */}
             <div
               className="relative"
-              onMouseEnter={() => setActiveSubmenu("recent")}
+              onMouseEnter={() => {
+                if (submenuTimerRef.current) { clearTimeout(submenuTimerRef.current); submenuTimerRef.current = null; }
+                setActiveSubmenu("recent");
+                // Edge detection: flip submenu to open left if near right edge
+                const el = menuBarRef.current;
+                if (el) {
+                  const rect = el.getBoundingClientRect();
+                  setSubmenuFlip(rect.left + 500 > window.innerWidth);
+                }
+              }}
+              onMouseLeave={() => {
+                submenuTimerRef.current = setTimeout(() => setActiveSubmenu(null), 150);
+              }}
             >
               {renderItem({
                 label: "Open Recent",
@@ -291,11 +316,13 @@ export function IDEMenuBar({
                 submenuId: "recent",
               })}
               {activeSubmenu === "recent" && (
-                <div className="absolute left-full top-0 -ml-1 min-w-[200px] rounded-md border border-surface-750 bg-surface-900/98 backdrop-blur-md py-1 shadow-2xl z-50">
+                <div
+                  className={`absolute top-0 min-w-[200px] rounded-md border border-surface-750 bg-surface-900/98 backdrop-blur-md py-1 shadow-2xl z-50 ${submenuFlip ? "right-full mr-0" : "left-full -ml-1"}`}
+                  onMouseEnter={() => { if (submenuTimerRef.current) { clearTimeout(submenuTimerRef.current); submenuTimerRef.current = null; } }}
+                  onMouseLeave={() => { submenuTimerRef.current = setTimeout(() => setActiveSubmenu(null), 150); }}
+                >
                   {renderItem({ label: "Quick Open...", shortcut: "Ctrl+P", onClick: onOpenQuickOpen })}
                   {renderItem({ label: "Re-open Closed Tab", shortcut: "Ctrl+Shift+T", onClick: onOpenQuickOpen })}
-                  {renderDivider()}
-                  {renderItem({ label: "Clear Recently Opened", onClick: () => {} })}
                 </div>
               )}
             </div>
@@ -303,7 +330,7 @@ export function IDEMenuBar({
             {renderDivider()}
             {renderItem({ label: "Add Folder to Workspace...", onClick: onNewFolder })}
             {renderItem({ label: "Save Workspace As...", onClick: onSaveAs })}
-            {renderItem({ label: "Duplicate Workspace", onClick: onNewProject })}
+            {renderItem({ label: "Duplicate Workspace", onClick: onDuplicateWorkspace || onNewProject })}
             {renderDivider()}
             {renderItem({ label: "Save", shortcut: "Ctrl+S", onClick: onSaveFile, disabled: !hasOpenFiles })}
             {renderItem({ label: "Save As...", shortcut: "Ctrl+Shift+S", onClick: onSaveAs, disabled: !hasOpenFiles })}
@@ -320,7 +347,18 @@ export function IDEMenuBar({
             {/* Preferences Submenu */}
             <div
               className="relative"
-              onMouseEnter={() => setActiveSubmenu("preferences")}
+              onMouseEnter={() => {
+                if (submenuTimerRef.current) { clearTimeout(submenuTimerRef.current); submenuTimerRef.current = null; }
+                setActiveSubmenu("preferences");
+                const el = menuBarRef.current;
+                if (el) {
+                  const rect = el.getBoundingClientRect();
+                  setSubmenuFlip(rect.left + 500 > window.innerWidth);
+                }
+              }}
+              onMouseLeave={() => {
+                submenuTimerRef.current = setTimeout(() => setActiveSubmenu(null), 150);
+              }}
             >
               {renderItem({
                 label: "Preferences",
@@ -328,7 +366,11 @@ export function IDEMenuBar({
                 submenuId: "preferences",
               })}
               {activeSubmenu === "preferences" && (
-                <div className="absolute left-full top-0 -ml-1 min-w-[220px] rounded-md border border-surface-750 bg-surface-900/98 backdrop-blur-md py-1 shadow-2xl z-50">
+                <div
+                  className={`absolute top-0 min-w-[220px] rounded-md border border-surface-750 bg-surface-900/98 backdrop-blur-md py-1 shadow-2xl z-50 ${submenuFlip ? "right-full mr-0" : "left-full -ml-1"}`}
+                  onMouseEnter={() => { if (submenuTimerRef.current) { clearTimeout(submenuTimerRef.current); submenuTimerRef.current = null; } }}
+                  onMouseLeave={() => { submenuTimerRef.current = setTimeout(() => setActiveSubmenu(null), 150); }}
+                >
                   {renderItem({
                     label: "Settings",
                     shortcut: "Ctrl+,",
@@ -356,7 +398,15 @@ export function IDEMenuBar({
             </div>
 
             {renderDivider()}
-            {renderItem({ label: "Revert File", disabled: !hasOpenFiles, onClick: onSaveFile })}
+            {renderItem({ label: "Revert File", disabled: !hasOpenFiles, onClick: onRevertFile || (() => {
+              // Fallback: use Monaco to revert to last saved model value
+              execEditor((ed) => {
+                const model = ed.getModel();
+                if (model) {
+                  ed.trigger("menu", "undo", null);
+                }
+              });
+            }) })}
             {renderItem({ label: "Close Editor", shortcut: "Ctrl+W", onClick: onCloseFile, disabled: !hasOpenFiles })}
             {renderItem({ label: "Close Window", shortcut: "Alt+F4", onClick: onCloseFile })}
           </div>
@@ -660,9 +710,9 @@ export function IDEMenuBar({
               },
             })}
             {renderItem({
-              label: "Switch to Swarm Activity",
+              label: "Switch to Output",
               onClick: () => {
-                setTerminalTab("swarm");
+                setTerminalTab("output");
                 setShowBottomTerminal(true);
               },
             })}
@@ -688,7 +738,12 @@ export function IDEMenuBar({
           <div className="absolute left-0 top-full mt-0.5 min-w-[230px] rounded-md border border-surface-750 bg-surface-900/95 backdrop-blur-md py-1 shadow-2xl z-50 animate-in fade-in-50 zoom-in-95 duration-75">
             {onOpenWelcome && renderItem({ label: "Welcome & Overview", onClick: onOpenWelcome })}
             {renderItem({ label: "Keyboard Shortcuts", shortcut: "Ctrl+K Ctrl+S", onClick: onOpenShortcuts })}
-            {renderItem({ label: "geezcodE DSL Reference", onClick: onOpenQuickOpen })}
+            {renderItem({
+              label: "geezcodE DSL Reference",
+              onClick: () => {
+                window.open("https://github.com/enrolconsultancy1-hue/Afroid/wiki", "_blank");
+              },
+            })}
             {renderDivider()}
             {renderItem({
               label: "Documentation & Architecture",

@@ -451,7 +451,18 @@ class ZeroQuestionIntakeEngine:
                 {"role": "user", "content": json.dumps(prompt_data)},
             ]
             response = await llm.ainvoke(messages)
-            data = json.loads(response.content)
+            # langchain-google-genai may return a list of content parts
+            raw = response.content
+            if isinstance(raw, list):
+                raw = "".join(
+                    part if isinstance(part, str) else part.get("text", "")
+                    for part in raw
+                )
+            raw = raw.strip()
+            if raw.startswith("```"):
+                lines = raw.split("\n")
+                raw = "\n".join(lines[1:-1]) if len(lines) > 2 else raw
+            data = json.loads(raw)
             return ArchitectureBlueprint(**data)
         except Exception as e:
             logger.warning("zero_question_blueprint_fallback", error=str(e))

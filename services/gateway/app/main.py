@@ -68,7 +68,7 @@ def route_for(path: str) -> str | None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    app.state.client = httpx.AsyncClient(timeout=60.0)
+    app.state.client = httpx.AsyncClient(timeout=300.0)
     yield
     await app.state.client.aclose()
 

@@ -195,6 +195,33 @@ export const incubateApi = {
         min_score: minScore,
       }),
     }),
+
+  autofill: (
+    projectId: string,
+    opportunityId: string,
+    targetFields: AutofillField[]
+  ) =>
+    request<AutofillResponse>("/v1/autofill", {
+      method: "POST",
+      body: JSON.stringify({
+        project_id: projectId,
+        opportunity_id: opportunityId,
+        target_fields: targetFields,
+      }),
+    }),
+
+  writeSection: (data: {
+    project_id: string;
+    opportunity_id: string;
+    section_name: string;
+    max_words?: number;
+    additional_context?: string;
+    tone?: string;
+  }) =>
+    request<GrantSectionResponse>("/v1/write-section", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 // --- Type Definitions ---
@@ -373,4 +400,38 @@ export interface IntakeScoreResponse {
     comments: string | null;
     created_at: string;
   }>;
+}
+
+// --- Autofill & Grant Writing Types ---
+
+export interface AutofillField {
+  field_name: string;
+  field_type?: string;
+  description?: string;
+  required?: boolean;
+}
+
+export interface AutofillFilledField {
+  field_name: string;
+  value: unknown;
+  confidence: number;
+  source_field: string;
+  needs_review: boolean;
+}
+
+export interface AutofillResponse {
+  project_id: string;
+  opportunity_id: string;
+  filled_fields: AutofillFilledField[];
+  overall_confidence: number;
+  missing_fields: string[];
+}
+
+export interface GrantSectionResponse {
+  section_name: string;
+  content: string;
+  word_count: number;
+  readability_score: number;
+  key_points_covered: string[];
+  suggested_improvements: string[];
 }
