@@ -1,81 +1,86 @@
-"""Vector Store — Embedding Generation Service."""
+"""Embedding generation and vector storage service using Google GenAI + pgvector."""
 
 from __future__ import annotations
 
-import hashlib
+import logging
 from typing import Any
+from uuid import UUID, uuid4
 
-import structlog
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from ..config import settings
-
-logger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingService:
-    """Generates vector embeddings using Google Generative AI embeddings model."""
+    """Generates embeddings via Google Generative AI and stores them in pgvector."""
 
-    def __init__(self) -> None:
-        self._embedder: Any = None
-        self._cache: dict[str, list[float]] = {}
+    def __init__(self, db: AsyncSession, api_key: str) -> None:
+        self._db = db
+        self._api_key = api_key
 
-    def _get_embedder(self) -> Any:
-        if self._embedder is None:
-            try:
-                from langchain_google_genai import GoogleGenerativeAIEmbeddings
+    async def _generate_embeddings(self, texts: list[str]) -> list[list[float]]:
+        """Generate embedding vectors for a list of texts using langchain-google-genai."""
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-                self._embedder = GoogleGenerativeAIEmbeddings(
-                    model=settings.embedding_model,
-                    output_dimensionality=settings.embedding_dimension,
-                )
-            except ImportError:
-                return None
-        return self._embedder
+        embeddings_model = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004",
+            google_api_key=self._api_key,
+        )
+        vectors = await embeddings_model.aembed_documents(texts)
+        return vectors
 
-    def _hash_text(self, text: str) -> str:
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
+    async def embed_and_store(
+        self,
+        texts: list[str],
+        metadata: dict[str, Any] | None = None,
+        namespace: str = "default",
+    ) -> list[UUID]:
+        """Generate embeddings and store them in the vectors table."""
+        vectors = await self._generate_embeddings(texts)
+        ids: list[UUID] = []
 
-    async def embed_texts(self, texts: list[str]) -> list[list[float]]:
-        """Generate 768-dim embeddings for a list of text strings with caching."""
-        uncached_indices: list[int] = []
-        uncached_texts: list[str] = []
-        results: list[list[float] | None] = [None] * len(texts)
+        for text_chunk, vector in zip(texts, vectors, strict=True):
+            vector_id = uuid4()
+            ids.append(vector_id)
 
-        for i, text in enumerate(texts):
-            h = self._hash_text(text)
-            if h in self._cache:
-                results[i] = self._cache[h]
-            else:
-                uncached_indices.append(i)
-                uncached_texts.append(text)
+            await self._db.execute(
+                text(
+                    """
+                    INSERT INTO vectors (id, namespace, text_content, embedding, metadata)
+                    VALUES (:id, :namespace, :text_content, :embedding, :metadata)
+                    """
+                ),
+                {
+                    "id": str(vector_id),
+                    "namespace": namespace,
+                    "text_content": text_chunk,
+                    "embedding": str(vector),
+                    "metadata": metadata or {},
+                },
+            )
 
-        if uncached_texts:
-            try:
-                embedder = self._get_embedder()
-                new_embeddings = await embedder.aembed_documents(uncached_texts)
-                for idx, emb, txt in zip(
-                    uncached_indices, new_embeddings, uncached_texts, strict=False
-                ):
-                    results[idx] = emb
-                    self._cache[self._hash_text(txt)] = emb
-            except (RuntimeError, ValueError, TimeoutError, OSError) as e:
-                logger.warning("embedding_api_fallback", error=str(e), error_type=type(e).__name__)
-                # Fallback deterministic pseudo-embedding for testing or fallback
-                for idx, txt in zip(uncached_indices, uncached_texts, strict=False):
-                    pseudo_emb = self._generate_pseudo_embedding(txt)
-                    results[idx] = pseudo_emb
-                    self._cache[self._hash_text(txt)] = pseudo_emb
+        logger.info("Stored %d vectors in namespace '%s'", len(ids), namespace)
+        return ids
 
-        return [r for r in results if r is not None]
+    async def delete_vectors(
+        self,
+        ids: list[UUID] | None = None,
+        namespace: str | None = None,
+    ) -> int:
+        """Delete vectors by ID list or by namespace."""
+        if ids:
+            result = await self._db.execute(
+                text("DELETE FROM vectors WHERE id = ANY(:ids)"),
+                {"ids": [str(i) for i in ids]},
+            )
+            return result.rowcount  # type: ignore[return-value]
 
-    def _generate_pseudo_embedding(self, text: str) -> list[float]:
-        """Generate deterministic normalized 768-dim vector from text hash (fallback)."""
-        import math
+        if namespace:
+            result = await self._db.execute(
+                text("DELETE FROM vectors WHERE namespace = :namespace"),
+                {"namespace": namespace},
+            )
+            return result.rowcount  # type: ignore[return-value]
 
-        h = hashlib.sha512(text.encode()).digest()
-        vec = []
-        for i in range(768):
-            byte_val = h[i % len(h)]
-            vec.append((float(byte_val) / 255.0) - 0.5)
-        norm = math.sqrt(sum(x * x for x in vec))
-        return [x / norm for x in vec] if norm > 0 else vec
+        return 0

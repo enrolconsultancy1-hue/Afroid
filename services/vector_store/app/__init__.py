@@ -1,1 +1,0 @@
-"""Afroid Vector Store Service."""

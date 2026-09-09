@@ -1,56 +1,79 @@
-"""Vector Store — pgvector Similarity Search Service."""
+"""Similarity search service using pgvector cosine distance."""
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-import structlog
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-logger = structlog.get_logger()
+logger = logging.getLogger(__name__)
 
 
-class VectorSearchService:
-    """Executes HNSW similarity search on PostgreSQL pgvector columns."""
+class SearchService:
+    """Performs similarity search against stored vectors using pgvector."""
 
-    ALLOWED_TABLES = frozenset({"startup_profiles", "opportunities"})
+    def __init__(self, db: AsyncSession, api_key: str) -> None:
+        self._db = db
+        self._api_key = api_key
 
-    async def search_similar(
-        self,
-        session: AsyncSession,
-        table_name: str,
-        query_vector: list[float],
-        top_k: int = 10,
-        filters: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
-        """Search similar records using cosine distance <=> operator."""
-        if table_name not in self.ALLOWED_TABLES:
-            raise ValueError(f"Table '{table_name}' is not supported for vector search.")
+    async def _embed_query(self, query: str) -> list[float]:
+        """Generate an embedding vector for a single query string."""
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-        vector_str = "[" + ",".join(str(x) for x in query_vector) + "]"
-
-        # SQL query using cosine distance (<=>)
-        # Cosine similarity = 1 - cosine_distance
-        sql = f"""
-            SELECT id,
-                   1 - (embedding <=> :vector::vector) AS similarity
-            FROM {table_name}
-            WHERE embedding IS NOT NULL
-            ORDER BY embedding <=> :vector::vector
-            LIMIT :limit
-        """
-
-        result = await session.execute(
-            text(sql),
-            {"vector": vector_str, "limit": top_k},
+        embeddings_model = GoogleGenerativeAIEmbeddings(
+            model="models/text-embedding-004",
+            google_api_key=self._api_key,
         )
-        rows = result.fetchall()
+        vector = await embeddings_model.aembed_query(query)
+        return vector
 
-        return [
+    async def similarity_search(
+        self,
+        query: str,
+        namespace: str = "default",
+        top_k: int = 20,
+        threshold: float = 0.70,
+    ) -> list[dict[str, Any]]:
+        """Find the top-k most similar vectors to the query within a namespace."""
+        query_vector = await self._embed_query(query)
+
+        rows = await self._db.execute(
+            text(
+                """
+                SELECT id, text_content, metadata,
+                       1 - (embedding <=> :query_vec::vector) AS score
+                FROM vectors
+                WHERE namespace = :namespace
+                  AND 1 - (embedding <=> :query_vec::vector) >= :threshold
+                ORDER BY embedding <=> :query_vec::vector
+                LIMIT :top_k
+                """
+            ),
             {
-                "id": row.id,
-                "similarity_score": round(float(row.similarity), 4),
-            }
-            for row in rows
-        ]
+                "query_vec": str(query_vector),
+                "namespace": namespace,
+                "threshold": threshold,
+                "top_k": top_k,
+            },
+        )
+
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            results.append(
+                {
+                    "id": row.id,
+                    "text": row.text_content,
+                    "score": float(row.score),
+                    "metadata": row.metadata,
+                }
+            )
+
+        logger.info(
+            "Search in namespace '%s' returned %d results (threshold=%.2f)",
+            namespace,
+            len(results),
+            threshold,
+        )
+        return results

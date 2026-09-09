@@ -4,12 +4,15 @@ from services.shared.config import BaseAppSettings
 
 
 class VectorStoreSettings(BaseAppSettings):
-    """Vector store configuration."""
+    """Vector-store microservice configuration."""
 
-    embedding_model: str = "models/gemini-embedding-001"
+    google_api_key: str = ""
+    embedding_model: str = "models/text-embedding-004"
     embedding_dimension: int = 768
     similarity_threshold: float = 0.70
-    max_batch_size: int = 64
+    max_results: int = 20
+    chunk_size: int = 1000
+    chunk_overlap: int = 200
 
 
 settings = VectorStoreSettings()

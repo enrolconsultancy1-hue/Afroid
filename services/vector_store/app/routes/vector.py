@@ -1,83 +1,89 @@
-"""Vector Store Service — API Routes."""
+"""Vector Store API routes — embed, search, and manage document vectors."""
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, Request
+import logging
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.shared.auth_middleware import get_current_user
-from services.shared.user_models import User
-
-from ..schemas.vector import (
-    EmbedTextRequest,
-    EmbedTextResponse,
-    VectorSearchRequest,
-    VectorSearchResponse,
-    VectorSearchResultItem,
+from services.vector_store.app.schemas.vector import (
+    EmbedRequest,
+    EmbedResponse,
+    SearchRequest,
+    SearchResponse,
+    SearchResult,
+    DeleteRequest,
+    DeleteResponse,
 )
-from ..services.embedding_service import EmbeddingService
-from ..services.search_service import VectorSearchService
+from services.vector_store.app.services.embedding_service import EmbeddingService
+from services.vector_store.app.services.search_service import SearchService
+from services.vector_store.app.config import settings
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vector", tags=["vector"])
 
-embedding_service = EmbeddingService()
-search_service = VectorSearchService()
 
-
-def _get_session(request: Request) -> AsyncSession:
+def _get_db(request: Request) -> AsyncSession:
     return request.state.db_session
 
 
-@router.post("/embed", response_model=EmbedTextResponse)
-async def embed_texts(
-    body: EmbedTextRequest,
-    current_user: User = Depends(get_current_user),
-) -> EmbedTextResponse:
-    """Generate dense 768-dim embeddings for text strings."""
-    embeddings = await embedding_service.embed_texts(body.texts)
-    dim = len(embeddings[0]) if embeddings else 768
-    return EmbedTextResponse(
-        embeddings=embeddings,
-        dimension=dim,
-        count=len(embeddings),
+@router.post("/embed", response_model=EmbedResponse, status_code=status.HTTP_201_CREATED)
+async def embed_documents(
+    payload: EmbedRequest,
+    db: AsyncSession = Depends(_get_db),
+) -> EmbedResponse:
+    """Generate embeddings for one or more text chunks and store them."""
+    svc = EmbeddingService(db=db, api_key=settings.google_api_key)
+    stored_ids = await svc.embed_and_store(
+        texts=payload.texts,
+        metadata=payload.metadata,
+        namespace=payload.namespace,
+    )
+    return EmbedResponse(
+        stored_count=len(stored_ids),
+        ids=stored_ids,
     )
 
 
-@router.post("/search", response_model=VectorSearchResponse)
-async def search_vectors(
-    request: Request,
-    body: VectorSearchRequest,
-    current_user: User = Depends(get_current_user),
-) -> VectorSearchResponse:
-    """Execute cosine similarity vector search over pgvector tables."""
-    session = _get_session(request)
-
-    query_vec = body.query_vector
-    if query_vec is None and body.query_text:
-        embs = await embedding_service.embed_texts([body.query_text])
-        query_vec = embs[0]
-
-    if query_vec is None:
-        return VectorSearchResponse(collection=body.collection, total_results=0, results=[])
-
-    raw_results = await search_service.search_similar(
-        session=session,
-        table_name=body.collection,
-        query_vector=query_vec,
-        top_k=body.top_k,
-        filters=body.filter_criteria,
+@router.post("/search", response_model=SearchResponse)
+async def search_similar(
+    payload: SearchRequest,
+    db: AsyncSession = Depends(_get_db),
+) -> SearchResponse:
+    """Find documents most similar to the query text."""
+    search_svc = SearchService(db=db, api_key=settings.google_api_key)
+    results = await search_svc.similarity_search(
+        query=payload.query,
+        namespace=payload.namespace,
+        top_k=payload.top_k or settings.max_results,
+        threshold=payload.threshold or settings.similarity_threshold,
+    )
+    return SearchResponse(
+        results=[
+            SearchResult(
+                id=r["id"],
+                text=r["text"],
+                score=r["score"],
+                metadata=r.get("metadata"),
+            )
+            for r in results
+        ],
+        total=len(results),
     )
 
-    items = [
-        VectorSearchResultItem(
-            id=r["id"],
-            similarity_score=r["similarity_score"],
-        )
-        for r in raw_results
-    ]
 
-    return VectorSearchResponse(
-        collection=body.collection,
-        total_results=len(items),
-        results=items,
+@router.delete("/delete", response_model=DeleteResponse)
+async def delete_vectors(
+    payload: DeleteRequest,
+    db: AsyncSession = Depends(_get_db),
+) -> DeleteResponse:
+    """Delete stored vectors by ID or namespace."""
+    svc = EmbeddingService(db=db, api_key=settings.google_api_key)
+    deleted = await svc.delete_vectors(
+        ids=payload.ids,
+        namespace=payload.namespace,
     )
+    return DeleteResponse(deleted_count=deleted)

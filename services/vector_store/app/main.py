@@ -9,13 +9,12 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
+from services.vector_store.app.config import settings
+from services.vector_store.app.routes.vector import router as vector_router
 from services.shared.database import create_engine, create_session_factory
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging
 from services.shared.schemas import HealthCheck
-
-from .config import settings
-from .routes.vector import router as vector_router
 
 
 @asynccontextmanager
@@ -35,7 +34,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     app = FastAPI(
         title="Afroid Vector Store Service",
-        description="pgvector embedding generation and semantic similarity search.",
+        description="Embedding generation and similarity search via pgvector.",
         version="1.0.0",
         docs_url="/docs" if settings.is_development else None,
         default_response_class=ORJSONResponse,
