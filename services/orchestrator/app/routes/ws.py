@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -11,6 +12,9 @@ import jwt
 from jwt.exceptions import PyJWTError as JWTError
 
 from services.orchestrator.app.config import settings
+from services.orchestrator.app.routes.builder import status_payload
+from services.orchestrator.app.services.durable_store import durable_store
+from services.orchestrator.app.services.job_store import job_store
 
 logger = structlog.get_logger()
 
@@ -175,3 +179,148 @@ async def websocket_endpoint(
                 pass
     except WebSocketDisconnect:
         manager.disconnect(session_id, websocket)
+
+
+def _ws_subject(websocket: WebSocket, query_token: str | None) -> str | None:
+    """Return the authenticated user id (JWT 'sub') for a WS connection, or None."""
+    token = _extract_ws_token(websocket, query_token)
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+    except JWTError:
+        return None
+    return str(payload.get("sub") or payload.get("user_id") or "") or None
+
+
+@ws_router.websocket("/ws/build/{session_id}")
+async def build_stream_endpoint(
+    websocket: WebSocket, session_id: str, token: str | None = Query(default=None)
+) -> None:
+    """Stream real build progress to the IDE over an authenticated WebSocket.
+
+    Tails the durable build store (the shared source of truth) server-side and pushes
+    a snapshot whenever the build advances — working no matter which instance runs the
+    build (via the Cloud Tasks worker) or serves the socket. Requires a valid JWT and
+    enforces per-user ownership of the build session.
+    """
+    subject = _ws_subject(websocket, token)
+    if subject is None:
+        await websocket.close(code=4401, reason="Unauthorized")
+        return
+    await websocket.accept()
+    last_sig: tuple[Any, Any, int] | None = None
+    missing_ticks = 0
+    try:
+        await websocket.send_json(
+            {"type": "connection_established", "payload": {"session_id": session_id}}
+        )
+        while True:
+            store = await durable_store.get("build", session_id)
+            # Per-user isolation: a record owned by someone else is invisible.
+            if store is not None and store.get("owner_id") not in (None, subject):
+                await websocket.send_json({"type": "snapshot", "data": {"session_id": session_id, "status": "not_found"}})
+                break
+            payload = status_payload(session_id, store)
+            status = payload.get("status")
+
+            if status == "not_found":
+                # The /start record may not have landed yet; wait briefly, then give up.
+                missing_ticks += 1
+                if missing_ticks > 20:
+                    await websocket.send_json({"type": "snapshot", "data": payload})
+                    break
+                await asyncio.sleep(1.0)
+                continue
+            missing_ticks = 0
+
+            sig = (status, payload.get("progress"), len(payload.get("log", [])))
+            if sig != last_sig:
+                await websocket.send_json({"type": "snapshot", "data": payload})
+                last_sig = sig
+
+            if status in ("complete", "error"):
+                break
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:  # noqa: BLE001 — a socket send failure just ends the stream
+        logger.info("build_stream_ended", session_id=session_id, reason=str(exc))
+    finally:
+        try:
+            await websocket.close()
+        except Exception:  # noqa: BLE001 — already closed
+            pass
+
+
+_TERMINAL_PHASES = {"complete", "completed", "done", "error", "failed"}
+
+
+@ws_router.websocket("/ws/job/{job_id}")
+async def job_stream_endpoint(
+    websocket: WebSocket, job_id: str, token: str | None = Query(default=None)
+) -> None:
+    """Stream orchestration-pipeline (/v1/orchestrate) job progress over WebSocket.
+
+    Like the build stream, this tails the DURABLE job store (Postgres) server-side
+    rather than relying on the in-process event bus / ConnectionManager, so a client
+    on any instance sees progress for a pipeline running on any other instance. This
+    removes the legacy pipeline's dependency on single-instance in-memory fan-out.
+    Requires a valid JWT and enforces per-user ownership.
+    """
+    subject = _ws_subject(websocket, token)
+    if subject is None:
+        await websocket.close(code=4401, reason="Unauthorized")
+        return
+    await websocket.accept()
+    last_sig: tuple[Any, Any, int] | None = None
+    missing_ticks = 0
+    try:
+        await websocket.send_json(
+            {"type": "connection_established", "payload": {"job_id": job_id}}
+        )
+        while True:
+            state = await job_store.get(job_id)
+            if state is None:
+                missing_ticks += 1
+                if missing_ticks > 20:
+                    await websocket.send_json(
+                        {"type": "snapshot", "data": {"job_id": job_id, "status": "not_found"}}
+                    )
+                    break
+                await asyncio.sleep(1.0)
+                continue
+            # Per-user isolation: only the owner may stream the job.
+            if getattr(state, "user_id", None) not in (None, "", subject):
+                await websocket.send_json({"type": "snapshot", "data": {"job_id": job_id, "status": "not_found"}})
+                break
+            missing_ticks = 0
+
+            phase = state.phase.value if hasattr(state.phase, "value") else str(state.phase)
+            payload = {
+                "job_id": state.job_id,
+                "session_id": state.session_id,
+                "status": phase,
+                "current_agent": state.current_agent,
+                "progress": state.progress,
+                "file_count": len(state.generated_files),
+                "review_count": len(state.review_results),
+                "error": state.error_message,
+            }
+            sig = (phase, state.progress, len(state.generated_files))
+            if sig != last_sig:
+                await websocket.send_json({"type": "snapshot", "data": payload})
+                last_sig = sig
+
+            if phase.lower() in _TERMINAL_PHASES:
+                break
+            await asyncio.sleep(1.0)
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:  # noqa: BLE001
+        logger.info("job_stream_ended", job_id=job_id, reason=str(exc))
+    finally:
+        try:
+            await websocket.close()
+        except Exception:  # noqa: BLE001
+            pass

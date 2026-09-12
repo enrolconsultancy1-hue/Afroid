@@ -1,0 +1,4 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store:latest', '-f', 'services/vector_store/Dockerfile', '.']
+images: ['us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store:latest']

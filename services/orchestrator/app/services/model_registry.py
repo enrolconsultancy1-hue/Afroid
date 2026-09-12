@@ -55,13 +55,18 @@ class ModelRegistry:
 
     def __init__(self) -> None:
         self._models: dict[str, ModelDescriptor] = {}
-        self._default_model_id = "gemini-3.6-flash"
+        # Use the stable "-latest" aliases as defaults so live LLM calls always
+        # resolve to a current Gemini model instead of a pinned (possibly retired)
+        # version. Specific versions remain selectable in the UI and via
+        # scan_and_sync_available_models().
+        self._default_model_id = "gemini-flash-latest"
         self._agent_defaults: dict[str, str] = {
-            "analyst": "gemini-3.6-flash",
-            "architect": "gemini-3.6-flash",
-            "codegen": "gemini-3.6-flash",
-            "reviewer": "gemini-3.6-flash",
-            "deployer": "gemini-3.6-flash",
+            "analyst": "gemini-flash-latest",
+            "architect": "gemini-pro-latest",
+            "codegen": "gemini-flash-latest",
+            "reviewer": "gemini-flash-latest",
+            "deployer": "gemini-flash-latest",
+            "assistant": "gemini-flash-latest",
         }
         self._initialize_builtins()
 

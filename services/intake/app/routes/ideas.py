@@ -22,6 +22,7 @@ from services.intake.app.models.intake import (
     IDEA_STATUS_EVALUATING,
     IDEA_STATUS_PENDING,
     IDEA_STATUS_REJECTED,
+    IDEA_STATUS_SYNCED,
     IdeaSubmission,
     PitchEvaluation,
     WriterProfile,
@@ -44,6 +45,7 @@ _ALLOWED_STATUSES = {
     IDEA_STATUS_CLAIMED,
     IDEA_STATUS_EVALUATING,
     IDEA_STATUS_BLUEPRINT_READY,
+    IDEA_STATUS_SYNCED,
     IDEA_STATUS_COMPLETED,
     IDEA_STATUS_REJECTED,
 }
@@ -188,6 +190,39 @@ async def list_ideas(
     return [IdeaResponse.model_validate(i) for i in result.scalars().all()]
 
 
+@router.get("/stats")
+async def idea_stats(
+    request: Request,
+    user_id: uuid.UUID | None = Depends(get_optional_user),
+) -> dict[str, Any]:
+    """Return authoritative FIFO idea-stock counts by status (for the IDE badge).
+
+    ``pending`` is the ready-to-claim FIFO queue; ``synced`` is the number of
+    projects already synced into a workspace. Counts come straight from the
+    idea stock (the single source of truth), not the filesystem.
+    """
+    from sqlalchemy import func
+
+    session = _session(request)
+    result = await session.execute(
+        select(IdeaSubmission.status, func.count(IdeaSubmission.id)).group_by(
+            IdeaSubmission.status
+        )
+    )
+    counts: dict[str, int] = {status: count for status, count in result.all()}
+    return {
+        "data": {
+            "pending": counts.get(IDEA_STATUS_PENDING, 0),
+            "claimed": counts.get(IDEA_STATUS_CLAIMED, 0),
+            "blueprint_ready": counts.get(IDEA_STATUS_BLUEPRINT_READY, 0),
+            "synced": counts.get(IDEA_STATUS_SYNCED, 0),
+            "completed": counts.get(IDEA_STATUS_COMPLETED, 0),
+            "rejected": counts.get(IDEA_STATUS_REJECTED, 0),
+            "total": sum(counts.values()),
+        }
+    }
+
+
 @router.get("/next", response_model=IdeaResponse)
 async def next_pending(
     request: Request,
@@ -289,13 +324,18 @@ async def certify_idea(
     return designation
 
 
-async def _request_start_project(name: str, idea_id: str, token: str) -> dict[str, Any] | None:
-    """Call the workspace service to create a project folder (best-effort)."""
+async def _request_start_project(payload: dict[str, Any], token: str) -> dict[str, Any] | None:
+    """Call the workspace service to sync a project folder (best-effort).
+
+    Sends the compiled applicant record (founder id + email + project name +
+    Architect Blueprint preview) so the workspace writes it into the synced
+    NEW_PROJECT_SYNCED/ folder.
+    """
     try:
         async with httpx.AsyncClient(timeout=httpx.Timeout(10.0, connect=2.0)) as client:
             response = await client.post(
                 f"{settings.workspace_url}/v1/workspace/projects",
-                json={"name": name, "idea_id": idea_id},
+                json=payload,
                 headers={"Authorization": f"Bearer {token}"} if token else {},
             )
             if response.status_code >= 400:
@@ -328,11 +368,26 @@ async def start_project(
 
     auth_header = request.headers.get("authorization", "")
     token = auth_header.removeprefix("Bearer ").strip() if auth_header else ""
-    result = await _request_start_project(idea.project_name, str(idea.id), token)
+    project_payload: dict[str, Any] = {
+        "name": idea.project_name,
+        "idea_id": str(idea.id),
+        "founder_id": str(idea.submitted_by) if idea.submitted_by else None,
+        "founder_email": idea.founder_email,
+        "one_liner": idea.one_liner,
+        "problem": idea.problem,
+        "blueprint": idea.draft_blueprint,
+    }
+    result = await _request_start_project(project_payload, token)
     if result is None:
         raise ServiceUnavailableError(detail="Workspace service unavailable.")
 
-    # Notify IDE: workspace project created, ready to open
+    # Stamp the idea 'synced' so it leaves the FIFO pending queue and is counted
+    # as synced from the single source of truth (the idea stock).
+    idea.status = IDEA_STATUS_SYNCED
+    await session.flush()
+    await session.refresh(idea)
+
+    # Notify IDE: workspace project synced, ready to open
     await event_bus.publish(
         topic_name="intake.projects",
         event_type="project.started",
@@ -340,6 +395,7 @@ async def start_project(
             "idea_id": str(idea.id),
             "project_name": idea.project_name,
             "started_by": str(user_id),
+            "synced_count": result.get("synced_count"),
             "workspace": result,
         },
     )

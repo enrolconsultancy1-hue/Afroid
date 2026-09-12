@@ -1,0 +1,2005 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260909063636
+Username: DESKTOP-VMAPI1N\HP
+RunAs User: DESKTOP-VMAPI1N\HP
+Configuration Name: 
+Machine: DESKTOP-VMAPI1N (Microsoft Windows NT 10.0.22000.0)
+Host Application: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe
+Process ID: 11296
+PSVersion: 5.1.22000.2538
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.22000.2538
+BuildVersion: 10.0.22000.2538
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\HP\Desktop\afroid_live_state.txt
+########## 1. ACCOUNT / PROJECT ##########
+accessibility:
+  screen_reader: 'True'
+core:
+  account: enrolconsultancy1@gmail.com
+  disable_usage_reporting: 'True'
+  project: afroid-506916
+lifecycleState: ACTIVE
+projectId: afroid-506916
+projectNumber: '629240539505'
+########## 2. ENABLED SERVICES ##########
+analyticshub.googleapis.com
+appengine.googleapis.com
+artifactregistry.googleapis.com
+autoscaling.googleapis.com
+bigquery.googleapis.com
+bigqueryconnection.googleapis.com
+bigquerydatapolicy.googleapis.com
+bigquerydatatransfer.googleapis.com
+bigquerymigration.googleapis.com
+bigqueryreservation.googleapis.com
+bigquerystorage.googleapis.com
+cloudapis.googleapis.com
+cloudbuild.googleapis.com
+cloudresourcemanager.googleapis.com
+cloudtrace.googleapis.com
+compute.googleapis.com
+container.googleapis.com
+containerfilesystem.googleapis.com
+containerregistry.googleapis.com
+dataform.googleapis.com
+dataplex.googleapis.com
+datastore.googleapis.com
+deploymentmanager.googleapis.com
+dns.googleapis.com
+fcm.googleapis.com
+file.googleapis.com
+firebase.googleapis.com
+firebasehosting.googleapis.com
+firebaseinstallations.googleapis.com
+firebaseremoteconfig.googleapis.com
+firebaseremoteconfigrealtime.googleapis.com
+firebaserules.googleapis.com
+firestore.googleapis.com
+generativelanguage.googleapis.com
+gkebackup.googleapis.com
+iam.googleapis.com
+iamcredentials.googleapis.com
+identitytoolkit.googleapis.com
+logging.googleapis.com
+monitoring.googleapis.com
+networkconnectivity.googleapis.com
+oslogin.googleapis.com
+pubsub.googleapis.com
+redis.googleapis.com
+run.googleapis.com
+runtimeconfig.googleapis.com
+secretmanager.googleapis.com
+securetoken.googleapis.com
+servicemanagement.googleapis.com
+servicenetworking.googleapis.com
+serviceusage.googleapis.com
+sql-component.googleapis.com
+sqladmin.googleapis.com
+storage-api.googleapis.com
+storage-component.googleapis.com
+storage.googleapis.com
+sts.googleapis.com
+telemetry.googleapis.com
+testing.googleapis.com
+vpcaccess.googleapis.com
+########## 3. CLOUD RUN - LIST ##########
+NAME: afroid-auth-prod
+URL: https://afroid-auth-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-auth-prod-00032-qhx
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-certify-prod
+URL: https://afroid-certify-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-certify-prod-00028-chq
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-codegen-prod
+URL: https://afroid-codegen-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-codegen-prod-00021-w66
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-gateway-prod
+URL: https://afroid-gateway-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-gateway-prod-00018-6sn
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-incubate-prod
+URL: https://afroid-incubate-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-incubate-prod-00022-8gb
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-intake-prod
+URL: https://afroid-intake-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-intake-prod-00020-xcj
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-notification-prod
+URL: https://afroid-notification-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-notification-prod-00022-zjh
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-orchestrator-prod
+URL: https://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-orchestrator-prod-00030-f5z
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-platform-prod
+URL: https://afroid-platform-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-platform-prod-00028-vpg
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+
+NAME: afroid-vector-store-prod
+URL: https://afroid-vector-store-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-vector-store-prod-00022-j9k
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store:latest
+
+NAME: afroid-web-prod
+URL: https://afroid-web-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-web-prod-00032-pvv
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web:latest
+
+NAME: afroid-workspace-prod
+URL: https://afroid-workspace-prod-kx4jycljfa-uc.a.run.app
+LATEST_READY_REVISION_NAME: afroid-workspace-prod-00019-5ds
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+########## 4. CLOUD RUN - PER SERVICE DETAIL ##########
+===== afroid-gateway-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containers:
+      - env:
+        - name: GATEWAY_AUTH_URL
+          value: https://afroid-auth-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_PLATFORM_URL
+          value: https://afroid-platform-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_CERTIFY_URL
+          value: https://afroid-certify-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_INCUBATE_URL
+          value: https://afroid-incubate-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_ORCHESTRATOR_URL
+          value: https://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_CODEGEN_URL
+          value: https://afroid-codegen-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_VECTOR_STORE_URL
+          value: https://afroid-vector-store-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_NOTIFICATION_URL
+          value: https://afroid-notification-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_WORKSPACE_URL
+          value: https://afroid-workspace-prod-kx4jycljfa-uc.a.run.app
+        - name: GATEWAY_INTAKE_URL
+          value: https://afroid-intake-prod-kx4jycljfa-uc.a.run.app
+        - name: CORS_ORIGINS
+          value: https://afroid-web-prod-629240539505.us-central1.run.app,https://afroid-web-prod-kx4jycljfa-uc.a.run.ap
+p,https://app.afroid.io
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway:4c734a01cbc968b4c30ff4896049eaee9af9e6
+4e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-gateway-prod-00018-6sn
+  url: https://afroid-gateway-prod-kx4jycljfa-uc.a.run.app
+===== afroid-auth-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth:4c734a01cbc968b4c30ff4896049eaee9af9e64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-auth-prod-00032-qhx
+  url: https://afroid-auth-prod-kx4jycljfa-uc.a.run.app
+===== afroid-platform-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform:4c734a01cbc968b4c30ff4896049eaee9af9e
+64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-platform-prod-00028-vpg
+  url: https://afroid-platform-prod-kx4jycljfa-uc.a.run.app
+===== afroid-orchestrator-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator:4c734a01cbc968b4c30ff4896049eaee9
+af9e64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-orchestrator-prod-00030-f5z
+  url: https://afroid-orchestrator-prod-kx4jycljfa-uc.a.run.app
+===== afroid-certify-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify:4c734a01cbc968b4c30ff4896049eaee9af9e6
+4e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-certify-prod-00028-chq
+  url: https://afroid-certify-prod-kx4jycljfa-uc.a.run.app
+===== afroid-incubate-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate:4c734a01cbc968b4c30ff4896049eaee9af9e
+64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-incubate-prod-00022-8gb
+  url: https://afroid-incubate-prod-kx4jycljfa-uc.a.run.app
+===== afroid-codegen-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen:4c734a01cbc968b4c30ff4896049eaee9af9e6
+4e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-codegen-prod-00021-w66
+  url: https://afroid-codegen-prod-kx4jycljfa-uc.a.run.app
+===== afroid-notification-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '5'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification:4c734a01cbc968b4c30ff4896049eaee9
+af9e64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-notification-prod-00022-zjh
+  url: https://afroid-notification-prod-kx4jycljfa-uc.a.run.app
+===== afroid-workspace-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace:4c734a01cbc968b4c30ff4896049eaee9af9
+e64e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-workspace-prod-00019-5ds
+  url: https://afroid-workspace-prod-kx4jycljfa-uc.a.run.app
+===== afroid-intake-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containers:
+      - env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake:4c734a01cbc968b4c30ff4896049eaee9af9e64
+e
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-intake-prod-00020-xcj
+  url: https://afroid-intake-prod-kx4jycljfa-uc.a.run.app
+===== afroid-vector-store-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '0'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cloudsql-instances: afroid-506916:us-central1:afroid-db-prod
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: DATABASE_URL
+        - name: JWT_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: JWT_SECRET_KEY
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              key: latest
+              name: GOOGLE_API_KEY
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store:latest
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-vector-store-prod-00022-j9k
+  url: https://afroid-vector-store-prod-kx4jycljfa-uc.a.run.app
+===== afroid-web-prod =====
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '20'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/client-name: gcloud
+        run.googleapis.com/client-version: 583.0.0
+        run.googleapis.com/cpu-throttling: 'false'
+        run.googleapis.com/sessionAffinity: 'false'
+        run.googleapis.com/vpc-access-connector: projects/afroid-506916/locations/us-central1/connectors/afroid-vpc-conn
+-prod
+        run.googleapis.com/vpc-access-egress: private-ranges-only
+    spec:
+      containers:
+      - env:
+        - name: APP_ENV
+          value: prod
+        - name: VERTEX_REGION
+          value: us-central1
+        image: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web:latest
+      serviceAccountName: 629240539505-compute@developer.gserviceaccount.com
+status:
+  traffic:
+  - latestRevision: true
+    percent: 100
+    revisionName: afroid-web-prod-00032-pvv
+  url: https://afroid-web-prod-kx4jycljfa-uc.a.run.app
+########## 5. CLOUD SQL ##########
+connectionName: afroid-506916:us-central1:afroid-db-prod
+databaseVersion: POSTGRES_16
+ipAddresses:
+- ipAddress: 34.9.120.78
+  type: PRIMARY
+- ipAddress: 104.197.175.218
+  type: OUTGOING
+settings:
+  backupConfiguration:
+    enabled: true
+  ipConfiguration:
+    enablePrivatePathForGoogleCloudServices: false
+    ipv4Enabled: true
+    message: Configuring authorized network or using CloudSQL auth proxy or language
+      connectors is a prerequisite for connecting to Public IP. Please refer to the
+      documentation for more details https://cloud.google.com/sql/docs/mysql/authorize-networks.
+    requireSsl: true
+    serverCaMode: GOOGLE_MANAGED_INTERNAL_CA
+    serverCertificateRotationMode: SERVER_CERTIFICATE_ROTATION_MODE_UNSPECIFIED
+    sslMode: TRUSTED_CLIENT_CERTIFICATE_REQUIRED
+  tier: db-custom-2-7680
+state: RUNNABLE
+NAME: postgres
+
+NAME: afroid
+########## 6. SECRET MANAGER ##########
+NAME: DATABASE_URL
+CREATED: 2026-09-09T10:18:42
+
+NAME: GOOGLE_API_KEY
+CREATED: 2026-09-01T10:44:34
+
+NAME: JWT_SECRET_KEY
+CREATED: 2026-09-01T10:41:36
+########## 7. IAM POLICY ##########
+bindings:
+- members:
+  - serviceAccount:service-629240539505@gcp-sa-artifactregistry.iam.gserviceaccount.com
+  role: roles/artifactregistry.serviceAgent
+- members:
+  - serviceAccount:deployer-sa@afroid-506916.iam.gserviceaccount.com
+  role: roles/artifactregistry.writer
+- members:
+  - serviceAccount:629240539505@cloudbuild.gserviceaccount.com
+  role: roles/cloudbuild.builds.builder
+- members:
+  - serviceAccount:service-629240539505@gcp-sa-cloudbuild.iam.gserviceaccount.com
+  role: roles/cloudbuild.serviceAgent
+- members:
+  - serviceAccount:629240539505-compute@developer.gserviceaccount.com
+  role: roles/cloudsql.client
+- members:
+  - serviceAccount:629240539505@cloudservices.gserviceaccount.com
+  role: roles/compute.instanceGroupManagerServiceAgent
+- members:
+  - serviceAccount:service-629240539505@compute-system.iam.gserviceaccount.com
+  role: roles/compute.serviceAgent
+- members:
+  - serviceAccount:service-629240539505@container-engine-robot.iam.gserviceaccount.com
+  role: roles/container.serviceAgent
+- members:
+  - serviceAccount:service-629240539505@containerregistry.iam.gserviceaccount.com
+  role: roles/containerregistry.ServiceAgent
+- members:
+  - serviceAccount:629240539505-compute@developer.gserviceaccount.com
+  - serviceAccount:629240539505@cloudservices.gserviceaccount.com
+  role: roles/editor
+- members:
+  - serviceAccount:service-629240539505@cloud-filer.iam.gserviceaccount.com
+  role: roles/file.serviceAgent
+- members:
+  - serviceAccount:service-629240539505@gcp-sa-firebase.iam.gserviceaccount.com
+  role: roles/firebase.managementServiceAgent
+- members:
+  - serviceAccount:firebase-adminsdk-fbsvc@afroid-506916.iam.gserviceaccount.com
+  role: roles/firebase.sdkAdminServiceAgent
+- members:
+  - serviceAccount:firebase-adminsdk-fbsvc@afroid-506916.iam.gserviceaccount.com
+  role: roles/iam.serviceAccountTokenCreator
+- members:
+  - serviceAccount:deployer-sa@afroid-506916.iam.gserviceaccount.com
+  role: roles/iam.serviceAccountUser
+- members:
+  - serviceAccount:terraform-sa@afroid-506916.iam.gserviceaccount.com
+  - user:enrolconsultancy1@gmail.com
+  role: roles/owner
+- members:
+  - serviceAccount:service-629240539505@cloud-redis.iam.gserviceaccount.com
+  role: roles/redis.serviceAgent
+- members:
+  - serviceAccount:deployer-sa@afroid-506916.iam.gserviceaccount.com
+  role: roles/run.admin
+- members:
+  - serviceAccount:service-629240539505@serverless-robot-prod.iam.gserviceaccount.com
+  role: roles/run.serviceAgent
+- members:
+  - serviceAccount:629240539505-compute@developer.gserviceaccount.com
+  role: roles/secretmanager.secretAccessor
+- members:
+  - serviceAccount:service-629240539505@service-networking.iam.gserviceaccount.com
+  role: roles/servicenetworking.serviceAgent
+- members:
+  - serviceAccount:service-629240539505@gcp-sa-vpcaccess.iam.gserviceaccount.com
+  role: roles/vpcaccess.serviceAgent
+########## 8. VPC / NETWORKING ##########
+NAME: afroid-vpc-prod
+SUBNET_MODE: CUSTOM
+BGP_ROUTING_MODE: REGIONAL
+
+NAME: default
+SUBNET_MODE: AUTO
+BGP_ROUTING_MODE: REGIONAL
+NAME: afroid-subnet-us-central1-prod
+NETWORK: afroid-vpc-prod
+RANGE: 10.10.0.0/20
+REGION: us-central1
+
+NAME: default
+NETWORK: default
+RANGE: 10.128.0.0/20
+REGION: us-central1
+CONNECTOR_ID: afroid-vpc-conn-prod
+STATE: READY
+NETWORK: afroid-vpc-prod
+IP_CIDR_RANGE: 10.8.0.0/28
+MIN_INSTANCES: 2
+MAX_INSTANCES: 10
+
+########## 9. ARTIFACT REGISTRY ##########
+Listing items under project afroid-506916, across all locations.
+
+REPOSITORY: afroid-containers
+FORMAT: DOCKER
+LOCATION:
+Listing items under project afroid-506916, location us-central1, repository afroid-containers.
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:02df9e267c35e4a8b26eeeeb2afcaa0cb4a51617b6fe43ec1d7b1082c9af9bbd
+CREATE_TIME: 2026-09-04T01:14:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:16910965377b00c906e4e8269272778b5d6625ad41d087d540d7f514cad80bc2
+CREATE_TIME: 2026-09-05T04:36:56
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:26ae4767d5713115056376d27d173c3842ca248d9d8d7608cf42407d46edbb12
+CREATE_TIME: 2026-09-01T00:33:01
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:34ab40bf18910c829856b1ddb698199c56d94e50c3631bee2657c1d79c566c33
+CREATE_TIME: 2026-09-04T00:52:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:3516aff6aa71a1ce62ed010ac664f8c05cc8ae0ad88a9909dc86bf6aa7e1bbeb
+CREATE_TIME: 2026-08-31T09:58:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:38484db8e91d9487ec41072e606271d98a33287b6c0cba3aae18d7d7eb57b036
+CREATE_TIME: 2026-08-31T10:35:28
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:41fc31c69814a4535604a37b10ff05856dd913ff996cf5e6e5e32e83165387c5
+CREATE_TIME: 2026-09-04T01:30:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:4c0002f0a3a030ad3fbd652d45a813300195ba9798c582edb49924b460d333b0
+CREATE_TIME: 2026-09-01T06:10:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:5ad8a52576214c69b38e842f678c9d724a423049cfd345e8ec6265290fe90b4b
+CREATE_TIME: 2026-09-01T03:22:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:605319e5fe48ffdf1ac85735bd9148ebde8a658461a60b23f0ed242bf21510ff
+CREATE_TIME: 2026-09-05T03:52:11
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:6a474473582cf0b3b3a294b310666bb113a2162b3139302a02c1c523a36818dc
+CREATE_TIME: 2026-08-31T09:50:11
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:6ce8745536209a876e6639c4e60770f8ac7b843ddaf8443b6ef4484216c5231c
+CREATE_TIME: 2026-09-03T09:07:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:765ef93be4083ba52401276a3e492fa207218cfaa1c7aec89fe4d39f5341276a
+CREATE_TIME: 2026-09-01T00:31:06
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:792379254151e05d32fd16ba77327436ff268902e6fea82259f5bb58988721dc
+CREATE_TIME: 2026-08-31T09:40:53
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:7adffaa0db1059f9af03c1b70de7cf69c2e9cf7dc6404eb8e5a4779daf8c8d30
+CREATE_TIME: 2026-09-09T03:45:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:7d66b1f8d95d473002d2daf3ffe69cbfa4b388de12878a37d71c6a32d2e5eb8c
+CREATE_TIME: 2026-09-03T09:18:08
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:7f1db0e86fade2e389a2229e2d7fa05b1a461c12c32a0116bc5427f313a48f76
+CREATE_TIME: 2026-09-03T05:45:19
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:809e1bf5323fccc5cde1d732e411d32ba0607aeeb459b4c7cd5dbba41ff7209b
+CREATE_TIME: 2026-09-08T06:24:31
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:88ddc0d92cfcf0b74a578962f1cb215788d4d703c903db8add74bf9957da13d7
+CREATE_TIME: 2026-09-03T08:50:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:8f4fcb404951de570a58bc71439e10f33fde79a98c1361f225e7b5b31ca8f00a
+CREATE_TIME: 2026-09-03T03:12:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:98086f29d87504145d471d3fe44484b9602872f0a628794420144b908fe642f6
+CREATE_TIME: 2026-08-31T09:37:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:985decf341fb0b4b1b3caf5d96c31ddde76c16f43c9810b2b31fb206ee370318
+CREATE_TIME: 2026-09-03T03:25:03
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:98a014c9ed14e158fa48c4e55b3daff562c33a854a78e2bf2c802fe4498d927d
+CREATE_TIME: 2026-09-06T06:04:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:9aed6f74d245ff8585302957b664f0d4e246c74c2cd4a7867fda3b293e151b78
+CREATE_TIME: 2026-09-01T00:14:07
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:a01598feec70e7e8e0ab92f3fcd7969738184a33ad48325e20aa6a8a8cb10f18
+CREATE_TIME: 2026-09-03T07:24:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:a93c0044e9cea06033e731b511e75e4ceacec6c54437382b1f2a458ed2b1bd63
+CREATE_TIME: 2026-09-01T06:10:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:b17544ee906fad69e2c8a522ade075fddbf85baaf8e0ba93a9f697c9582deee2
+CREATE_TIME: 2026-09-06T05:56:56
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:c327d53d1e08c3f8ecd0e154812b6a22adbcb695c59958a6f83359bba933205d
+CREATE_TIME: 2026-09-03T07:49:22
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:caca06dd67666d3d9b2438120ed4df2615340f4fb56b7270592945293a5c31a1
+CREATE_TIME: 2026-08-31T23:43:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:cfdb00318436509595e14896b87ba4cfe91e09f8c236ee647b948fed7fb1753d
+CREATE_TIME: 2026-09-05T02:54:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:d96101d897e1c4550eda14da34dd53ee1d84b9c14903ec83281555377498eaf9
+CREATE_TIME: 2026-09-05T02:17:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:da655096ca7cd0dd5b6d5d5701c98c42761361c8414c8c8e8fac6077cbe9b230
+CREATE_TIME: 2026-09-08T06:34:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:e93fd7e672b74f4396d756e477972f88907ba99f3e7bfa5e7089c19e9a9b4fb4
+CREATE_TIME: 2026-09-05T01:02:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:f025799e1f852d5554c07b73948c125b814933912dbad4ce9203f53486832116
+CREATE_TIME: 2026-09-05T01:38:54
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:f4ff58d04cae1e876ec2a047f935d07ff7d8bc71290de3ef9d4af7d5a1012aaf
+CREATE_TIME: 2026-09-01T06:10:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/auth
+DIGEST: sha256:f6179d62d805e6559c7f820c95223d3ed6eaee80298fb0edf1e2b3dc32af8d83
+CREATE_TIME: 2026-09-03T07:07:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:0cf533f174eda158d3f364299fd6319f395430a6be4e074f19fec81a48344534
+CREATE_TIME: 2026-09-01T00:16:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:29f7db75e933f141abf5004871597e625b35dbd577bb434755498ae30a26622e
+CREATE_TIME: 2026-09-03T05:44:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:32abd596fe7e4c32160010a52f155b735c850b33480586beb8ac3529981df741
+CREATE_TIME: 2026-09-05T03:55:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:33b2c2f87b56639eadf593ed57abfa5cc7f6da40e16d9b3d0483a10d268f0d11
+CREATE_TIME: 2026-09-05T02:57:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:3701c6e39fd2c5e014c5a9be12d2c3f3f070547499d53198735fbb899d0af1c5
+CREATE_TIME: 2026-09-01T00:33:44
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:383a06a86d2e952926273d86b20b36566cf6c7b0eb334a304adc003a6c4bf259
+CREATE_TIME: 2026-09-03T07:10:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:46b1e6ca3d8b6d4310c8cf3e19de68fe4a1ffef662a8ec0ad70bd36180486f3f
+CREATE_TIME: 2026-09-05T01:05:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:4ddcda03519cc5d5a015d3a382ffc5c681348b4467fe84776fc78737c759049f
+CREATE_TIME: 2026-09-04T00:55:46
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:5bef1a397ad786ff828813ee441f31717de30249ef26da26d5468a84e9ebb60a
+CREATE_TIME: 2026-09-03T07:52:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:61724fb35d11ac5923b2dbcce1b8e54058a7d4715d0457c090ae33a9e64084a5
+CREATE_TIME: 2026-09-02T15:30:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:65f1a71c1eb61fe455f91a6610fbfb19e644f5f8a2dddadfafde9f65236777ca
+CREATE_TIME: 2026-09-03T03:28:19
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:7abc148eb85b1146e88df677493017c1255a4b98c2473691e1adc0939159b2fc
+CREATE_TIME: 2026-09-04T01:17:42
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:8644591cc57439059af8903317937dc93e74cd285fdcaa3d2eaea20d78cd7ffe
+CREATE_TIME: 2026-08-31T10:38:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:956e0b048724cfea50f4b999d39c4fc347a999519aa090bcb1e97a407027f5ae
+CREATE_TIME: 2026-09-05T01:42:04
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:a138cc185738ef7547c0e61d52e56da7dc83a296383bbb4d4d60bb9923fb2cc5
+CREATE_TIME: 2026-09-05T02:20:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:a273c218d5a6fe2652c14a017b13974fdba7ac1551a41fe1b1fc723c0f3a78ff
+CREATE_TIME: 2026-09-03T09:21:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:af6e0af36a1995ea5574cca4914b97b3efc86685d32c5b89d6130718b2156751
+CREATE_TIME: 2026-09-03T09:11:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:b12a7e2b1e784f0d7946dd9dfb64047d612c08db5f5bc0235a69a89258e4b840
+CREATE_TIME: 2026-09-02T21:12:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:b4894d730d882234ca2138b868c43eba9b3c799193a1ca06508bdb105b52ef96
+CREATE_TIME: 2026-09-04T01:33:11
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:cd38b43bec817a96984775763e7e4c6b09cdcf2e33b5976455cf2f1d4d1d7134
+CREATE_TIME: 2026-09-03T07:27:35
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:d0b35de7371a2c6dace4221cccdaa26ba7681b53b5da08ddbc5e9e90fafa3836
+CREATE_TIME: 2026-09-03T08:53:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:dabb7ba9a4d26d2063500e2385bb919bac37d64aa0e5e5396065c963e37f99e8
+CREATE_TIME: 2026-08-31T23:46:38
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:e383b5094e4019ca2808fe99d94815e65d81fc48086fced950e65c1da3f4f04f
+CREATE_TIME: 2026-09-03T03:16:03
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:e3a13519a07970f225aa96849dc6659b735613048a2cc3f57b8de5e76b0ff561
+CREATE_TIME: 2026-09-01T00:35:38
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:f809cb90fca5a6b2c4b6aa7a2ace633ccf5dfa89fda3121b76014dc6ae22b3fd
+CREATE_TIME: 2026-09-01T03:25:28
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/certify
+DIGEST: sha256:fd39480441c166e1ab034c48b3967dd047dcdf632ab65cfcc0fd1b47b42e7dac
+CREATE_TIME: 2026-09-03T05:48:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:1016ab3cd7ee0160afa87b34014bc8c6ec15a38b8ba49f9cdd2f3c7d7483231d
+CREATE_TIME: 2026-09-03T09:14:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:1f8e20ce14df15a491ba5eb9e3983af501fa4d426ef88722ff46a66b4d7ffe6d
+CREATE_TIME: 2026-09-05T01:09:49
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:22131485675b5a7dd8b8120f43d3fc544c7b5b080515595a664546149a241b96
+CREATE_TIME: 2026-09-05T01:45:35
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:2f900e06fdd642ace6300e453d95fe3106f14c193ddb01ee5c3c596b8aa51ca5
+CREATE_TIME: 2026-09-01T04:37:00
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:33a5fb4ec59785560caefa0a7b31786d17c5077c257475c6c2470f1e597b8a5b
+CREATE_TIME: 2026-09-03T07:14:46
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:477d5808eaabd5d657bfe68c50d484319aff7f240cfb5695a02e3c63e0d2fb22
+CREATE_TIME: 2026-09-03T07:57:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:4e3ced871c9ce9fc0524830604d179ba0bd64c9101c4838bbfee5d9189dcd201
+CREATE_TIME: 2026-09-03T03:31:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:588ffea85c0f90ca7a932022214d7f80e314934021dab56727a1cce6e0964ec7
+CREATE_TIME: 2026-09-05T02:24:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:59bd2a7f086e8f1ad1c3ab376ab32c0d0b978f4c32529c453b06c8513d94ae54
+CREATE_TIME: 2026-09-03T09:25:16
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:6ab2d83f5cac7bcb0b9d2ff610820521c6c17c3375292e4c0e7ace0b1574b297
+CREATE_TIME: 2026-09-04T01:36:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:6c0fb287f3430ffe24263967348c8b98ed257b80d8e0f1fddc86a89d49378d10
+CREATE_TIME: 2026-09-05T03:58:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:7a5226974323e7e6abbedd413aaa1444076b4c7a16749fd5cc78f9c4bf443f0c
+CREATE_TIME: 2026-09-03T08:58:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:904163e719e70e9dc206f38aa049b4e590ff220f5ee716712c63b4da0c09e36c
+CREATE_TIME: 2026-09-01T04:37:00
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:a1268eccaaad1112c05932a9ee7c37d61724c903b308757739bf645ec31d323f
+CREATE_TIME: 2026-09-04T01:21:25
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:af84f20db25c2ef23eb03f2f28f6f3c889f55d9d74ba1dd274062d1a48476552
+CREATE_TIME: 2026-09-03T03:20:09
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:b766ccdd0056b912384ecfd8fe12af0eb2325a6a7ccf3b7366a20eff12756bef
+CREATE_TIME: 2026-09-05T03:00:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:bd06c999d687d780ceb5b7d751cf8440a61a3462798a7e54d2206776d38e5157
+CREATE_TIME: 2026-09-03T05:52:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:c43d303d698b5da69f0f410b1d45148d64939389718ddb6ecc674e2e7ae0f2de
+CREATE_TIME: 2026-09-01T04:37:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:d44c119e95a1a4a0557bb051bdecf1fc1458b03e90a7959fad236a36d979a400
+CREATE_TIME: 2026-09-04T00:59:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/codegen
+DIGEST: sha256:e2e2112a03b6cf8e577d4f069232020093ff240a5224740fbd4d3bcf61e79572
+CREATE_TIME: 2026-09-03T07:31:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:080f41f56b530f483b963f9c412b65d960978c092113b1afcd17038165e21b52
+CREATE_TIME: 2026-09-04T01:03:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:0b31b6f7a63884b08a3c81ef937fa7d00161ab4ca681b6b999b2546c81cc7263
+CREATE_TIME: 2026-09-05T03:04:07
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:2cd92ce4dbc458400882679bdf11b4ad6f54a8d8fd4ae9d08ee42deb08a542ee
+CREATE_TIME: 2026-09-05T02:28:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:39a0d26934bb4da7b4e2ec7981dc4154eb9c2fab3fac808d5fdefe607acd41ba
+CREATE_TIME: 2026-09-03T05:56:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:3dc7b65c94ae6762ef8286da2d7a1b059c9e4bcb34d2e6cc17c4fa561482edf6
+CREATE_TIME: 2026-09-05T01:13:28
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:5c45434e5ab2e2d9c4b2c78022ab40f83fde3a5f401f4d92d5c48f820d03e23e
+CREATE_TIME: 2026-09-03T07:35:25
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:72bb02e3e7305b857a7a5b4bb341c5ee45d5edf6fd98369076d2fea260613e1c
+CREATE_TIME: 2026-09-03T09:01:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:861cc73f9ee4a83081786777c0849e772f2fc14e1cc8ab62a341956a2b0f4251
+CREATE_TIME: 2026-09-04T01:25:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:8d043e89e83146859476cf25d4f242a1eb68e2662880258c5e5e7e4e3097cf67
+CREATE_TIME: 2026-09-04T01:40:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:93080e82e51f9a3fc77b598f31f7336ad8396c0a29fc85fc9edb9b80bb7714ad
+CREATE_TIME: 2026-09-05T01:48:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:a90c337f3d14fded9eb86f56731210cb3f53a3617125ff906b5b77d2776e33a4
+CREATE_TIME: 2026-09-03T09:29:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:a9c980c84a714b7fb5d01e34f1df2781a96901eb692ae05b282e1b689cd2e151
+CREATE_TIME: 2026-09-05T04:02:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:b54722353be5667554555f0b13a86671b10fe14d574779f6a1c3b7b3509206d2
+CREATE_TIME: 2026-09-03T08:01:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:eaaf5238f60500b62cceecbe947ce94862e1a0c78c043c0e772aa4fbd3c4cb80
+CREATE_TIME: 2026-09-03T07:21:45
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/gateway
+DIGEST: sha256:efa38543d9ff5559447f496679806d125364889b247b7cf344c39ef1f06ed68b
+CREATE_TIME: 2026-09-03T09:18:25
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:01eba18347e0e74e2ee11e4998597a28e18d283bbbdc8429e25aa0a1c5861052
+CREATE_TIME: 2026-09-03T07:54:01
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:0a10b3709590761ed7db69c74484d4995f037e94cca6a18bac65a0fbb300627d
+CREATE_TIME: 2026-09-05T02:58:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:0a3b461c8e73eb8393c1e219849c977c4bb9838f1385d33e684a8c9129b0b76d
+CREATE_TIME: 2026-09-05T02:21:42
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:0b8d969a9f9e4745740cc724b594d729cbb4ccecbd43a3acc6ebbb9c3d8026c1
+CREATE_TIME: 2026-09-03T03:17:51
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:14a0af03de1f2f2f6d6c3dffab33a82de4a26f84d691035d2b3c5a24b89b0bc4
+CREATE_TIME: 2026-09-03T08:55:36
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:176b4e46afd46b422ae8ee663af072c310426878def49f7fb8a67f2cfa00bdfc
+CREATE_TIME: 2026-09-05T01:43:32
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:18971d6bf66a338c605dfbf1f42ade5e238023885ecd68816297e9e95b749431
+CREATE_TIME: 2026-09-01T04:47:04
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:2220829cdf08c4ac1fd2962e7f63c3a0180949694ca4df255b3358f2a014318a
+CREATE_TIME: 2026-09-04T00:56:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:3e47c3598505a83b8c9b522529e8f05c7f198f80ee0858207efe3cfc09be4362
+CREATE_TIME: 2026-09-02T21:22:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:4069e5a20125cb04868d012213351e0c7795579aaedbfa604b78a1323d777348
+CREATE_TIME: 2026-09-03T05:49:54
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:4cf643135ca4a4e2cdc3b29968f6c18e8055eb688c8fd6389475a4a35c8a466f
+CREATE_TIME: 2026-09-03T09:12:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:68a831c137f7f3fc969154de43cbb25db7c734801f7bb502d4f93f6aa6df6d42
+CREATE_TIME: 2026-09-05T01:07:31
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:6b1272433165460eb0d98de5b2aff4c7d71b6baf33f91e8d2bf6a727b04bbca4
+CREATE_TIME: 2026-09-02T21:13:35
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:6cac5a6fcb62ceb7f0648dba965195b193f8c3c3a41835b1d8a58ff558d38aa7
+CREATE_TIME: 2026-09-04T01:34:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:7134753de752b8ae5cb6420db7dbe6539b647d1cfedb3fef6447483b4018605d
+CREATE_TIME: 2026-09-04T01:19:08
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:8db7ddac11857c0235026d9300ab7d3f0f6f327e2e8f5e87f915eb33cd75fdd6
+CREATE_TIME: 2026-09-05T03:56:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:9b0d65b91d66c62880785a5ad9c834e2dcff29b3016133471d77031b6b234755
+CREATE_TIME: 2026-09-01T04:47:04
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:b6a38ad96dc353d4370e2407499924e491ecfc87dd0ebd0981717b0ba6c10813
+CREATE_TIME: 2026-09-01T04:47:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:d9f3dfcb027f852709237e97fe74f300d01832316fcabe28544151d3a6854f5d
+CREATE_TIME: 2026-09-03T05:45:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:dc546926ea41129da7bebacf2d00087c326c932435c94b89c53d776234144810
+CREATE_TIME: 2026-09-03T03:29:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:de0166a7508ae22dc989b6b8dcf0ba5172e27d6d371482ea79abf7572f3bc470
+CREATE_TIME: 2026-09-02T15:31:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:e179f57a84eadaa76535a9f9fcfad9146d6ab8d1a0d18c0a39b9b0879ae2c2b7
+CREATE_TIME: 2026-09-03T07:12:16
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:e2f9fd12a57d0209dd3deb1b97088bb9e84cbbe14ddc919dab4d44e151cc7d35
+CREATE_TIME: 2026-09-03T09:22:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/incubate
+DIGEST: sha256:f133720d46347f5331a840b1a23f279301cefc5e747272b8a6572bab50746a40
+CREATE_TIME: 2026-09-03T07:28:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:0c2d1c7760b9124a09754f5cac8339185fd13700cf18a1744c971338783f5170
+CREATE_TIME: 2026-09-03T07:59:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:1f3d050489342fa07df4639a77a23871f1d3a90e43dd9e807988a44444eb05c7
+CREATE_TIME: 2026-09-03T05:46:15
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:35fd215f08e9192abe13144d9b25c5d105034459e1b6faba65d2ebc1a60db611
+CREATE_TIME: 2026-09-03T09:28:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:371471b661e5fa5ff40cf214e076b76e11066e7e17570e7af35e94c3d97cbfce
+CREATE_TIME: 2026-09-03T07:20:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:38f65953352c32769c1f7d72f8f75789acabfeeaee49a59956c3154a7c1fc48d
+CREATE_TIME: 2026-09-05T01:12:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:3a52399a112225634c37ed76f93720c6a574d5c42690570959080cb7ae10294e
+CREATE_TIME: 2026-09-05T02:27:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:406e02b344c1cc0695276aff03a8cacfa4cd0ea1b37ad357948dfc69931b1566
+CREATE_TIME: 2026-09-03T09:01:22
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:578ece627038691552090c7ea69ac6ab23bb162a7e0fe357206a51daf2842250
+CREATE_TIME: 2026-09-03T07:34:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:581d59efb1f6bbc5ffa5d7b23125fbd33192487b02a4af9927e03f8063d8dac2
+CREATE_TIME: 2026-09-04T01:02:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:5d99e7e84a9c7bc3f4bcfc7fde13416c3e7b85df74674d57cf8f770eeaf57065
+CREATE_TIME: 2026-09-03T03:35:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:71b9ff5981d75872dbc92efdf0d9c8fdbe429b1e8e5d9e3be27517b1032ed303
+CREATE_TIME: 2026-09-04T01:39:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:84280759ca8c01336a8f3ce13efa99b346dc20fe86cd27fc75b3ee4b6f34688f
+CREATE_TIME: 2026-09-03T05:55:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:85de1c00259342576b7dd076f966179d87dabce5aaaffb4516dac616083b6501
+CREATE_TIME: 2026-09-05T04:02:06
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:aca802f6b0167dc2eb7aff4a5869ea8f4d3163d03a4ba30e50765cf7abcc0590
+CREATE_TIME: 2026-09-05T01:47:53
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:c04f019bebe6148fb8e33cc6ca9d3a17b0bd906b3de659f6a797abbcd3d173db
+CREATE_TIME: 2026-09-03T09:17:32
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:c43d807d3e6d9deb0616632ef16a10d76378b5029291a2e9a1b3af05fbf1c750
+CREATE_TIME: 2026-09-04T01:24:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:fa6ab22f3d507d153a3b544f8dde83db1f77758c67280f2fcde463fa84a2a9bd
+CREATE_TIME: 2026-09-03T03:23:09
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/intake
+DIGEST: sha256:fed78428fa1c30bb987f290168e3c678991e7ee8005d4bc28ea7eecaa8693a4c
+CREATE_TIME: 2026-09-05T03:03:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:19b93cee333e45fd20d5ddfe6310adc2b404f1df32dbb43d097fa7d53600b91f
+CREATE_TIME: 2026-09-03T07:15:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:1f4df555266813a31c2a3928111d6acbca7fff6f27593f0b687f8f93f20d247b
+CREATE_TIME: 2026-09-02T21:29:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:2da5d20a1977719fae96dbb35f67bc75383a2ca822b6cee5d6e52b15d84b8858
+CREATE_TIME: 2026-09-02T21:14:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:3898ffdb961656a7cb4986961d2a0f2eea8b8664d0a6ba4362bf908f084e3764
+CREATE_TIME: 2026-09-05T01:10:57
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:396c5bf6559c3ed2a3d422c543e744fce27f5b258292397a79a70ebc06e52f92
+CREATE_TIME: 2026-09-05T04:00:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:54d313ef8cfa5249165368c86a0cb498733f6b399c92b98e379d88ee7ea3ebff
+CREATE_TIME: 2026-09-04T01:37:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:56b34f2be0150425a6e9884fcb16c9e536aa94b55d6d5fc56a13714063f61b9b
+CREATE_TIME: 2026-09-02T15:31:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:57654245dbacb4794cd6d61c72ce44f5cecc3216e34bad4b93ba51986bd39a81
+CREATE_TIME: 2026-09-01T04:50:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:649fe56cc1ceacc967f8a97460d8d36ad8efc517dfaf6c6b59f696076c3d66e0
+CREATE_TIME: 2026-09-03T05:45:53
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:83040c2f11d7e458a973161dbf56762c5f1ed96cb799f8580c43a7d2aa53b076
+CREATE_TIME: 2026-09-03T03:21:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:925d9c782df22655e2ff08fc48a9fc33ec083b93f5f4ebeed2f4cb97cac081bb
+CREATE_TIME: 2026-09-03T05:53:34
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:9b46fe2b6ac89f0c40e9e988abab9e190b0a0ef11bc63dafcbade073cd90fd0a
+CREATE_TIME: 2026-09-03T09:15:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:a19242d12903dc3b6609fcd2154bd23766916a1b60d9907f173d822960ca8c3b
+CREATE_TIME: 2026-09-04T01:22:49
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:a4dbe249be2918d457c2f69c5a78f1f6924bf1fda04c71c387f1ad71b341d40c
+CREATE_TIME: 2026-09-05T01:46:18
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:a7e2c9468d96ff66e16df36e0e9082eacc64ac1527cf00dee807af6d2db3f3b6
+CREATE_TIME: 2026-09-03T09:26:25
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:a9afb41a6311ab931ff59defa8bd80b97f405e6b886a0998fb0426ba690b2e04
+CREATE_TIME: 2026-09-03T03:33:07
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:ab9d2a7d7d9efe6a723e29f4941d1508212dbfe03d19ff4f310a51e44fbb795c
+CREATE_TIME: 2026-09-03T07:58:03
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:b674e5adbb7a8e8942e2bdc97651e7dde0aa84294b00179a7cc64bb72c8ec6f4
+CREATE_TIME: 2026-09-01T04:50:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:c107310a79cd5ce0027ddb7e1b003b83db45a7a91f0909c653cd9a97f8b6f7d3
+CREATE_TIME: 2026-09-03T07:32:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:dd8a73c3e743322cf4bd83e049c3f0fd048d7cba3229fcd7905de3dbfdbcf890
+CREATE_TIME: 2026-09-05T03:01:46
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:df715a49848bad40618c8006c90a1617962cc52f10d0f0b0adafcfa5ae86f5a3
+CREATE_TIME: 2026-09-03T08:59:28
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:e565d89757e1c8082f70e7ba5afbbd1fd9cef12bc2c6d5a4d5f6944b788fea6c
+CREATE_TIME: 2026-09-01T04:50:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:f3e216daae20ba8d5e233427dc10d4ea05691406e366039c3034f68f0466013a
+CREATE_TIME: 2026-09-05T02:25:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/notification
+DIGEST: sha256:fd032e7e4374ba81c330bac457383c180dcd43bfde47cdb5a619b1a1ef32198d
+CREATE_TIME: 2026-09-04T01:00:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:08c3b5ffce16dd1191eeddfe3142d522db7da31a090d7c1e5ee50329d4600e4a
+CREATE_TIME: 2026-09-05T03:54:15
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:16fcb2b3da9ffbc61e6b85bd2bbf1dbf711cbfd0a483c51247b78f384c276e28
+CREATE_TIME: 2026-09-05T02:27:09
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:1b2f938edd3ca40512c467e64876c0ca5ddf9a84478cb892a87b40940802d342
+CREATE_TIME: 2026-09-01T00:33:01
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:2231f32e5d2be9565ae00e871caac6558f1ab1cdc74472b9654056ef30c854b6
+CREATE_TIME: 2026-09-03T07:51:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:3114997630a7ddcdd6dc594657ba7d7afabc3afd55f67fc00afd224d07a5f39a
+CREATE_TIME: 2026-09-01T00:34:45
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:3931eb61ab214a53714284757983f123bdf7e5b70a436c71a7dc808290bc2467
+CREATE_TIME: 2026-09-05T01:04:45
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:3ecb3768ee1f271b0bfa4da946d53662e3e0dcf81cb0aa51d06f0bdef6e0a98a
+CREATE_TIME: 2026-09-03T07:09:44
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:3f0e05403da364f23c14ad83a14ad7610f62f782df9ba95c38fabd217b95b99b
+CREATE_TIME: 2026-09-04T01:16:53
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:55f7a7b603b3d8bd38127f483d763eaeea326e1403aee290574d029feee2d392
+CREATE_TIME: 2026-09-03T08:52:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:5724f4fbf364dbc72d0726f85a2b73c125c976fad777034ea70d90ec690c1cf6
+CREATE_TIME: 2026-09-01T06:16:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:598c1e8ed82c86c3a33d4b2e3c4be0d1e549a49e7672f6917d29124400427b57
+CREATE_TIME: 2026-09-03T09:10:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:59dc36cb1292fc9d95230cd8d9660898e6179655eba24ee4ff80ab3ef7ad9829
+CREATE_TIME: 2026-09-03T03:27:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:5bc5905fc49a914f14a5118880730652d79fb788fcc22f6f7ea722f45542da94
+CREATE_TIME: 2026-09-01T06:16:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:5ec49346fd9e17ef2c4a709739f299bf68b5ad942fa1301b457ec5a198b39aa5
+CREATE_TIME: 2026-09-04T01:32:23
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:70553bcd8bd9f98ca6eb1c537e794ca39b09d38872f0718f0722b03a000aa736
+CREATE_TIME: 2026-09-05T01:40:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:71cf488232b856aa9b0e4ab29bd115c94ee4d7b448b1b6400da6b7aeffdcfc02
+CREATE_TIME: 2026-09-05T02:19:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:75786619682042cbbb3f1d243c12be2dbeabf01d4081a1fcacb3da22afef5c0b
+CREATE_TIME: 2026-08-31T23:45:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:78ae02853264a444f87702363b0040d02c9b16e9dc42f2e95cb4b60fdb8cb185
+CREATE_TIME: 2026-09-01T03:24:20
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:81fa250da0eacce5e66e702db4e0d8f8a663909c8c199bcef8d3ca3ca122a48c
+CREATE_TIME: 2026-09-01T06:16:23
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:8aefd07357a4a6e200b19bbe78fe87a24b95bfe42bf8663f8d008501c1d4278d
+CREATE_TIME: 2026-09-05T02:56:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:9639312ba8299363924d6505d3b1a6b216c6fcad53bffd32f35811e5d77e3fb0
+CREATE_TIME: 2026-08-31T10:37:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:ada41ba0517d52e5cbca904f27f53fbfc69cb9d8ec9b31b0c969340e795f2f10
+CREATE_TIME: 2026-09-01T00:16:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:ca63e926cf5e31ad83b8f769a894c7210de0f56f6c9576e14229f2a7feacb306
+CREATE_TIME: 2026-09-03T07:26:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:d000a11eefb28109be0966a86c0f54cc783cd16b9929becc44931b26f7f29c2d
+CREATE_TIME: 2026-09-03T09:20:38
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:d1fba6d93195bd80b0de14a75d5acd1e87c3283034c4e2f00adc17ad97f7ab6f
+CREATE_TIME: 2026-09-04T00:54:23
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:d51fe9854c469dcece0951ade3fcdbbc28e845e48ead707132f9fc90f72514bf
+CREATE_TIME: 2026-09-03T03:15:16
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/orchestrator
+DIGEST: sha256:f736465eb2139d574eb9ec0f7e053c9e837c8621a9247d8b291d4d8c84affde9
+CREATE_TIME: 2026-09-03T05:47:19
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:1afb0c750c28e01041a85a49db819fb8888aac31d9487a157a91305828d95060
+CREATE_TIME: 2026-09-03T09:08:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:2ae6db60677ebf48f3cd996b82e654275b0292fc4de569b15d570a318fdfac3e
+CREATE_TIME: 2026-08-31T09:58:58
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:2d9506444c8653990e4c89bdcc52aa6f2cc491c3fc00e5be8d1d768444b149b9
+CREATE_TIME: 2026-09-05T02:18:07
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:515093e8b1c3037906f7b836955c8fb0e70f472ac17de6ba88026802eac49740
+CREATE_TIME: 2026-09-04T00:53:31
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:584b19e2381e487f0ce346fd2badeac4563fcbe2f24edb7f9bcc0c2a28b61419
+CREATE_TIME: 2026-08-31T23:44:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:59eeb1b2b463ab4c6befb337eff6a6fca51a5a979100208e6bc35e6e1bea4cfd
+CREATE_TIME: 2026-09-03T08:51:35
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:5ab8723b82d55334d88f4616968fca01fcb3b55a1f6e3e9cd2b614519a18e870
+CREATE_TIME: 2026-08-31T10:36:45
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:610841e808bc56582ee19919d0d4193fe5d3938edbd8d971192b20e4fab537cb
+CREATE_TIME: 2026-09-03T07:08:33
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:645f3ddb14fb574579e556f64b385283dee927a5b7c6d85b3e7db50df4c832f0
+CREATE_TIME: 2026-09-05T02:55:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:6bbc0ce315aa980887841cf35e8cb490629b63a4fda6849fc1f7b7f78563a517
+CREATE_TIME: 2026-09-04T01:15:26
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:6eba3920cd97b47c0142fa45a4ee4e15769ae77ea15ac6f1d5bfce42aefd0dd3
+CREATE_TIME: 2026-09-04T01:31:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:76ef4f16426f59b018be663f0d4d0b20da2397cfa4ad4a66dbc8fb1281d6e766
+CREATE_TIME: 2026-09-01T06:13:15
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:78fa69da18f93d6f516b95c3bfdda05ad22b78197658bca793c77e7ef9e3e99a
+CREATE_TIME: 2026-09-03T07:50:29
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:7b92d40fb76cb7aaa95f0eaf37bb8ee3a903360ecdd2af2af1698b4b4af353d7
+CREATE_TIME: 2026-09-01T00:14:54
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:876f2b2462bd708500f16d077aa4d0cf9e0735f7bd6687a59961e44afd059d40
+CREATE_TIME: 2026-09-05T03:53:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:90f25bbc79f1d5ec213be605f65cccf0a70e00e6029f244291ab112f335047c6
+CREATE_TIME: 2026-09-01T00:33:43
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:92fb7fd428c6f6611fbb0d398685c2a4c137616cecbded41741cf17d90246b51
+CREATE_TIME: 2026-09-05T01:03:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:a55cc8efc0372359ea651050783e24fad15dfffc889dbbe540bc486995a1838d
+CREATE_TIME: 2026-09-01T06:13:16
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:a7dd905941b11d1cced221f5da38352b72fa30676cfacb8d926a0270b319a1d4
+CREATE_TIME: 2026-09-01T03:23:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:ae238d9f47bb32849795720305be3b544f35e0f546d61428092c3addcffbd7d6
+CREATE_TIME: 2026-09-01T06:13:15
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:ae56713ad38f78e8ea9e2a210576244ad1cccf0388290231275d96f9dd737d05
+CREATE_TIME: 2026-09-05T01:40:01
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:ae89801fb2196ef7c594d04cea59d12137dce62edb6314701feabef752d44c12
+CREATE_TIME: 2026-09-03T05:46:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:bb4d1c72536eeeabc885c4bc1c533a8cdbcab4fd992041ffae8cebfc4b9c2852
+CREATE_TIME: 2026-09-03T09:19:08
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:c992f6f3babdedd496acdd40581afddef6c6cf16a57fcc3c758c22da6d46fa49
+CREATE_TIME: 2026-09-03T03:26:00
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:e89e6fd8c2ebd72eddb3f2cf021e79a7a871d78b15c7f11467c4bb0c17dcf09e
+CREATE_TIME: 2026-09-03T07:25:23
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:f345ef52aad28948dbc20a0743ab4977abdd5102805e60b34291904df480292a
+CREATE_TIME: 2026-09-03T03:13:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/platform
+DIGEST: sha256:fbc761aeddc69391bd510b2c6897a9b04c6f7733513bdd00f4f9d4036d5deda9
+CREATE_TIME: 2026-09-01T00:31:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:035cd0dbc3cc63616ed03b2fb6aef3348d8ecd9d65aecc46a61e269746a43e06
+CREATE_TIME: 2026-09-04T01:20:36
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:1d3562a90ae810ec8ea4c096d155457a73da0bca8f65fc97e9d10be9bc293a1c
+CREATE_TIME: 2026-09-03T09:24:28
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:4d2ccf4f7452c007a72a61bbe8221c06866d8001c72802851b3799ff6633d9b6
+CREATE_TIME: 2026-09-03T07:13:56
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:55ef82b3bc9fcc4c15130fb545156f59833834eb9758c652bcd4638fd46594ea
+CREATE_TIME: 2026-09-09T03:54:52
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:6523307465ffe3f6f224ec103430073d98c19076991c17bcafd5a68516d9a3e6
+CREATE_TIME: 2026-09-03T09:13:58
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:81578e24a1a12bb9b173bb3477700864e50d0ed968153ac332d0fb9354a96784
+CREATE_TIME: 2026-09-03T07:55:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:88559e41e63cb07dae2be1a2d8ac20450d25650082499359dccbac4d042a42a1
+CREATE_TIME: 2026-09-01T04:54:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:8df458da3ac2fad32d46d17b74279fc75b79f66659920827c209b5e924f8e960
+CREATE_TIME: 2026-09-03T08:57:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:99ac26076479e19f8a52c76204b2e010292113df724cfa762ce3023a6f6fdca3
+CREATE_TIME: 2026-09-04T01:35:37
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:a241a70c3d6b48cf597f757f3a8a208acdd8e0ed7d883bc0b2c76c33b28e9a9e
+CREATE_TIME: 2026-09-01T04:54:49
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:a2c59e9833161d5cf98bbf86f807014d8a2d0efd1af88dbf32754703d28e8e7c
+CREATE_TIME: 2026-09-04T00:58:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:af681d9da7270b9fda6ef1d5d31c20331b8bb3f5cefb6c2a1f5ac4bc02c4f16d
+CREATE_TIME: 2026-09-05T02:23:15
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:b03d391cd45123e133be2b65ed63469f2d6ae432f82bdd2baf7b1f4eb4ce06b5
+CREATE_TIME: 2026-09-05T01:44:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:d72a03b45dac311c30dbcbd0a51294939a2740e502d4467512e4ab695913bf3a
+CREATE_TIME: 2026-09-03T03:31:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:d7e93e1d2edab001d53b303e8c28de1c13348e58d7f053cc0cedd619c98db998
+CREATE_TIME: 2026-09-05T02:59:58
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:d90b8a0d44f37bf312379862f5242f36586258c3be5b5df3893c3f9ab610fe98
+CREATE_TIME: 2026-09-03T05:51:45
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:dd17e3638b4457ee708ead3ce82bc5678beac470928060bc2038c669dfcf70ab
+CREATE_TIME: 2026-09-03T07:29:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:e9686fc28d0fc00eacdc6fa9f7d62b408a2adf40d9a577737a2058944850fcfe
+CREATE_TIME: 2026-09-05T03:57:51
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:f61004f4af18c1aae5df25e24f15105cc4d3d506ff45658e3cb8af9d2a892a2d
+CREATE_TIME: 2026-09-03T03:19:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:f6e42debc8b2d25ac4954a9d4480fffccc193a15d6a87287e1f749d532ca95b0
+CREATE_TIME: 2026-09-01T04:54:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/vector-store
+DIGEST: sha256:ff739364502f167320eeb484c72b7b194c9079e5b72c80ea469f4b50408ba90b
+CREATE_TIME: 2026-09-05T01:08:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:05c9b9ab2c4706684ffd51ee5915fdc39930b245e626438ed9726acec09d7721
+CREATE_TIME: 2026-09-04T01:13:53
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:0e8e1092c8a789559961745a030b88b86745ca0c1511ee594714d0e4c257befa
+CREATE_TIME: 2026-09-01T05:14:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:21e14e142e460b5bdfba7f54ff4544d40ac055245f801ba0313139aa48225e6c
+CREATE_TIME: 2026-09-06T09:18:06
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:334ec8de5b9e0618833f6dc795940ffee2f6a100deee5daf422cef9cdfdafcbc
+CREATE_TIME: 2026-09-03T03:28:48
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:3f5d872076c02d7aa27a9385a69119f305d464b074817d611b87008f079ff428
+CREATE_TIME: 2026-09-04T03:28:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:424c2569b71968a7f0df7db8c908c17caee95bd65fbefd03cd1c659a0b1ade18
+CREATE_TIME: 2026-09-05T02:29:50
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:4723a151b1d0e5d2ad18ca7121b8867b89e4373a03ab952594e506471eca9a01
+CREATE_TIME: 2026-09-05T03:05:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:510e8ff29aa8ca22fb1bc154ed2b1ab054bf4a67a545b292c9852fc8d9f75b88
+CREATE_TIME: 2026-09-05T04:04:54
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:5f2dbc4e0d8fd78cddb293b2148300c1ddbde9022a5e43cbddf1a7e9ba996158
+CREATE_TIME: 2026-09-03T09:03:38
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:6054dd62a15942cce90e8a38484ab164805c59ad62a20190d0ff1434fd7ead0c
+CREATE_TIME: 2026-09-03T09:20:04
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:63a46a356a49269fb2b1de9959a8b58880662f4999d7534e004970c1f29af36f
+CREATE_TIME: 2026-09-08T06:27:59
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:6d4c4c66d530739a9e48fa4b7674a0d51c9099c536a115c89ac540d3d182bb2f
+CREATE_TIME: 2026-09-08T06:37:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:7601d781267958a4388a9f7555bf6675566b625b83fac61a2ab951b9c77d4d46
+CREATE_TIME: 2026-09-04T04:39:13
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:864ba8ad4c95ad35d887b473e46f409279c9c3b52ef286d04006821be70541f6
+CREATE_TIME: 2026-09-04T06:23:49
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:8fe0e3d5cd9fe9c6664a9e69f5f4093ec66127cdfe2ef4a60f1d6d7ae1fb143e
+CREATE_TIME: 2026-09-03T09:31:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:95d29938196efe53f4f4afbcac647808f483f3e63fadf8a923adaea86d6ec46d
+CREATE_TIME: 2026-09-04T05:47:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:9971aa905ccab05626cc60bfb430cd8ef491a22c385e46d12a483806d073b0ab
+CREATE_TIME: 2026-09-03T08:03:10
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:9cc2ebc3ec7766711443bbb706aa98f2f70b7e5ddd7d408ea2aec4c320a11a3d
+CREATE_TIME: 2026-09-04T01:44:58
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:9ce9dad0d7604a4c9ed7e45795090eceb63d3c0480cb3dff1c62d0f7b329ec7d
+CREATE_TIME: 2026-09-05T01:15:40
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:9cfedff02c503c6278c5c955925c8dc11d400ba86fd6ff6a3feeaab5d8d8dd68
+CREATE_TIME: 2026-09-03T05:58:05
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:a73f84e7fa583f7ad58f306250dd0579852fe4cbb99036366d76a789779f5444
+CREATE_TIME: 2026-09-04T04:16:17
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:b2ce0a85a3ace03581968a58a8d0ed5834aeb44b58ff31232340a7f2342173a8
+CREATE_TIME: 2026-09-03T07:23:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:c5b1b602384d1ce2dc5a912b154a34f0b940239ed2e76d997f4226b135ea1a72
+CREATE_TIME: 2026-09-01T05:14:39
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:cfb1d285363dff0d6645530d86448bca522f23b3dc9c4418d3aa63a72783ec13
+CREATE_TIME: 2026-09-05T01:50:14
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:d0f213ec532d2c097d85dfd6173721268856f9688452f159cd97b56a71daf811
+CREATE_TIME: 2026-09-01T05:14:43
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:d8803394839007b7623767c5064bafbbcecb58797f34934958e6ba4e192a120c
+CREATE_TIME: 2026-09-03T02:28:12
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:d963af69eff16e254f7bd21727a0fc8279b9b1934169a0e9fe1680a7554d24c1
+CREATE_TIME: 2026-09-04T03:57:02
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:e6594b8bc0349140fd4a666fba4750c213e6d3b5241232cf0cc14c8eba1aac29
+CREATE_TIME: 2026-09-04T01:38:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:ed60c0f4b9ca2b9c31a58a76344dbdc930b6304cc77601fc1976fc158fdbba2a
+CREATE_TIME: 2026-09-03T02:12:18
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:ff5cf8d8e88aedc191663359083d45cd2cba2d5ccd11488afef4bb59095d94fe
+CREATE_TIME: 2026-09-08T04:47:12
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/web
+DIGEST: sha256:ffb7d1e84bddd1fdeebf68f7b679748d4bb3c4eceec463bdb8fba6d5f7dcd583
+CREATE_TIME: 2026-09-03T07:37:01
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:05faf432b78cfde19749b52c907a686e7aef3077f2b2adbefac1bbf05246260c
+CREATE_TIME: 2026-09-03T07:33:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:12d753a9f599ef86494712728ae9be3aa635fdf0e20b877da9c2084a4b5037ad
+CREATE_TIME: 2026-09-03T07:59:24
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:35ede2f8817dfacbc667a414a1ba08fef56ec287aa9d4c4b668068de01be329b
+CREATE_TIME: 2026-09-03T05:54:55
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:3b480ec509e913228249dd40286929a208a35610881196423edeb56779a24fa0
+CREATE_TIME: 2026-09-03T09:27:27
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:3bb0a8ad57b103d264264c41e78b33d3b673daf185ea2f453cfaa0509f137c6d
+CREATE_TIME: 2026-09-05T04:01:11
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:48addaa57e9ee79568005efb8c1deb7d189503fe77fbc6df789656aa9f7e6ab0
+CREATE_TIME: 2026-09-03T03:22:30
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:68f75636e35f5ce4845b22e148952196dec11ff7c2ac8fc896c26ccefcd4cf27
+CREATE_TIME: 2026-09-03T09:00:21
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:6b29ed1b05a4c155052a5352cae0e9cac5ea1d5b8688128a3198a1a3a7802fec
+CREATE_TIME: 2026-09-05T01:11:51
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:71b0022e83bcfdfd2881d8348c878788cbfb17221d728cac279580657c14b101
+CREATE_TIME: 2026-09-03T03:34:04
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:76a4e3f2f2df55cb3a5224de5ec4f4410839c3b5a22dee923af4edc80e2c7573
+CREATE_TIME: 2026-09-05T03:02:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:7a18f93f8e1c9dc51d13cbee5d65f98aea7f34fd11f56e9b8d2b009bb60aeb5a
+CREATE_TIME: 2026-09-05T02:26:25
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:82ae693c5ee834ebf17146cdf88b92824234a1341f8e8147338bd71cb9a64372
+CREATE_TIME: 2026-09-04T01:01:47
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:bff9dfe832a4ee8949225ca0cd1e340cb7335bea65a9500346faaab1b2683992
+CREATE_TIME: 2026-09-04T01:38:51
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:d4fa2c8b00aad182f8f523b1e2c8f05ad5820cf9971932c89142be03be3ec8a1
+CREATE_TIME: 2026-09-05T01:47:22
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:e1287e09742f0d6b42bf301f14b54e94ccbe0a40d4844a769ae5b4a3ce9ac065
+CREATE_TIME: 2026-09-03T07:18:41
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:e9ec3477496bd7b523bc30c8676197cc425731064841dfbc7176a7736bb0e776
+CREATE_TIME: 2026-09-03T09:16:58
+
+IMAGE: us-central1-docker.pkg.dev/afroid-506916/afroid-containers/workspace
+DIGEST: sha256:f00cbd58886ebe9f0bf5a7b1253b45f0e398a575a0e2587ed0ee264fa7e31dd4
+CREATE_TIME: 2026-09-04T01:23:45
+########## 10. PUB/SUB ##########
+NAME: projects/afroid-506916/topics/audit-events
+
+NAME: projects/afroid-506916/topics/generation-events
+
+NAME: projects/afroid-506916/topics/certification-events
+
+NAME: projects/afroid-506916/topics/match-events
+
+NAME: projects/afroid-506916/topics/notification-events
+
+########## 11. HEALTH CHECKS ##########
+gateway -> HTTP 200 {"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-auth-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+auth -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-auth-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-platform-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+platform -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-platform-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-orchestrator-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+orchestrator -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-orchestrator-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-certify-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+certify -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-certify-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-incubate-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+incubate -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-incubate-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-codegen-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+codegen -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-codegen-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-notification-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+notification -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-notification-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-workspace-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+workspace -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-workspace-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-intake-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+intake -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-intake-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-vector-store-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+vector-store -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-vector-store-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+PS>TerminatingError(Invoke-WebRequest): "Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-web-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed.""
+web -> ERROR Cannot bind parameter 'Uri'. Cannot convert value "https://afroid-web-prod-629240539505.{"status":"healthy","service":"gateway-service","version":"1.0.0","checks":{}}.run.app/health" to type "System.Uri". Error: "Invalid URI: The hostname could not be parsed."
+**********************
+Windows PowerShell transcript end
+End time: 20260909063932
+**********************
+# # # # # # # # # #   1 1 .   H E A L T H   C H E C K S   ( c o r r e c t e d )   # # # # # # # # # #  
+ g a t e w a y                 - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " g a t e w a y - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ a u t h                       - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " a u t h - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ p l a t f o r m               - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " p l a t f o r m - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ o r c h e s t r a t o r       - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " o r c h e s t r a t o r - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ c e r t i f y                 - >   H T T P       T h e   o p e r a t i o n   h a s   t i m e d   o u t .  
+ i n c u b a t e               - >   H T T P       T h e   o p e r a t i o n   h a s   t i m e d   o u t .  
+ c o d e g e n                 - >   H T T P       T h e   o p e r a t i o n   h a s   t i m e d   o u t .  
+ n o t i f i c a t i o n       - >   H T T P       T h e   o p e r a t i o n   h a s   t i m e d   o u t .  
+ w o r k s p a c e             - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " w o r k s p a c e - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ i n t a k e                   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " i n t a k e - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ v e c t o r - s t o r e       - >   H T T P       T h e   o p e r a t i o n   h a s   t i m e d   o u t .  
+ w e b                         - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " a f r o i d - w e b " , " v e r s i o n " : " 1 . 0 . 0 " , " t i m e s t a m p " : " 2 0 2 6 - 0 9 - 0 9 T 1 3 : 4 4 : 1 4 . 0 2 2 Z " }  
+ D O N E   ( h e a l t h ) .  
+ # # # # # # # # # #   1 1 b .   C O L D - S T A R T   R E C H E C K   ( 6 0 s ,   2   t r i e s )   # # # # # # # # # #  
+ c e r t i f y                 ( t r y   1 )   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " c e r t i f y - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ i n c u b a t e               ( t r y   1 )   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " i n c u b a t e - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ c o d e g e n                 ( t r y   1 )   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " c o d e g e n - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ n o t i f i c a t i o n       ( t r y   1 )   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " n o t i f i c a t i o n - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ v e c t o r - s t o r e       ( t r y   1 )   - >   H T T P   2 0 0     { " s t a t u s " : " h e a l t h y " , " s e r v i c e " : " v e c t o r - s t o r e - s e r v i c e " , " v e r s i o n " : " 1 . 0 . 0 " , " c h e c k s " : { } }  
+ D O N E   ( c o l d   r e c h e c k ) .  
+ 

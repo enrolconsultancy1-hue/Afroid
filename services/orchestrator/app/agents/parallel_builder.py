@@ -12,6 +12,7 @@ import ast
 import asyncio
 import json
 import os
+import tempfile
 import time
 import uuid
 from pathlib import Path
@@ -482,23 +483,97 @@ class ParallelBuilderCore:
     """
 
     def __init__(self, workspace_root: str | None = None) -> None:
-        self.workspace_root = workspace_root or str(
-            Path(__file__).resolve().parents[4] / "projects"
+        # Generated files are streamed back to the caller and written into the
+        # per-user workspace by the IDE, so this is only scratch output. Use a
+        # writable temp dir (the container runs as a non-root user and cannot
+        # write under /app). Override with BUILD_OUTPUT_ROOT if needed.
+        self.workspace_root = (
+            workspace_root
+            or os.environ.get("BUILD_OUTPUT_ROOT")
+            or os.path.join(tempfile.gettempdir(), "afroid_builds")
         )
 
     # ------------------------------------------------------------------
     # LLM-powered file generation for a single milestone
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _coerce_content(raw: Any) -> str:
+        """Flatten an LLM content value (str, or a list of parts) into text.
+
+        langchain-google-genai may return response.content as a list of parts,
+        so calling .strip() on it directly raises — which previously forced the
+        build into the scaffold fallback.
+        """
+        if isinstance(raw, list):
+            out = []
+            for part in raw:
+                if isinstance(part, str):
+                    out.append(part)
+                elif isinstance(part, dict):
+                    out.append(part.get("text", ""))
+                else:
+                    out.append(str(part))
+            return "".join(out)
+        return raw if isinstance(raw, str) else str(raw or "")
+
+    @staticmethod
+    def _parse_files_json(text: str) -> list[dict[str, Any]]:
+        """Robustly extract a list of {path, content, language} dicts from an LLM reply.
+
+        Handles markdown fences, surrounding prose, a bare array, a
+        {"files": [...]} wrapper, a single file object, or a {path: content} map.
+        """
+        s = (text or "").strip()
+        if s.startswith("```"):
+            nl = s.find("\n")
+            if nl != -1:
+                s = s[nl + 1:]
+            if s.rstrip().endswith("```"):
+                s = s.rstrip()[:-3]
+            s = s.strip()
+
+        data: Any = None
+        try:
+            data = json.loads(s)
+        except json.JSONDecodeError:
+            for open_ch, close_ch in (("[", "]"), ("{", "}")):
+                start, end = s.find(open_ch), s.rfind(close_ch)
+                if start != -1 and end > start:
+                    try:
+                        data = json.loads(s[start:end + 1])
+                        break
+                    except json.JSONDecodeError:
+                        continue
+        if data is None:
+            return []
+
+        if isinstance(data, dict):
+            if isinstance(data.get("files"), list):
+                data = data["files"]
+            elif data.get("path"):
+                data = [data]
+            else:
+                data = [{"path": k, "content": v} for k, v in data.items() if isinstance(v, str)]
+        if not isinstance(data, list):
+            return []
+        return [d for d in data if isinstance(d, dict) and d.get("path")]
+
     async def _generate_milestone_files_llm(
         self,
         blueprint: ArchitectureBlueprint,
         milestone: Milestone,
         model_id: str | None = None,
+        provider: dict[str, Any] | None = None,
     ) -> list[GeneratedFile]:
-        """Call the LLM to generate production-quality source files for one milestone."""
-        llm = model_registry.create_llm(
-            agent_name="codegen", model_id=model_id, temperature=0.0
+        """Call the LLM to generate production-quality source files for one milestone.
+
+        If a custom OpenAI-compatible ``provider`` (base_url + api_key + model) is
+        supplied, the whole swarm runs codegen on that provider using the user's key;
+        otherwise the configured Gemini model is used.
+        """
+        use_byo = bool(
+            provider and provider.get("base_url") and provider.get("api_key") and provider.get("model")
         )
 
         prompt_payload = json.dumps({
@@ -530,29 +605,42 @@ class ParallelBuilderCore:
             {"role": "user", "content": prompt_payload},
         ]
 
-        response = await llm.ainvoke(messages)
+        if use_byo:
+            from services.orchestrator.app.services.byo_provider import openai_compatible_chat
 
-        # Parse the response — strip markdown fences if present
-        content = response.content.strip()
-        if content.startswith("```"):
-            # Remove ```json ... ``` wrapper
-            lines = content.split("\n")
-            content = "\n".join(lines[1:-1]) if len(lines) > 2 else content
+            content = await openai_compatible_chat(
+                base_url=str(provider["base_url"]),
+                api_key=str(provider["api_key"]),
+                model=str(provider["model"]),
+                messages=messages,
+                temperature=0.0,
+                max_tokens=8192,
+            )
+        else:
+            llm = model_registry.create_llm(
+                agent_name="codegen", model_id=model_id, temperature=0.0
+            )
+            response = await llm.ainvoke(messages)
+            content = self._coerce_content(response.content)
 
-        files_data = json.loads(content)
+        files_data = self._parse_files_json(content)
         generated: list[GeneratedFile] = []
-
-        if isinstance(files_data, list):
-            for fd in files_data:
-                file_content = fd.get("content", "")
-                gf = GeneratedFile(
-                    path=fd.get("path", "unknown"),
+        for fd in files_data:
+            file_content = fd.get("content", "") or ""
+            if not isinstance(file_content, str):
+                file_content = str(file_content)
+            generated.append(
+                GeneratedFile(
+                    path=str(fd.get("path", "unknown")),
                     content=file_content,
-                    language=fd.get("language", "text"),
+                    language=str(fd.get("language", "text")),
                     size_bytes=len(file_content.encode("utf-8")),
                 )
-                generated.append(gf)
-
+            )
+        if not generated:
+            # Surface WHY nothing came back (empty response, prose, or unparseable JSON)
+            snippet = content[:300].replace("\n", "\\n")
+            raise ValueError(f"codegen returned no parseable files (len={len(content)}): {snippet!r}")
         return generated
 
     # ------------------------------------------------------------------
@@ -738,6 +826,7 @@ class ParallelBuilderCore:
         autopilot: bool = True,
         on_event: Any | None = None,
         model_id: str | None = None,
+        provider: dict[str, Any] | None = None,
     ) -> ParallelBuildSession:
         """Execute milestone-based build using LLM code generation.
 
@@ -818,9 +907,10 @@ class ParallelBuilderCore:
         milestones = blueprint.milestones or []
         used_llm = False
 
-        for idx, milestone in enumerate(milestones):
-            ms_progress = int(((idx) / max(len(milestones), 1)) * 100)
-
+        # Announce all milestones, then generate them CONCURRENTLY (true parallel
+        # swarm) via asyncio.gather — each milestone's Gemini codegen runs at the
+        # same time instead of one after another.
+        for milestone in milestones:
             await self._emit(on_event, {
                 "type": "milestone_started",
                 "payload": {
@@ -828,47 +918,41 @@ class ParallelBuilderCore:
                     "milestone_name": milestone.name,
                     "objective": milestone.objective,
                     "files_planned": milestone.filesToCreate,
-                    "progress": ms_progress,
+                    "progress": 0,
                 },
             })
-
             logger.info(
-                "milestone_started",
-                session_id=session_id,
-                milestone=milestone.id,
-                name=milestone.name,
-                files=len(milestone.filesToCreate),
+                "milestone_started", session_id=session_id, milestone=milestone.id, name=milestone.name
             )
 
-            # ----- Try LLM generation -----
-            milestone_files: list[GeneratedFile] = []
+        async def _gen(ms: Milestone) -> tuple[Milestone, list[GeneratedFile], str | None]:
             try:
-                milestone_files = await self._generate_milestone_files_llm(
-                    blueprint, milestone, model_id=model_id
-                )
-                if milestone_files:
-                    used_llm = True
-                    logger.info(
-                        "milestone_llm_generated",
-                        milestone=milestone.id,
-                        file_count=len(milestone_files),
-                    )
-            except Exception as e:
-                logger.warning(
-                    "milestone_llm_fallback",
-                    milestone=milestone.id,
-                    error=str(e),
-                )
-                # LLM failed — milestone_files stays empty, scaffold fills in below
+                files = await self._generate_milestone_files_llm(blueprint, ms, model_id=model_id, provider=provider)
+                if files:
+                    logger.info("milestone_llm_generated", milestone=ms.id, file_count=len(files))
+                return ms, files, None
+            except Exception as e:  # noqa: BLE001 — one milestone failing must not abort the swarm
+                logger.warning("milestone_llm_fallback", milestone=ms.id, error=str(e))
+                return ms, [], f"{type(e).__name__}: {e}"
 
-            # ----- Write generated files to disk -----
+        results = await asyncio.gather(*[_gen(ms) for ms in milestones]) if milestones else []
+
+        done = 0
+        for milestone, milestone_files, diag in results:
+            if milestone_files:
+                used_llm = True
+            elif diag:
+                # Emit the real reason the LLM codegen produced nothing (visible in build log)
+                await self._emit(on_event, {
+                    "type": "codegen_diag",
+                    "payload": {"milestone_id": milestone.id, "reason": diag[:400]},
+                })
             for gf in milestone_files:
                 full_path = os.path.join(project_dir, gf.path)
                 os.makedirs(os.path.dirname(full_path), exist_ok=True)
                 with open(full_path, "w", encoding="utf-8") as f:  # noqa: ASYNC230
                     f.write(gf.content)
                 session.generated_files.append(gf)
-
                 await self._emit(on_event, {
                     "type": "file_generated",
                     "payload": {
@@ -879,22 +963,20 @@ class ParallelBuilderCore:
                         "source": "llm",
                     },
                 })
-
+            done += 1
+            progress = int((done / max(len(milestones), 1)) * 100)
             await self._emit(on_event, {
                 "type": "milestone_completed",
                 "payload": {
                     "milestone_id": milestone.id,
                     "milestone_name": milestone.name,
                     "files_generated": len(milestone_files),
-                    "progress": int(((idx + 1) / max(len(milestones), 1)) * 100),
+                    "progress": progress,
                 },
             })
-
-            # Update sub-agent progress
-            agent_progress = int(((idx + 1) / max(len(milestones), 1)) * 100)
             for sa in session.sub_agents:
                 if sa.type == "codegen":
-                    sa.progress = agent_progress
+                    sa.progress = progress
                     sa.current_task = f"Completed {milestone.name}"
 
         # ----- Scaffold fallback if LLM produced nothing -----

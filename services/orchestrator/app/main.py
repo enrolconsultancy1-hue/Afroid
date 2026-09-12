@@ -10,11 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from services.orchestrator.app.config import settings
+from services.orchestrator.app.models.kv import (  # noqa: F401 — registers on Base.metadata
+    OrchestratorKV,
+)
 from services.orchestrator.app.routes.builder import router as builder_router
 from services.orchestrator.app.routes.orchestrate import router as orchestrate_router
 from services.orchestrator.app.routes.ws import ws_router
-from services.shared.database import create_engine, create_session_factory
+from services.orchestrator.app.services.durable_store import durable_store
+from services.shared.database import Base, create_engine, create_session_factory
 from services.shared.event_bus import event_bus
+from services.shared.rate_limit import RateLimitMiddleware
 from services.shared.exceptions import register_exception_handlers
 from services.shared.logging import setup_logging
 from services.shared.schemas import HealthCheck
@@ -31,6 +36,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine)
+    # Bind the durable (cross-instance) job/build store to the session factory so
+    # background tasks — which have no request-scoped session — can persist state.
+    durable_store.bind(app.state.session_factory)
+    # Create the orchestrator-owned durable state table idempotently
+    # (same convention as the intake/certify services).
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    except Exception as exc:  # noqa: BLE001 — start even if the DB is briefly unreachable
+        import logging
+        logging.getLogger("uvicorn.error").warning(
+            f"Orchestrator DB initialization skipped/deferred: {exc}"
+        )
     yield
     await engine.dispose()
 
@@ -52,6 +70,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # Abuse brake: generous per-client sliding window; fail-open, exempts /health and /_run.
+    app.add_middleware(RateLimitMiddleware, limit=150, window=60)
 
     @app.middleware("http")
     async def db_session_middleware(request: Request, call_next) -> Response:

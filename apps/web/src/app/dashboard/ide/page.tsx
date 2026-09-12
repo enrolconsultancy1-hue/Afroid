@@ -64,6 +64,8 @@ import { useAgentStream } from "@/hooks/use-agent-stream";
 import { registerGeezCodeLanguage } from "@/lib/geezcode-monaco";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8090";
+// Orchestrator WebSocket base (direct — Cloud Run supports WS; the gateway proxies HTTP only).
+const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "";
 
 const authHeaders = (): Record<string, string> => {
   const token = typeof window !== "undefined" ? localStorage.getItem("afroid_access_token") : null;
@@ -176,6 +178,144 @@ interface PendingReviewFile {
   newContent: string;
   agentName: string;
   milestoneId: string;
+}
+
+interface ProblemItem {
+  file: string;
+  line: number;
+  message: string;
+  severity: "error" | "warning";
+  source?: string;
+}
+
+interface CustomProvider {
+  id: string;
+  label: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+// One-click presets for common free / OpenAI-compatible providers.
+const PROVIDER_PRESETS: { label: string; baseUrl: string; model: string; hint: string }[] = [
+  { label: "Groq", baseUrl: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile", hint: "console.groq.com/keys" },
+  { label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "meta-llama/llama-3.3-70b-instruct", hint: "openrouter.ai/keys" },
+  { label: "Together", baseUrl: "https://api.together.xyz/v1", model: "meta-llama/Llama-3.3-70B-Instruct-Turbo", hint: "api.together.xyz" },
+  { label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat", hint: "platform.deepseek.com" },
+];
+
+function ProvidersModal({
+  providers,
+  onClose,
+  onChange,
+  onSelect,
+}: {
+  providers: CustomProvider[];
+  onClose: () => void;
+  onChange: (list: CustomProvider[]) => void;
+  onSelect: (id: string) => void;
+}) {
+  const [label, setLabel] = useState("");
+  const [baseUrl, setBaseUrl] = useState("");
+  const [model, setModel] = useState("");
+  const [apiKey, setApiKey] = useState("");
+  const [testing, setTesting] = useState<string | null>(null);
+  const [testResult, setTestResult] = useState<Record<string, "ok" | "fail">>({});
+
+  const applyPreset = (p: (typeof PROVIDER_PRESETS)[number]) => {
+    setLabel(p.label);
+    setBaseUrl(p.baseUrl);
+    setModel(p.model);
+  };
+  const canAdd = !!(label.trim() && baseUrl.trim() && model.trim() && apiKey.trim());
+  const addProvider = () => {
+    if (!canAdd) return;
+    const id = Date.now().toString(36);
+    onChange([...providers, { id, label: label.trim(), baseUrl: baseUrl.trim(), model: model.trim(), apiKey: apiKey.trim() }]);
+    setLabel("");
+    setBaseUrl("");
+    setModel("");
+    setApiKey("");
+  };
+  const removeProvider = (id: string) => onChange(providers.filter((p) => p.id !== id));
+  const testProvider = async (p: CustomProvider) => {
+    setTesting(p.id);
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ message: "Reply with a short confirmation.", provider: { base_url: p.baseUrl, api_key: p.apiKey, model: p.model } }),
+      });
+      const d = (await res.json())?.data;
+      const ok = res.ok && d && typeof d.reply === "string" && !/temporarily unavailable/i.test(d.reply);
+      setTestResult((r) => ({ ...r, [p.id]: ok ? "ok" : "fail" }));
+    } catch {
+      setTestResult((r) => ({ ...r, [p.id]: "fail" }));
+    } finally {
+      setTesting(null);
+    }
+  };
+  const mask = (k: string) => (k.length <= 6 ? "••••" : `${k.slice(0, 3)}••••${k.slice(-3)}`);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+      <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-lg border border-surface-700 bg-[#161618] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-surface-800 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-surface-100">
+            <Sparkles className="h-4 w-4 text-brand-400" /> AI Providers
+          </div>
+          <button onClick={onClose} className="text-surface-500 hover:text-surface-200"><X className="h-4 w-4" /></button>
+        </div>
+        <div className="space-y-4 p-4">
+          <p className="text-[11px] leading-relaxed text-surface-400">
+            Bring your own OpenAI-compatible provider (Groq, OpenRouter, Together, DeepSeek, local, …) and run the Copilot on it with your own key.
+            Keys are stored <b className="text-surface-200">only in this browser</b> and sent per request over TLS — never saved on our servers.
+          </p>
+
+          {providers.length > 0 && (
+            <div className="space-y-1.5">
+              {providers.map((p) => (
+                <div key={p.id} className="flex items-center gap-2 rounded border border-surface-800 bg-surface-900/50 px-2.5 py-1.5 text-[11px]">
+                  <span className="flex-1 truncate">
+                    <span className="font-medium text-surface-100">{p.label}</span>
+                    <span className="text-surface-500"> · {p.model} · key {mask(p.apiKey)}</span>
+                  </span>
+                  {testResult[p.id] === "ok" && <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+                  {testResult[p.id] === "fail" && <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-400" />}
+                  <button onClick={() => testProvider(p)} disabled={testing === p.id} className="rounded px-1.5 py-0.5 text-surface-300 hover:bg-surface-800">
+                    {testing === p.id ? <Loader2 className="h-3 w-3 animate-spin" /> : "Test"}
+                  </button>
+                  <button onClick={() => onSelect(p.id)} className="rounded px-1.5 py-0.5 text-brand-300 hover:bg-surface-800">Use</button>
+                  <button onClick={() => removeProvider(p.id)} className="rounded px-1.5 py-0.5 text-red-400 hover:bg-surface-800">Remove</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div>
+            <div className="mb-1 text-[10px] uppercase tracking-wide text-surface-500">Quick preset (fills URL + a default model)</div>
+            <div className="flex flex-wrap gap-1.5">
+              {PROVIDER_PRESETS.map((p) => (
+                <button key={p.label} onClick={() => applyPreset(p)} className="rounded border border-surface-700 px-2 py-0.5 text-[11px] text-surface-300 hover:border-brand-500 hover:text-surface-100" title={`Get a key: ${p.hint}`}>
+                  {p.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Label (e.g. Groq)" className="w-full rounded border border-surface-700 bg-surface-950 px-2.5 py-1.5 text-[12px] text-surface-100 outline-none focus:border-brand-500" />
+            <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="Base URL (e.g. https://api.groq.com/openai/v1)" className="w-full rounded border border-surface-700 bg-surface-950 px-2.5 py-1.5 text-[12px] text-surface-100 outline-none focus:border-brand-500" />
+            <input value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model id (e.g. llama-3.3-70b-versatile)" className="w-full rounded border border-surface-700 bg-surface-950 px-2.5 py-1.5 text-[12px] text-surface-100 outline-none focus:border-brand-500" />
+            <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} type="password" placeholder="API key (stored only in this browser)" className="w-full rounded border border-surface-700 bg-surface-950 px-2.5 py-1.5 text-[12px] text-surface-100 outline-none focus:border-brand-500" />
+            <button onClick={addProvider} disabled={!canAdd} className="w-full rounded bg-brand-600 py-1.5 text-[12px] font-medium text-white hover:bg-brand-500 disabled:opacity-50">
+              Add provider
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function FileTypeIcon({ name }: { name: string }) {
@@ -384,7 +524,19 @@ function GeezCodeIDEContent() {
   const [dirtyCloseTarget, setDirtyCloseTarget] = useState<string | null>(null);
 
   const [autopilot, setAutopilot] = useState(true);
-  const [selectedModel, setSelectedModel] = useState("gemini-3.6-flash");
+  const [selectedModel, setSelectedModel] = useState("gemini-flash-latest");
+  // Bring-Your-Own custom AI providers (stored only in this browser).
+  const [customProviders, setCustomProviders] = useState<CustomProvider[]>([]);
+  const [showProvidersModal, setShowProvidersModal] = useState(false);
+  // AI autocomplete (ghost-text inline completions)
+  const [autocompleteEnabled, setAutocompleteEnabled] = useState(true);
+  const completionCfgRef = useRef<{ enabled: boolean; model_id: string; provider: any }>({
+    enabled: true,
+    model_id: "gemini-flash-latest",
+    provider: null,
+  });
+  const activeFilePathRef = useRef<string>("");
+  const diagTimerRef = useRef<any>(null);
 
   const [projectRoot, setProjectRoot] = useState<string | null>(null);
   const [showNewProject, setShowNewProject] = useState(false);
@@ -394,7 +546,14 @@ function GeezCodeIDEContent() {
   const [workspaceProjects, setWorkspaceProjects] = useState<
     Array<{ name: string; path: string }>
   >([]);
+  const [ideaStats, setIdeaStats] = useState<{ pending: number; synced: number; total: number }>({
+    pending: 0,
+    synced: 0,
+    total: 0,
+  });
+  const prevPendingRef = useRef<number | null>(null);
   const [pendingReview, setPendingReview] = useState<PendingReviewFile | null>(null);
+  const [pendingEditQueue, setPendingEditQueue] = useState<PendingReviewFile[]>([]);
   const [diffSideBySide, setDiffSideBySide] = useState(true);
   const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>({
     "task-M1-0": true,
@@ -406,6 +565,14 @@ function GeezCodeIDEContent() {
   const [showRightDock, setShowRightDock] = useState(true);
   const [showBottomTerminal, setShowBottomTerminal] = useState(true);
   const [terminalTab, setTerminalTab] = useState<"terminal" | "preview" | "problems" | "output">("terminal");
+  const [problems, setProblems] = useState<ProblemItem[]>([]);
+  const [runningTests, setRunningTests] = useState(false);
+  // Cmd+K inline edit
+  const monacoRef = useRef<any>(null);
+  const inlineSelRef = useRef<string>("");
+  const [inlineEditOpen, setInlineEditOpen] = useState(false);
+  const [inlineEditPrompt, setInlineEditPrompt] = useState("");
+  const [inlineEditBusy, setInlineEditBusy] = useState(false);
   const [terminalSessions, setTerminalSessions] = useState<Array<{ id: string; title: string; shell: "powershell" | "bash" | "cmd" | "wsl" }>>([
     { id: "term-1", title: "1: powershell", shell: "powershell" },
   ]);
@@ -551,12 +718,20 @@ function GeezCodeIDEContent() {
      {
        id: "msg-1",
        sender: "agent",
-       agentName: "geez-agent",
-       text: "Hello! I am geez-agent, your system operation guide. I can help you navigate and operate the geezcodE IDE, 2-phase Architect Intake, Certify, and Incubate. How can I guide you today?",
+       agentName: "geezcodE Copilot",
+       text: "Hi — I'm geezcodE Copilot. Ask me about the file you're editing, or tell me what to build or change and I'll propose an edit you can review and apply. What are we working on?",
        timestamp: "Just now",
      },
    ]);
   const [dockInput, setDockInput] = useState("");
+  // @-mention: extra workspace files attached as Copilot context
+  const [mentionOpen, setMentionOpen] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionedPaths, setMentionedPaths] = useState<string[]>([]);
+  // Codebase-aware retrieval (pgvector via the vector-store service)
+  const [codebaseIndexed, setCodebaseIndexed] = useState(false);
+  const [codebaseRetrieval, setCodebaseRetrieval] = useState(false);
+  const [indexingCodebase, setIndexingCodebase] = useState(false);
   const dockEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -592,7 +767,7 @@ function GeezCodeIDEContent() {
     }
   }, []);
 
-  const { connect: connectWs, sendPatchReview, isConnected: isWsConnected } = useAgentStream({
+  const { sendPatchReview, isConnected: isWsConnected } = useAgentStream({
     sessionId: sessionId || undefined,
     onCodeChunk: (filePath, chunk) => {
       setEditorContent((prev) => prev + chunk);
@@ -759,6 +934,47 @@ function GeezCodeIDEContent() {
     loadIntakeIdeas();
     loadWorkspaceProjects();
   }, [loadIntakeIdeas, loadWorkspaceProjects]);
+
+  // Poll the FIFO idea-stock counts (authoritative, from the intake DB) every 15s.
+  // Surfaces a live badge + a notification when new applicant ideas arrive.
+  useEffect(() => {
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/v1/intake/ideas/stats`, { headers: { ...authHeaders() } });
+        if (!res.ok) return;
+        const json = await res.json();
+        const d = json.data || {};
+        if (cancelled) return;
+        const pending = Number(d.pending) || 0;
+        const synced = Number(d.synced) || 0;
+        setIdeaStats({ pending, synced, total: Number(d.total) || 0 });
+        if (prevPendingRef.current !== null && pending > prevPendingRef.current) {
+          const delta = pending - prevPendingRef.current;
+          showToast(`${delta} new idea${delta === 1 ? "" : "s"} in the intake queue`);
+          setDockMessages((prev) => [
+            ...prev,
+            {
+              id: `intake-${Date.now()}`,
+              sender: "system",
+              text: `${delta} new applicant idea${delta === 1 ? "" : "s"} arrived in the FIFO intake stock — ${pending} pending, ${synced} synced.`,
+              timestamp: "Just now",
+            },
+          ]);
+          loadIntakeIdeas();
+        }
+        prevPendingRef.current = pending;
+      } catch {
+        /* ignore transient poll errors */
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [showToast, loadIntakeIdeas]);
 
   const startProjectFromIdea = async (ideaId: string) => {
     try {
@@ -980,6 +1196,8 @@ function GeezCodeIDEContent() {
         setFileTree((prev) => updateTreeContent(prev, path, contentToWrite));
         setTerminalLogs((prev) => [...prev, `[Filesystem] Saved to disk: ${path}`]);
         showToast(`Saved ${path}`);
+        // Refresh diagnostics (real linter) for the just-saved buffer.
+        void runDiagnostics(path, contentToWrite);
         return;
       }
     } catch {
@@ -1192,19 +1410,101 @@ function GeezCodeIDEContent() {
     }
   };
 
-  const handleRunActiveFile = () => {
-    if (!activeFilePath) return;
-    if (activeFilePath.endsWith(".py")) {
-      runTerminalCommand(`python ${activeFilePath}`);
-    } else if (activeFilePath.endsWith(".js") || activeFilePath.endsWith(".ts")) {
-      runTerminalCommand(`node ${activeFilePath}`);
-    } else {
-      runTerminalCommand(`cat ${activeFilePath}`);
+  // Run a command in the workspace and return its captured output (also echoed to
+  // the terminal). Backs the integrated run/test + diagnostics flow.
+  const runAndCapture = async (
+    cmd: string,
+  ): Promise<{ stdout: string; stderr: string; exit_code: number }> => {
+    setTerminalTab("terminal");
+    setShowBottomTerminal(true);
+    setTerminalLogs((prev) => [...prev, `geezcodE@ide:~$ ${cmd}`]);
+    try {
+      const res = await fetch(`${API_BASE}/v1/workspace/terminal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ command: cmd }),
+      });
+      const json = await res.json();
+      const d = json.data || {};
+      const out = ((d.stdout || "") + (d.stderr || "")).trim();
+      if (out) setTerminalLogs((prev) => [...prev, out]);
+      if (d.exit_code !== undefined && d.exit_code !== 0) {
+        setTerminalLogs((prev) => [...prev, `[exit code ${d.exit_code}]`]);
+      }
+      return { stdout: d.stdout || "", stderr: d.stderr || "", exit_code: d.exit_code ?? 0 };
+    } catch {
+      setTerminalLogs((prev) => [...prev, "[terminal] workspace service unreachable"]);
+      return { stdout: "", stderr: "workspace service unreachable", exit_code: -1 };
     }
   };
 
-  const handleRunTests = () => {
-    runTerminalCommand("pytest -v");
+  // Parse pytest failures and Python tracebacks from run output into structured
+  // problems (file + line + message) that populate the Problems panel.
+  const parseDiagnostics = (output: string): ProblemItem[] => {
+    const norm = (p: string) => p.replace(/^\.\//, "").replace(/^\/+/, "").trim();
+    const out: ProblemItem[] = [];
+    const lines = output.split("\n");
+    const frameRe = /File "([^"]+)", line (\d+)/;
+    const pytestRe = /^(.+\.py):(\d+):\s*(.*)$/;
+    const excRe = /^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception|Warning)):\s*(.*)$/;
+    let lastFrame: { file: string; line: number } | null = null;
+    for (const raw of lines) {
+      const line = raw.replace(/\r$/, "");
+      const fm = line.match(frameRe);
+      if (fm) {
+        lastFrame = { file: norm(fm[1]), line: parseInt(fm[2], 10) };
+        continue;
+      }
+      const pm = line.match(pytestRe);
+      if (pm && !line.trim().startsWith("File ")) {
+        out.push({ file: norm(pm[1]), line: parseInt(pm[2], 10), message: pm[3] || "Test failure", severity: "error", source: "pytest" });
+        continue;
+      }
+      const em = line.match(excRe);
+      if (em && lastFrame) {
+        out.push({ file: lastFrame.file, line: lastFrame.line, message: `${em[1]}: ${em[2]}`.trim(), severity: "error", source: "runtime" });
+        lastFrame = null;
+      }
+    }
+    const seen = new Set<string>();
+    return out.filter((p) => {
+      const k = `${p.file}:${p.line}:${p.message}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  };
+
+  const handleRunActiveFile = async () => {
+    if (!activeFilePath) return;
+    let cmd: string;
+    if (activeFilePath.endsWith(".py")) cmd = `python ${activeFilePath}`;
+    else if (activeFilePath.endsWith(".js") || activeFilePath.endsWith(".ts")) cmd = `node ${activeFilePath}`;
+    else {
+      runTerminalCommand(`cat ${activeFilePath}`);
+      return;
+    }
+    const { stdout, stderr } = await runAndCapture(cmd);
+    const diags = parseDiagnostics(`${stdout}\n${stderr}`);
+    setProblems(diags);
+    if (diags.length) {
+      setTerminalTab("problems");
+      showToast(`${diags.length} problem${diags.length === 1 ? "" : "s"} found`);
+    }
+  };
+
+  const handleRunTests = async () => {
+    setRunningTests(true);
+    const { stdout, stderr, exit_code } = await runAndCapture("pytest -v");
+    const diags = parseDiagnostics(`${stdout}\n${stderr}`);
+    setProblems(diags);
+    if (diags.length) {
+      setTerminalTab("problems");
+      showToast(`${diags.length} problem${diags.length === 1 ? "" : "s"} found`);
+    } else if (exit_code === 0) {
+      showToast("All tests passed — no problems");
+    }
+    setRunningTests(false);
   };
 
   useEffect(() => {
@@ -1348,7 +1648,7 @@ function GeezCodeIDEContent() {
         : { concept: ideaForm.oneLiner, model_id: selectedModel };
       const res = await fetch(`${API_BASE}/v1/builder/intake`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeaders() },
         body: JSON.stringify(payload),
       });
       if (res.ok) {
@@ -1400,35 +1700,162 @@ function GeezCodeIDEContent() {
     }
   };
 
-  const continueBuildExecution = async () => {
-    setActiveLiveAgent("QA & AST Runner");
-    setActiveLiveTask("Validating Python AST syntax & type signatures (Milestone 4/5)...");
-    setLiveProgress(80);
-    setTokensUsed((prev) => prev + 5400);
-    setTerminalLogs((prev) => [
-      ...prev,
-      "[QA & AST Runner] AST syntax validation passed with 0 syntax errors.",
-      "[Certify] Nigeria Startup Act compliance verified (100% score).",
-      "[Deployer] Docker container specs generated. Ready to ship to GCP africa-south1.",
-    ]);
-    await new Promise((r) => setTimeout(r, 1200));
-    setActiveLiveAgent("geezcodE Copilot");
-    setActiveLiveTask("Build complete. All 5 milestones verified and passing.");
-    setLiveProgress(100);
-    setTokensUsed((prev) => prev + 3200);
-    setDockMessages((prev) => [
-      ...prev,
-      {
-        id: `msg-${Date.now()}`,
-        sender: "agent",
-        agentName: "QA & AST Runner",
-        text: "Build complete. All generated files validated with 0 syntax errors, 100% AST pass rate, and full compliance certification.",
-        filesModified: ["services/api/main.py", "services/api/routes.py", "apps/web/page.tsx", "docker-compose.yml", "README.md"],
-        commandsRun: ["python scripts/smoke_test.py -> 11/11 PASSED"],
-        timestamp: "Just now",
-      },
-    ]);
+  // Apply one build-status snapshot (from either the WebSocket stream or an HTTP
+  // poll) to the UI. Writes generated files to the workspace on completion.
+  // Returns true when the build has reached a terminal state (complete/error).
+  const applyBuildSnapshot = async (d: any, logRef: { lastLogLen: number }): Promise<boolean> => {
+    if (!d || d.status === "not_found") return false;
+
+    if (typeof d.progress === "number") setLiveProgress(d.progress);
+    setActiveLiveAgent("Parallel Builder");
+    if (d.current) setActiveLiveTask(d.current);
+    if (Array.isArray(d.sub_agents) && d.sub_agents.length) setSwarmAgents(d.sub_agents);
+    if (Array.isArray(d.log) && d.log.length > logRef.lastLogLen) {
+      const fresh = d.log.slice(logRef.lastLogLen);
+      logRef.lastLogLen = d.log.length;
+      setTerminalLogs((prev) => [...prev, ...fresh]);
+    }
+
+    if (d.status === "complete") {
+      const files = Array.isArray(d.generated_files) ? d.generated_files : [];
+      const ast = Array.isArray(d.test_results) && d.test_results[0] ? d.test_results[0] : null;
+      for (const f of files) {
+        if (!f?.path || typeof f.content !== "string") continue;
+        try {
+          await fetch(`${API_BASE}/v1/workspace/file`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", ...authHeaders() },
+            body: JSON.stringify({ path: f.path, content: f.content }),
+          });
+        } catch {
+          /* keep loading the rest */
+        }
+        setFileTree((prev) => {
+          const exists = findFileContentByPath(prev, f.path) !== null;
+          if (exists) return updateTreeContent(prev, f.path, f.content);
+          return [
+            ...prev,
+            {
+              name: f.path.split("/").pop() || f.path,
+              path: f.path,
+              type: "file" as const,
+              language: getLanguage(f.path),
+              content: f.content,
+              savedContent: f.content,
+            },
+          ];
+        });
+      }
+      setLiveProgress(100);
+      setActiveLiveTask(`Build complete — ${files.length} files generated.`);
+      setDockMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}`,
+          sender: "agent",
+          agentName: "Parallel Builder",
+          text: `Build complete: ${files.length} file(s) generated and written to your workspace.${
+            ast ? ` AST validation ${ast.passed ? "passed" : "failed"} across ${ast.files_scanned ?? 0} Python file(s).` : ""
+          }`,
+          filesModified: files.map((f: any) => f.path),
+          timestamp: "Just now",
+        },
+      ]);
+      showToast(`Build complete — ${files.length} files written`);
+      fetchWorkspaceTree();
+      setIsBuilding(false);
+      return true;
+    }
+
+    if (d.status === "error") {
+      setTerminalLogs((prev) => [...prev, `[Parallel Builder] Build error: ${d.error || "unknown"}`]);
+      setActiveLiveTask("Build failed.");
+      setDockMessages((prev) => [
+        ...prev,
+        { id: `msg-${Date.now()}`, sender: "agent", agentName: "Parallel Builder", text: `Build failed: ${d.error || "unknown error"}`, timestamp: "Just now" },
+      ]);
+      setIsBuilding(false);
+      return true;
+    }
+    return false;
+  };
+
+  // HTTP fallback: poll the real parallel-build job and stream its events. Shares
+  // logRef with the WebSocket path so log lines aren't duplicated when we fail over.
+  const pollBuildStatus = async (buildSessionId: string, logRef: { lastLogLen: number } = { lastLogLen: 0 }) => {
+    for (let i = 0; i < 400; i++) {
+      await new Promise((r) => setTimeout(r, 1800));
+      let d: any;
+      try {
+        const res = await fetch(`${API_BASE}/v1/builder/status/${buildSessionId}`, { headers: { ...authHeaders() } });
+        if (!res.ok) continue;
+        d = (await res.json())?.data || {};
+      } catch {
+        continue;
+      }
+      const done = await applyBuildSnapshot(d, logRef);
+      if (done) return;
+    }
+    setTerminalLogs((prev) => [...prev, "[Parallel Builder] Stopped watching build after timeout — it may still be running."]);
     setIsBuilding(false);
+  };
+
+  // Preferred path: stream real build progress over a WebSocket (true server push,
+  // backed by the durable store so it works across instances). Falls back to HTTP
+  // polling if the socket can't open or closes before the build finishes.
+  const streamBuildStatus = async (buildSessionId: string) => {
+    const logRef = { lastLogLen: 0 };
+    if (!WS_BASE || typeof WebSocket === "undefined") {
+      await pollBuildStatus(buildSessionId, logRef);
+      return;
+    }
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let opened = false;
+      let ws: WebSocket | null = null;
+
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        try { ws?.close(); } catch { /* noop */ }
+        resolve();
+      };
+      const failover = async () => {
+        if (settled) return;
+        settled = true;
+        try { ws?.close(); } catch { /* noop */ }
+        await pollBuildStatus(buildSessionId, logRef);
+        resolve();
+      };
+
+      const connectTimer = setTimeout(() => { if (!opened) failover(); }, 4000);
+
+      try {
+        const wsTok = typeof window !== "undefined" ? localStorage.getItem("afroid_access_token") : null;
+        const q = wsTok ? `?token=${encodeURIComponent(wsTok)}` : "";
+        ws = new WebSocket(`${WS_BASE}/ws/build/${buildSessionId}${q}`);
+      } catch {
+        clearTimeout(connectTimer);
+        failover();
+        return;
+      }
+
+      ws.onopen = () => { opened = true; clearTimeout(connectTimer); };
+      ws.onmessage = async (ev) => {
+        let msg: any;
+        try { msg = JSON.parse(typeof ev.data === "string" ? ev.data : ""); } catch { return; }
+        if (msg?.type === "snapshot" && msg.data) {
+          const done = await applyBuildSnapshot(msg.data, logRef);
+          if (done) finish();
+        }
+      };
+      ws.onerror = () => { if (!opened) { clearTimeout(connectTimer); failover(); } };
+      ws.onclose = () => {
+        clearTimeout(connectTimer);
+        // Closed before a terminal snapshot → finish the watch over HTTP.
+        if (!settled) failover();
+      };
+    });
   };
 
   const handleSyncProject = async () => {
@@ -1471,89 +1898,56 @@ function GeezCodeIDEContent() {
   };
 
   const handleApproveAndBuild = async () => {
-    setShowBlueprintModal(false);
-    setIsBuilding(true);
-    const generatedSessionId = `build-${Date.now()}`;
-    setSessionId(generatedSessionId);
-    connectWs(generatedSessionId);
-    if (blueprintRaw) {
-      try {
-        const res = await fetch(`${API_BASE}/v1/builder/start`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: generatedSessionId, blueprint: blueprintRaw, autopilot }),
-        });
-        const json = await res.json();
-        if (res.ok && json.data) {
-          const d = json.data;
-          const agents = Array.isArray(d.sub_agents) ? d.sub_agents : [];
-          const files = Array.isArray(d.generated_files) ? d.generated_files : [];
-          setSwarmAgents(agents);
-          setTerminalLogs((prev) => [
-            ...prev,
-            `[Parallel Builder] Build complete for ${d.project_name ?? blueprintData?.projectName}`,
-            `[Parallel Builder] Generated ${files.length} file(s) at ${d.project_path ?? "projects/"}`,
-            ...files.map((f: any) => `[CodeGen] ${f.path}`),
-          ]);
-          setActiveLiveAgent("Parallel Builder");
-          setActiveLiveTask("Build complete. All sub-agents finished.");
-          setLiveProgress(100);
-          setDockMessages((prev) => [
-            ...prev,
-            {
-              id: `msg-${Date.now()}`,
-              sender: "agent",
-              agentName: "Parallel Builder",
-              text: `Build complete: ${files.length} files generated across ${agents.length} sub-agents.`,
-              filesModified: files.map((f: any) => f.path),
-              timestamp: "Just now",
-            },
-          ]);
-          setIsBuilding(false);
-          return;
-        }
-      } catch {
-        // fall through to mock build
-      }
-    }
-    setActiveLiveAgent("CodeGen Worker 1");
-    setActiveLiveTask("Building Milestone 1/5: Writing services/api/main.py...");
-    setLiveProgress(30);
-    setDockMessages((prev) => [
-      ...prev,
-      {
-        id: `msg-${Date.now()}`,
-        sender: "agent",
-        agentName: "CodeGen Worker 1",
-        text: `Starting autonomous execution of Milestone 1 for '${blueprintData?.projectName}'. Dispatching parallel sub-agent workers.`,
-        thought: "Creating FastAPI application gateway, initializing Pydantic entity models, and structuring database connection pool.",
-        filesModified: ["services/api/main.py", "services/api/routes.py"],
-        commandsRun: ["alembic upgrade head", "pytest tests/test_api.py"],
-        timestamp: "Just now",
-      },
-    ]);
-    setTerminalLogs((prev) => [
-      ...prev,
-      `[Architect] Handover to Parallel Builder Core for '${blueprintData?.projectName}'`,
-      "[CodeGen Worker 1] Generating FastAPI microservices & Pydantic schemas...",
-      "[CodeGen Worker 2] Generating Next.js 15 App Router frontend...",
-    ]);
-    await new Promise((r) => setTimeout(r, 1400));
-    if (!autopilot) {
-      const filePath = "services/api/main.py";
-      const existing = findFileContentByPath(fileTree, filePath) || `from fastapi import FastAPI\n\napp = FastAPI(title="Sovereign Agritech API", version="1.0.0")\n\n@app.get("/health")\ndef health_check():\n    return {"status": "healthy", "sovereignty": "verified"}\n`;
-      setPendingReview({
-        filePath,
-        diff: `+ @app.post("/v1/loans/originate")\n+ def originate_loan(req: LoanRequest):\n+     return {"loan_id": "LN-9921", "approved": True}`,
-        originalContent: existing,
-        newContent: INITIAL_FILES[0].children![0].children![0].content || "",
-        agentName: "CodeGen Worker 1",
-        milestoneId: "MS1",
-      });
-      setIsBuilding(false);
+    if (!blueprintRaw) {
+      showAlert("Generate an Architect Blueprint first, then Approve & Build.");
       return;
     }
-    await continueBuildExecution();
+    setShowBlueprintModal(false);
+    setIsBuilding(true);
+    setLiveProgress(2);
+    setActiveLiveAgent("Parallel Builder");
+    setActiveLiveTask("Dispatching parallel build…");
+    setTerminalLogs((prev) => [
+      ...prev,
+      `[Architect] Approved blueprint for '${blueprintData?.projectName}'. Starting parallel build…`,
+    ]);
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ blueprint: blueprintRaw, autopilot, model_id: selectedModel, provider: providerPayloadFor(selectedModel) }),
+      });
+      const json = await res.json();
+      const buildSessionId = json?.data?.session_id;
+      if (!res.ok || !buildSessionId) {
+        throw new Error(json?.detail || "Failed to start the build job.");
+      }
+      setSessionId(buildSessionId);
+      setDockMessages((prev) => [
+        ...prev,
+        {
+          id: `msg-${Date.now()}`,
+          sender: "agent",
+          agentName: "Parallel Builder",
+          text: `Build dispatched for '${blueprintData?.projectName}'. Generating code milestone by milestone with ${selectedModel} — live progress is streaming into the terminal.`,
+          timestamp: "Just now",
+        },
+      ]);
+      await streamBuildStatus(buildSessionId);
+    } catch (err) {
+      setTerminalLogs((prev) => [...prev, `[Parallel Builder] Could not start build: ${(err as Error).message}`]);
+      setActiveLiveTask("Build failed to start.");
+      setIsBuilding(false);
+    }
+  };
+
+  // Pop the next queued Copilot edit into the review panel (or clear when done).
+  const advanceEditQueue = () => {
+    setPendingEditQueue((q) => {
+      const [next, ...rest] = q;
+      setPendingReview(next ?? null);
+      return rest;
+    });
   };
 
   const handleApprovePendingFile = async () => {
@@ -1561,7 +1955,7 @@ function GeezCodeIDEContent() {
     const targetPath = pendingReview.filePath;
     const updatedContent = pendingReview.newContent;
 
-    // Update in-memory file buffers and tree
+    // Update in-memory file buffers
     setOpenFiles((prev) =>
       prev.map((f) =>
         f.path === targetPath
@@ -1569,12 +1963,27 @@ function GeezCodeIDEContent() {
           : f
       )
     );
-    setFileTree((prev) => updateTreeContent(prev, targetPath, updatedContent));
+    // Update the tree — adding the file if the Copilot created a new one.
+    setFileTree((prev) => {
+      const exists = findFileContentByPath(prev, targetPath) !== null;
+      if (exists) return updateTreeContent(prev, targetPath, updatedContent);
+      return [
+        ...prev,
+        {
+          name: targetPath.split("/").pop() || targetPath,
+          path: targetPath,
+          type: "file" as const,
+          language: getLanguage(targetPath),
+          content: updatedContent,
+          savedContent: updatedContent,
+        },
+      ];
+    });
     if (activeFilePath === targetPath) {
       setEditorContent(updatedContent);
     }
 
-    // Persist approved diff directly to workspace disk
+    // Persist approved edit directly to workspace disk
     try {
       await fetch(`${API_BASE}/v1/workspace/file`, {
         method: "POST",
@@ -1585,72 +1994,405 @@ function GeezCodeIDEContent() {
       // offline fallback
     }
 
-    // Dispatch approval to orchestrator stream
+    // Best-effort notify any connected orchestrator stream (no-op if not connected).
     sendPatchReview(true, targetPath);
 
     setTerminalLogs((prev) => [
       ...prev,
-      `[Founder] Approved diff for ${targetPath}. Changes written to disk and confirmed over WebSocket stream.`,
+      `[Founder] Approved edit for ${targetPath}. Written to the workspace on disk.`,
     ]);
-    showToast(`Approved & applied patch for ${targetPath}`);
-    setPendingReview(null);
-    setIsBuilding(true);
-    await continueBuildExecution();
+    showToast(`Applied edit to ${targetPath}`);
+    advanceEditQueue();
   };
 
   const handleRejectPendingFile = (feedback?: string) => {
     if (!pendingReview) return;
     const targetPath = pendingReview.filePath;
-    // Dispatch rejection to orchestrator stream
-    sendPatchReview(false, targetPath, feedback || "Founder rejected proposed diff");
+    // Best-effort notify any connected orchestrator stream (no-op if not connected).
+    sendPatchReview(false, targetPath, feedback || "Founder rejected proposed edit");
     setTerminalLogs((prev) => [
       ...prev,
-      `[Founder] Rejected diff for ${targetPath}. Dispatched steering event to swarm worker.`,
+      `[Founder] Rejected edit for ${targetPath}.`,
     ]);
-    showToast(`Rejected patch for ${targetPath}`);
-    setPendingReview(null);
+    showToast(`Rejected edit for ${targetPath}`);
+    advanceEditQueue();
   };
 
-  const handleSendDockMessage = (e: React.FormEvent) => {
+  const [dockThinking, setDockThinking] = useState(false);
+
+  // Load custom providers + autocomplete pref from this browser on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("afroid_custom_providers");
+      if (raw) setCustomProviders(JSON.parse(raw));
+      const ac = localStorage.getItem("afroid_autocomplete");
+      if (ac !== null) setAutocompleteEnabled(ac === "1");
+    } catch {
+      /* ignore unreadable storage */
+    }
+  }, []);
+  // Keep the completion config current for the (once-registered) Monaco provider.
+  useEffect(() => {
+    completionCfgRef.current = {
+      enabled: autocompleteEnabled,
+      model_id: selectedModel,
+      provider: providerPayloadFor(selectedModel),
+    };
+    try {
+      localStorage.setItem("afroid_autocomplete", autocompleteEnabled ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [autocompleteEnabled, selectedModel, customProviders]);
+  useEffect(() => {
+    activeFilePathRef.current = activeFilePath;
+  }, [activeFilePath]);
+  // Fetch a single inline completion for the cursor context.
+  const fetchCompletion = async (prefix: string, suffix: string, language: string): Promise<string> => {
+    const cfg = completionCfgRef.current;
+    if (!cfg.enabled) return "";
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/complete`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ prefix, suffix, language, path: activeFilePathRef.current, model_id: cfg.model_id, provider: cfg.provider }),
+      });
+      if (!res.ok) return "";
+      return (await res.json())?.data?.completion || "";
+    } catch {
+      return "";
+    }
+  };
+  // ── LSP-style diagnostics ─────────────────────────────────
+  // Runs a real static-analysis linter (Ruff for Python) server-side and paints the
+  // results as Monaco squiggles + Problems-panel entries. Ruff only parses and lints
+  // — it never executes the buffer — so it is safe to run on unsaved content.
+  const fetchDiagnostics = async (
+    path: string,
+    content: string,
+    language: string,
+  ): Promise<
+    Array<{ line: number; column: number; endLine: number; endColumn: number; code: string; message: string; severity: "error" | "warning" }>
+  > => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/diagnose`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ path, content, language }),
+      });
+      if (!res.ok) return [];
+      return (await res.json())?.data?.diagnostics || [];
+    } catch {
+      return [];
+    }
+  };
+
+  // Lint a buffer and reconcile both the Monaco markers and the Problems list.
+  const runDiagnostics = useCallback(async (path: string, content: string) => {
+    if (!path) return;
+    const language = getLanguage(path);
+    const diags = await fetchDiagnostics(path, content, language);
+    const monaco = monacoRef.current;
+    const editor = editorRef.current;
+    // Only paint markers when this buffer is the one shown in the editor.
+    if (monaco && editor && path === activeFilePathRef.current) {
+      const model = editor.getModel();
+      if (model) {
+        const markers = diags.map((d) => ({
+          startLineNumber: d.line,
+          startColumn: d.column,
+          endLineNumber: d.endLine,
+          endColumn: Math.max(d.endColumn, d.column + 1),
+          message: `${d.message}${d.code && d.code !== "syntax" ? ` (${d.code})` : ""}`,
+          severity: d.severity === "error" ? monaco.MarkerSeverity.Error : monaco.MarkerSeverity.Warning,
+          source: "ruff",
+        }));
+        monaco.editor.setModelMarkers(model, "ruff", markers);
+      }
+    }
+    // Reconcile the Problems panel: drop this file's prior ruff entries, add fresh ones.
+    setProblems((prev) => {
+      const kept = prev.filter((p) => !(p.source === "ruff" && p.file === path));
+      const added: ProblemItem[] = diags.map((d) => ({
+        file: path,
+        line: d.line,
+        message: `${d.message}${d.code && d.code !== "syntax" ? ` (${d.code})` : ""}`,
+        severity: d.severity,
+        source: "ruff",
+      }));
+      return [...kept, ...added];
+    });
+  }, []);
+
+  // Debounced trigger for live diagnostics as the user types or switches files.
+  const scheduleDiagnostics = useCallback((path: string, content: string) => {
+    if (diagTimerRef.current) clearTimeout(diagTimerRef.current);
+    diagTimerRef.current = setTimeout(() => {
+      void runDiagnostics(path, content);
+    }, 900);
+  }, [runDiagnostics]);
+
+  // Live-lint the active buffer on open and (debounced) as it changes.
+  useEffect(() => {
+    if (activeFilePath) scheduleDiagnostics(activeFilePath, editorContent);
+  }, [activeFilePath, editorContent, scheduleDiagnostics]);
+  const persistProviders = (list: CustomProvider[]) => {
+    setCustomProviders(list);
+    try {
+      localStorage.setItem("afroid_custom_providers", JSON.stringify(list));
+    } catch {
+      /* ignore unwritable storage */
+    }
+  };
+  // Build the per-request provider payload when a custom provider is selected.
+  const providerPayloadFor = (sel: string): { base_url: string; api_key: string; model: string } | null => {
+    if (!sel || !sel.startsWith("custom:")) return null;
+    const p = customProviders.find((x) => `custom:${x.id}` === sel);
+    return p ? { base_url: p.baseUrl, api_key: p.apiKey, model: p.model } : null;
+  };
+
+  // Flatten the file tree to a list of file paths (for the @-mention picker).
+  const allWorkspaceFilePaths = (): string[] => {
+    const out: string[] = [];
+    const walk = (nodes: FileNode[]) => {
+      for (const n of nodes) {
+        if (n.type === "file") out.push(n.path);
+        if (n.children) walk(n.children);
+      }
+    };
+    walk(fileTree);
+    return out;
+  };
+
+  // Resolve a file's content from open buffers, the tree, or the workspace API.
+  const resolveFileContent = async (path: string): Promise<string | null> => {
+    const open = openFiles.find((f) => f.path === path);
+    if (open) return path === activeFilePath ? editorContent : open.content || "";
+    const inTree = findFileContentByPath(fileTree, path);
+    if (inTree != null) return inTree;
+    try {
+      const r = await fetch(`${API_BASE}/v1/workspace/file?path=${encodeURIComponent(path)}`, { headers: { ...authHeaders() } });
+      if (r.ok) return (await r.json())?.data?.content ?? "";
+    } catch {
+      /* offline */
+    }
+    return null;
+  };
+
+  // pgvector namespace for this project's codebase index.
+  const codebaseNamespace = (): string =>
+    `codebase:${(blueprintData?.projectName || "workspace").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
+  // Index the workspace into the vector store (Gemini embeddings + pgvector),
+  // chunking each file so the Copilot can later retrieve relevant code semantically.
+  const handleIndexCodebase = async () => {
+    if (indexingCodebase) return;
+    const paths = allWorkspaceFilePaths().slice(0, 120); // cap for a responsive index
+    if (paths.length === 0) {
+      showToast("No workspace files to index yet");
+      return;
+    }
+    setIndexingCodebase(true);
+    setTerminalLogs((prev) => [...prev, `[Codebase] Indexing ${paths.length} file(s) into the vector store…`]);
+    const ns = codebaseNamespace();
+    let indexed = 0;
+    for (const p of paths) {
+      const content = await resolveFileContent(p);
+      if (!content || !content.trim()) continue;
+      // ~1200-char chunks keep each embedding well within model limits.
+      const chunks: string[] = [];
+      for (let i = 0; i < content.length; i += 1200) chunks.push(content.slice(i, i + 1200));
+      try {
+        const res = await fetch(`${API_BASE}/v1/vector/embed`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ texts: chunks, metadata: { path: p }, namespace: ns }),
+        });
+        if (res.ok) indexed++;
+      } catch {
+        /* skip file on failure */
+      }
+    }
+    setCodebaseIndexed(indexed > 0);
+    setCodebaseRetrieval(indexed > 0);
+    setIndexingCodebase(false);
+    setTerminalLogs((prev) => [...prev, `[Codebase] Indexed ${indexed} file(s). Semantic retrieval is ${indexed > 0 ? "ON" : "unavailable"}.`]);
+    showToast(indexed > 0 ? `Codebase indexed (${indexed} files) — retrieval on` : "Indexing failed");
+  };
+
+  // Retrieve the most relevant code chunks for a query from the vector store.
+  const retrieveCodebaseContext = async (query: string): Promise<{ path: string; content: string }[]> => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/vector/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ query, namespace: codebaseNamespace(), top_k: 5, threshold: 0.25 }),
+      });
+      if (!res.ok) return [];
+      const data = (await res.json())?.results || [];
+      return data.map((r: any) => ({
+        path: `retrieved: ${r?.metadata?.path || "codebase"}`,
+        content: r?.text || "",
+      }));
+    } catch {
+      return [];
+    }
+  };
+
+  const handleSendDockMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!dockInput.trim()) return;
+    if (!dockInput.trim() || dockThinking) return;
     const userText = dockInput.trim();
     setDockInput("");
     setDockMessages((prev) => [...prev, { id: `user-${Date.now()}`, sender: "user", text: userText, timestamp: "Just now" }]);
-    setActiveLiveAgent("geez-agent");
-    setActiveLiveTask(`Processing: "${userText}"`);
+    setActiveLiveAgent("geezcodE Copilot");
+    setActiveLiveTask(`Thinking: "${userText.slice(0, 48)}${userText.length > 48 ? "…" : ""}"`);
+    setDockThinking(true);
 
-    const lower = userText.toLowerCase();
-    const isAskingArchitecture =
-      lower.includes("architecture") ||
-      lower.includes("internal") ||
-      lower.includes("workflow") ||
-      lower.includes("under the hood") ||
-      lower.includes("source code") ||
-      lower.includes("backend") ||
-      lower.includes("pipeline") ||
-      lower.includes("how does it work");
+    // Attach the active file + all other open files as context so the Copilot can
+    // reason across the codebase and propose coordinated multi-file edits.
+    const activeFile = openFiles.find((f) => f.path === activeFilePath);
+    const activeFilePayload = activeFile
+      ? {
+          path: activeFile.path,
+          content: activeFilePath === activeFile.path ? editorContent : activeFile.content || "",
+        }
+      : null;
+    const openFilesPayload = openFiles
+      .filter((f) => f.path !== activeFilePath)
+      .map((f) => ({ path: f.path, content: f.content || "" }));
 
-    const userName = user?.full_name || user?.email?.split("@")[0] || "Founder";
+    // Attach @-mentioned workspace files not already in the open set.
+    for (const p of mentionedPaths) {
+      if (p === activeFilePath || openFilesPayload.some((f) => f.path === p)) continue;
+      const content = await resolveFileContent(p);
+      if (content != null) openFilesPayload.push({ path: p, content });
+    }
 
-    const replyText = isAskingArchitecture
-      ? `i am sorry ${userName} am not trained to answer that. is there anything i can help you with related to operation guidance?  if not Good luck ${userName} Happy coding.`
-      : `Hello ${userName}! As geez-agent, I am your UI operation guide. You can open the 2-phase Architect Intake via the activity bar, review blueprints, sync projects to the workspace, and run compliance audits in Certify. How can I guide your navigation today?`;
+    // Codebase-aware retrieval: pull semantically relevant chunks from pgvector.
+    if (codebaseRetrieval && codebaseIndexed) {
+      const retrieved = await retrieveCodebaseContext(userText);
+      for (const r of retrieved) {
+        if (r.content) openFilesPayload.push(r);
+      }
+    }
 
-    setTimeout(() => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          message: userText,
+          model_id: selectedModel,
+          active_file: activeFilePayload,
+          open_files: openFilesPayload,
+          provider: providerPayloadFor(selectedModel),
+        }),
+      });
+      const json = await res.json();
+      const d = (json && json.data) || {};
+      const reply = d.reply || "I couldn't produce a response — try again.";
+      setDockMessages((prev) => [
+        ...prev,
+        { id: `reply-${Date.now()}`, sender: "agent", agentName: "geezcodE Copilot", text: reply, timestamp: "Just now" },
+      ]);
+
+      // Coordinated multi-file edits: queue them and open the first in the Diff
+      // review panel; approving/rejecting advances to the next automatically.
+      const rawEdits = Array.isArray(d.edits) ? d.edits : d.proposed_edit ? [d.proposed_edit] : [];
+      const reviews: PendingReviewFile[] = rawEdits
+        .filter((e: any) => e && e.path && typeof e.new_content === "string")
+        .map((e: any) => ({
+          filePath: e.path,
+          diff: e.summary || "Proposed change from geezcodE Copilot",
+          originalContent: findFileContentByPath(fileTree, e.path) ?? "",
+          newContent: e.new_content,
+          agentName: "geezcodE Copilot",
+          milestoneId: "assistant",
+        }));
+      if (reviews.length > 0) {
+        setPendingReview(reviews[0]);
+        setPendingEditQueue(reviews.slice(1));
+        const files = reviews.length === 1 ? reviews[0].filePath : `${reviews.length} files`;
+        showToast(`Copilot proposed changes to ${files} — review the diff${reviews.length > 1 ? "s" : ""}`);
+      }
+    } catch {
       setDockMessages((prev) => [
         ...prev,
         {
           id: `reply-${Date.now()}`,
           sender: "agent",
-          agentName: "geez-agent",
-          text: replyText,
+          agentName: "geezcodE Copilot",
+          text: "geezcodE Copilot is unreachable right now — is the gateway running?",
           timestamp: "Just now",
         },
       ]);
-      setActiveLiveAgent("geez-agent");
-      setActiveLiveTask("Ready for guidance instructions");
-    }, 800);
+    } finally {
+      setDockThinking(false);
+      setActiveLiveAgent("geezcodE Copilot");
+      setActiveLiveTask("Ready");
+    }
+  };
+
+  // Cmd+K inline edit: send the instruction (+ selected code) to the Copilot and
+  // route the returned edit(s) into the same Diff review flow as the dock.
+  const runInlineEdit = async () => {
+    const instruction = inlineEditPrompt.trim();
+    if (!instruction || inlineEditBusy) return;
+    if (!activeFilePath) {
+      showToast("Open a file first, then ⌘K");
+      return;
+    }
+    setInlineEditBusy(true);
+    const sel = inlineSelRef.current;
+    const message = sel
+      ? `${instruction}\n\nApply this specifically to the following selected code from ${activeFilePath}:\n\n${sel}`
+      : instruction;
+    try {
+      const res = await fetch(`${API_BASE}/v1/builder/assistant`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({
+          message,
+          model_id: selectedModel,
+          active_file: { path: activeFilePath, content: editorContent },
+          open_files: [],
+          provider: providerPayloadFor(selectedModel),
+        }),
+      });
+      const json = await res.json();
+      const d = (json && json.data) || {};
+      const rawEdits = Array.isArray(d.edits) ? d.edits : d.proposed_edit ? [d.proposed_edit] : [];
+      const reviews: PendingReviewFile[] = rawEdits
+        .filter((e: any) => e && e.path && typeof e.new_content === "string")
+        .map((e: any) => ({
+          filePath: e.path,
+          diff: e.summary || "Inline edit (⌘K)",
+          originalContent: findFileContentByPath(fileTree, e.path) ?? (e.path === activeFilePath ? editorContent : ""),
+          newContent: e.new_content,
+          agentName: "geezcodE Copilot (⌘K)",
+          milestoneId: "inline-edit",
+        }));
+      if (reviews.length > 0) {
+        setPendingReview(reviews[0]);
+        setPendingEditQueue(reviews.slice(1));
+        setInlineEditOpen(false);
+        showToast(`Inline edit ready — review the diff${reviews.length > 1 ? "s" : ""}`);
+      } else {
+        if (d.reply) {
+          setDockMessages((prev) => [
+            ...prev,
+            { id: `reply-${Date.now()}`, sender: "agent", agentName: "geezcodE Copilot", text: d.reply, timestamp: "Just now" },
+          ]);
+        }
+        showToast("No edit produced — rephrase, or check the Copilot dock");
+        setInlineEditOpen(false);
+      }
+    } catch {
+      showToast("Copilot unreachable — try again");
+    } finally {
+      setInlineEditBusy(false);
+    }
   };
 
   const handleRunCertifyAudit = async () => {
@@ -1946,6 +2688,16 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
   ];
 }
 
+  const badgeFor = (id: string) => {
+    const n = id === "intake" ? ideaStats.pending : id === "explorer" ? ideaStats.synced : 0;
+    if (!n) return null;
+    return (
+      <span className="absolute -right-0.5 -top-0.5 flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-brand-500 px-1 text-[9px] font-bold text-white">
+        {n > 99 ? "99+" : n}
+      </span>
+    );
+  };
+
   return (
     <div className="flex h-screen flex-col bg-surface-950 text-surface-100 font-sans antialiased overflow-hidden">
       {/* ===== Title bar ===== */}
@@ -2098,6 +2850,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
                 )}
                 {item.icon}
+                {badgeFor(item.id)}
               </button>
             ))}
           </div>
@@ -2117,6 +2870,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
                 )}
                 {item.icon}
+                {badgeFor(item.id)}
               </button>
             ))}
             <button
@@ -2770,8 +3524,17 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     theme="vs-dark"
                     onMount={(editor, monaco) => {
                       editorRef.current = editor;
+                      monacoRef.current = monaco;
                       editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
                         handleSaveFile();
+                      });
+                      // Cmd/Ctrl+K — inline AI edit of the selection (or whole file).
+                      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyK, () => {
+                        const model = editor.getModel();
+                        const sel = editor.getSelection();
+                        inlineSelRef.current = model && sel ? model.getValueInRange(sel) : "";
+                        setInlineEditPrompt("");
+                        setInlineEditOpen(true);
                       });
                       editor.onDidChangeCursorPosition((e) => {
                         setCursorPos({ line: e.position.lineNumber, col: e.position.column });
@@ -2782,6 +3545,31 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                           const text = model.getValueInRange(e.selection);
                           setSelectionCount(text.length);
                         }
+                      });
+                      // AI autocomplete (ghost text). Registered once; reads live
+                      // config from completionCfgRef. Debounce + cancel-on-keystroke
+                      // via Monaco's cancellation token.
+                      monaco.languages.registerInlineCompletionsProvider("*", {
+                        provideInlineCompletions: async (m: any, position: any, _ctx: any, tokenReq: any) => {
+                          if (!completionCfgRef.current.enabled) return { items: [] };
+                          const offset = m.getOffsetAt(position);
+                          const full = m.getValue();
+                          const prefix = full.slice(Math.max(0, offset - 4000), offset);
+                          const suffix = full.slice(offset, offset + 1500);
+                          await new Promise((r) => setTimeout(r, 350));
+                          if (tokenReq?.isCancellationRequested) return { items: [] };
+                          const text = await fetchCompletion(prefix, suffix, (m.getLanguageId && m.getLanguageId()) || "plaintext");
+                          if (!text || tokenReq?.isCancellationRequested) return { items: [] };
+                          return {
+                            items: [
+                              {
+                                insertText: text,
+                                range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
+                              },
+                            ],
+                          };
+                        },
+                        freeInlineCompletions: () => {},
                       });
                     }}
                     beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
@@ -2797,6 +3585,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       cursorBlinking: "smooth",
                       renderLineHighlight: "all",
                       tabSize: tabSize,
+                      inlineSuggest: { enabled: true },
                     }}
                   />
                 </div>
@@ -2813,7 +3602,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                   {/* Left: Tab System */}
                   <div className="flex items-center gap-1.5 min-w-0 overflow-x-auto shrink">
                     {[
-                      { id: "problems", label: "Problems", badge: 0 },
+                      { id: "problems", label: "Problems", badge: problems.length },
                       { id: "output", label: "Output" },
                       { id: "terminal", label: "Terminal" },
                       { id: "preview", label: "Preview" },
@@ -3080,8 +3869,34 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
 
                   {/* ── Problems ── */}
                   {terminalTab === "problems" && (
-                    <div className="flex items-center gap-2 p-3 text-xs text-surface-400">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> No problems detected in the workspace.
+                    <div className="overflow-y-auto h-full p-1 text-xs">
+                      {runningTests && (
+                        <div className="flex items-center gap-2 p-2 text-surface-400">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand-400" /> Running tests…
+                        </div>
+                      )}
+                      {problems.length === 0 ? (
+                        <div className="flex items-center gap-2 p-3 text-surface-400">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> No problems detected. Run a file or the test suite to check.
+                        </div>
+                      ) : (
+                        problems.map((p, i) => (
+                          <button
+                            key={`${p.file}:${p.line}:${i}`}
+                            onClick={() => handleSearchResultClick({ file: p.file, line: p.line, text: p.message })}
+                            className="flex w-full items-start gap-2 rounded px-2 py-1.5 text-left hover:bg-surface-800/60"
+                          >
+                            <AlertCircle className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${p.severity === "error" ? "text-red-400" : "text-amber-400"}`} />
+                            <span className="flex-1">
+                              <span className="text-surface-200">{p.message}</span>
+                              <span className="ml-2 text-surface-500">
+                                {p.file}:{p.line}
+                                {p.source ? ` · ${p.source}` : ""}
+                              </span>
+                            </span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   )}
 
@@ -3280,23 +4095,126 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       <ChevronDown className="h-2.5 w-2.5 text-surface-500" />
                     </button>
 
+                    {/* Codebase-aware retrieval (pgvector) */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!codebaseIndexed && !indexingCodebase) handleIndexCodebase();
+                        else if (!indexingCodebase) setCodebaseRetrieval((v) => !v);
+                      }}
+                      disabled={indexingCodebase}
+                      className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-60 ${
+                        codebaseIndexed && codebaseRetrieval
+                          ? "bg-brand-500/15 text-brand-300"
+                          : "text-surface-300 hover:bg-surface-800 hover:text-surface-100"
+                      }`}
+                      title={codebaseIndexed ? "Toggle codebase-aware retrieval (pgvector)" : "Index the workspace for semantic retrieval"}
+                    >
+                      {indexingCodebase ? <Loader2 className="h-3 w-3 animate-spin text-brand-400" /> : <Sparkles className="h-3 w-3 text-brand-400" />}
+                      <span>{indexingCodebase ? "Indexing…" : codebaseIndexed ? (codebaseRetrieval ? "Codebase: on" : "Codebase: off") : "Index codebase"}</span>
+                    </button>
+
                     {/* Model Selector Pill */}
                     <div className="flex items-center gap-1 text-[10px] font-mono text-surface-400">
                       <Cpu className="h-3 w-3 text-brand-400 shrink-0" />
                       <select
                         value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-transparent text-[10px] text-surface-300 outline-none cursor-pointer font-mono hover:text-surface-100"
+                        onChange={(e) => {
+                          if (e.target.value === "__manage__") { setShowProvidersModal(true); return; }
+                          setSelectedModel(e.target.value);
+                        }}
+                        className="bg-transparent text-[10px] text-surface-300 outline-none cursor-pointer font-mono hover:text-surface-100 max-w-[160px]"
                       >
-                        {(models.length > 0 ? models : [
-                          { id: "gemini-3.6-flash", name: "Gemini 3.6 Flash" },
-                          { id: "gemini-pro-latest", name: "Gemini Pro" },
-                          { id: "gemini-3-flash-preview", name: "Gemini 3 Flash" },
-                        ]).map((m: any) => (
-                          <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
-                        ))}
+                        <optgroup label="Google Gemini">
+                          {(models.length > 0 ? models : [
+                            { id: "gemini-flash-latest", name: "Gemini Flash (latest)" },
+                            { id: "gemini-pro-latest", name: "Gemini Pro (latest)" },
+                            { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash" },
+                          ]).map((m: any) => (
+                            <option key={m.id} value={m.id} className="bg-surface-900">{m.name.split(" (")[0]}</option>
+                          ))}
+                        </optgroup>
+                        {customProviders.length > 0 && (
+                          <optgroup label="Custom providers (your key)">
+                            {customProviders.map((p) => (
+                              <option key={p.id} value={`custom:${p.id}`} className="bg-surface-900">
+                                {p.label}: {p.model}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <option value="__manage__" className="bg-surface-900">＋ Add / manage providers…</option>
                       </select>
+                      <button
+                        type="button"
+                        onClick={() => setShowProvidersModal(true)}
+                        title="Add a free / custom AI provider (your own API key)"
+                        className="text-surface-500 hover:text-brand-400 transition-colors"
+                      >
+                        <Settings className="h-3 w-3" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAutocompleteEnabled((v) => !v)}
+                        title={autocompleteEnabled ? "AI autocomplete: on (click to disable)" : "AI autocomplete: off (click to enable)"}
+                        className={`rounded px-1 text-[10px] font-medium transition-colors ${autocompleteEnabled ? "text-brand-300" : "text-surface-600 hover:text-surface-300"}`}
+                      >
+                        AC
+                      </button>
                     </div>
+                  </div>
+
+                  {/* @-mention context: chips + searchable file picker */}
+                  <div className="relative mb-1">
+                    <div className="flex flex-wrap items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => { setMentionOpen((o) => !o); setMentionQuery(""); }}
+                        className="flex items-center gap-1 rounded bg-surface-800 px-1.5 py-0.5 text-[10px] text-surface-300 hover:bg-surface-750 hover:text-surface-100 transition-colors"
+                        title="Attach a workspace file as context"
+                      >
+                        <span className="text-brand-400 font-semibold">@</span> Add context
+                      </button>
+                      {mentionedPaths.map((p) => (
+                        <span key={p} className="flex items-center gap-1 rounded bg-brand-500/15 border border-brand-500/30 px-1.5 py-0.5 text-[10px] text-brand-300">
+                          {p.split("/").pop()}
+                          <button type="button" onClick={() => setMentionedPaths((prev) => prev.filter((x) => x !== p))} className="text-brand-400 hover:text-white leading-none">×</button>
+                        </span>
+                      ))}
+                    </div>
+                    {mentionOpen && (
+                      <div className="absolute bottom-full left-0 z-20 mb-1 w-72 overflow-hidden rounded-lg border border-surface-700 bg-[#161618] shadow-xl">
+                        <input
+                          autoFocus
+                          value={mentionQuery}
+                          onChange={(e) => setMentionQuery(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === "Escape") setMentionOpen(false); }}
+                          placeholder="Search workspace files…"
+                          className="w-full border-b border-surface-800 bg-transparent px-2.5 py-1.5 text-[11px] text-surface-100 outline-none placeholder:text-surface-600"
+                        />
+                        <div className="max-h-44 overflow-y-auto py-1">
+                          {(() => {
+                            const matches = allWorkspaceFilePaths().filter(
+                              (p) => !mentionedPaths.includes(p) && p.toLowerCase().includes(mentionQuery.toLowerCase())
+                            );
+                            if (matches.length === 0) {
+                              return <div className="px-2.5 py-2 text-[11px] text-surface-600">No matching files</div>;
+                            }
+                            return matches.slice(0, 50).map((p) => (
+                              <button
+                                key={p}
+                                type="button"
+                                onClick={() => { setMentionedPaths((prev) => [...prev, p]); setMentionOpen(false); }}
+                                className="flex w-full items-center gap-1.5 px-2.5 py-1 text-left text-[11px] text-surface-300 hover:bg-surface-800"
+                              >
+                                <FileTypeIcon name={p.split("/").pop() || p} />
+                                <span className="truncate">{p}</span>
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Multi-line Prompt Input */}
@@ -3745,8 +4663,13 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     <span className="rounded bg-brand-500/15 border border-brand-500/30 px-2 py-0.5 font-mono text-[11px] text-brand-400 font-medium">
                       {pendingReview.filePath}
                     </span>
+                    {pendingEditQueue.length > 0 && (
+                      <span className="rounded bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+                        +{pendingEditQueue.length} more file{pendingEditQueue.length === 1 ? "" : "s"} queued
+                      </span>
+                    )}
                     <span className="flex items-center gap-1 rounded bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
-                      <Activity className="h-3 w-3 animate-pulse" /> Live Swarm Diff
+                      <Activity className="h-3 w-3 animate-pulse" /> Diff Review
                     </span>
                   </div>
                   <div className="text-[11px] text-surface-400">
@@ -3932,6 +4855,61 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
           }
         }}
       />
+
+      {/* ===== Cmd+K Inline Edit prompt ===== */}
+      {inlineEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 pt-[18vh]" onClick={() => !inlineEditBusy && setInlineEditOpen(false)}>
+          <div className="w-full max-w-xl rounded-lg border border-brand-500/40 bg-[#161618] shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 border-b border-surface-800 px-3 py-2 text-xs text-surface-300">
+              <Zap className="h-3.5 w-3.5 text-brand-400" />
+              <span className="font-medium">Inline edit</span>
+              <span className="text-surface-500">
+                {inlineSelRef.current ? `${inlineSelRef.current.length} chars selected` : "whole file"}
+                {activeFilePath ? ` · ${activeFilePath.split("/").pop()}` : ""}
+              </span>
+              <span className="ml-auto text-surface-600">Enter to run · Esc to cancel</span>
+            </div>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                runInlineEdit();
+              }}
+              className="p-3"
+            >
+              <input
+                autoFocus
+                value={inlineEditPrompt}
+                onChange={(e) => setInlineEditPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape" && !inlineEditBusy) setInlineEditOpen(false);
+                }}
+                placeholder="Describe the change… e.g. add error handling, convert to async, write a docstring"
+                disabled={inlineEditBusy}
+                className="w-full rounded border border-surface-700 bg-surface-950 px-3 py-2 text-sm text-surface-100 placeholder:text-surface-600 focus:border-brand-500 focus:outline-none disabled:opacity-60"
+              />
+              <div className="mt-2 flex items-center justify-end gap-2">
+                <button type="button" onClick={() => setInlineEditOpen(false)} disabled={inlineEditBusy} className="rounded px-3 py-1.5 text-xs text-surface-400 hover:text-surface-200 disabled:opacity-50">
+                  Cancel
+                </button>
+                <button type="submit" disabled={inlineEditBusy || !inlineEditPrompt.trim()} className="flex items-center gap-1.5 rounded bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 disabled:opacity-50">
+                  {inlineEditBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Zap className="h-3.5 w-3.5" />}
+                  {inlineEditBusy ? "Generating…" : "Generate edit"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===== Custom AI Providers (Bring-Your-Own-Key) ===== */}
+      {showProvidersModal && (
+        <ProvidersModal
+          providers={customProviders}
+          onClose={() => setShowProvidersModal(false)}
+          onChange={persistProviders}
+          onSelect={(id) => { setSelectedModel(`custom:${id}`); setShowProvidersModal(false); }}
+        />
+      )}
 
       {/* ===== Command Palette (Ctrl+Shift+P / F1) ===== */}
       <CommandPalette

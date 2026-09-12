@@ -17,6 +17,7 @@ IDEA_STATUS_PENDING = "pending"
 IDEA_STATUS_CLAIMED = "claimed"
 IDEA_STATUS_EVALUATING = "evaluating"
 IDEA_STATUS_BLUEPRINT_READY = "blueprint_ready"
+IDEA_STATUS_SYNCED = "synced"
 IDEA_STATUS_COMPLETED = "completed"
 IDEA_STATUS_REJECTED = "rejected"
 

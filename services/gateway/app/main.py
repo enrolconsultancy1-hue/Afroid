@@ -7,12 +7,13 @@ uses Kong / Cloud Endpoints; this gateway exists for local, end-to-end runs.
 
 from __future__ import annotations
 
+import asyncio
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 import httpx
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, ORJSONResponse
 
@@ -99,6 +100,59 @@ def create_app() -> FastAPI:
     @app.get("/routes", tags=["gateway"])
     async def list_routes() -> dict[str, str]:
         return {prefix: service for prefix, service in ROUTES}
+
+    @app.websocket("/ws/{path:path}")
+    async def ws_proxy(client_ws: WebSocket, path: str) -> None:
+        """Bridge browser WebSockets to the orchestrator (e.g. /ws/build/{id}).
+
+        The HTTP proxy cannot carry a WebSocket upgrade, so this route accepts the
+        client socket and pipes frames both ways to the orchestrator's own WS
+        endpoint. This lets the IDE reach live build/job streams same-origin through
+        the gateway; a direct connection to the orchestrator also remains valid.
+        """
+        # Import lazily so a missing optional dep can never crash gateway startup.
+        try:
+            import websockets
+        except Exception:  # noqa: BLE001
+            await client_ws.close(code=1011)
+            return
+
+        base = UPSTREAMS["orchestrator"]
+        ws_base = base.replace("https://", "wss://", 1).replace("http://", "ws://", 1)
+        target = f"{ws_base}/ws/{path}"
+        if client_ws.scope.get("query_string"):
+            target += "?" + client_ws.scope["query_string"].decode()
+
+        await client_ws.accept()
+        try:
+            async with websockets.connect(target, open_timeout=10) as upstream:
+                async def client_to_upstream() -> None:
+                    try:
+                        while True:
+                            msg = await client_ws.receive_text()
+                            await upstream.send(msg)
+                    except Exception:  # noqa: BLE001 — client closed / socket error
+                        await upstream.close()
+
+                async def upstream_to_client() -> None:
+                    try:
+                        async for msg in upstream:
+                            await client_ws.send_text(
+                                msg if isinstance(msg, str) else msg.decode("utf-8", "ignore")
+                            )
+                    except Exception:  # noqa: BLE001 — upstream closed / socket error
+                        pass
+
+                await asyncio.gather(client_to_upstream(), upstream_to_client())
+        except WebSocketDisconnect:
+            return
+        except Exception:  # noqa: BLE001 — upstream unreachable / handshake failure
+            pass
+        finally:
+            try:
+                await client_ws.close()
+            except Exception:  # noqa: BLE001
+                pass
 
     @app.api_route(
         "/{full_path:path}",

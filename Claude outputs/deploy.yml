@@ -1,4 +1,4 @@
-﻿name: Afroid CD Deployment Pipeline
+name: Afroid CD Deployment Pipeline
 
 # ---------------------------------------------------------------------------
 # SAFETY MODEL
@@ -6,7 +6,9 @@
 #   * Deployment to Cloud Run runs ONLY on a manual "Run workflow"
 #     (workflow_dispatch), because the live services carry hand-tuned runtime
 #     config — Cloud SQL Auth Proxy, VPC connector, dedicated least-privilege
-#     service account, and per-service gateway upstream URLs.
+#     service account, and per-service gateway upstream URLs. The deploy job
+#     below encodes that live config; keep it in sync with reality and verify
+#     before each manual deploy.
 #   * This prevents an accidental push from stripping the Cloud SQL / VPC
 #     settings and breaking database connectivity across the platform.
 # ---------------------------------------------------------------------------
@@ -23,7 +25,9 @@ env:
   SERVICE_ACCOUNT: "afroid-cloudrun-prod@afroid-506916.iam.gserviceaccount.com"
   CLOUDSQL_INSTANCE: "afroid-506916:us-central1:afroid-db-prod"
   VPC_CONNECTOR: "afroid-vpc-conn-prod"
+  # Real Secret Manager bindings (env var name = secret name:version).
   SECRET_ENV: "DATABASE_URL=DATABASE_URL:latest,JWT_SECRET_KEY=JWT_SECRET_KEY:latest,GEMINI_API_KEY=GOOGLE_API_KEY:latest"
+  # Backend services that connect to the database (exclude gateway + web).
   BACKENDS: "auth platform orchestrator certify incubate vector-store codegen notification workspace intake"
 
 jobs:
@@ -105,6 +109,7 @@ jobs:
         run: |
           set -euo pipefail
           RUN="kx4jycljfa-uc.a.run.app"
+          # Use a custom '##' delimiter because CORS_ORIGINS itself contains commas.
           GW_ENV="^##^GATEWAY_AUTH_URL=https://afroid-auth-prod-${RUN}"
           GW_ENV="${GW_ENV}##GATEWAY_PLATFORM_URL=https://afroid-platform-prod-${RUN}"
           GW_ENV="${GW_ENV}##GATEWAY_CERTIFY_URL=https://afroid-certify-prod-${RUN}"
