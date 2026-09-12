@@ -143,4 +143,4 @@ jobs:
         run: npm run typecheck
 
       - name: Run Vitest Suite Across Monorepo
-        run: npx turbo test -- --passWithNoTests
+        run: npm run test
