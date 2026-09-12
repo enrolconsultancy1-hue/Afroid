@@ -714,15 +714,15 @@ function GeezCodeIDEContent() {
   const [activeLiveAgent, setActiveLiveAgent] = useState<string>("geezcodE Copilot");
   const [liveProgress, setLiveProgress] = useState<number>(0);
   const [tokensUsed, setTokensUsed] = useState<number>(1240);
-   const [dockMessages, setDockMessages] = useState<AiDockMessage[]>([
-     {
-       id: "msg-1",
-       sender: "agent",
-       agentName: "geezcodE Copilot",
-       text: "Hi — I'm geezcodE Copilot. Ask me about the file you're editing, or tell me what to build or change and I'll propose an edit you can review and apply. What are we working on?",
-       timestamp: "Just now",
-     },
-   ]);
+  const [dockMessages, setDockMessages] = useState<AiDockMessage[]>([
+    {
+      id: "msg-1",
+      sender: "agent",
+      agentName: "geezcodE Copilot",
+      text: "Hi — I'm geezcodE Copilot. Ask me about the file you're editing, or tell me what to build or change and I'll propose an edit you can review and apply. What are we working on?",
+      timestamp: "Just now",
+    },
+  ]);
   const [dockInput, setDockInput] = useState("");
   // @-mention: extra workspace files attached as Copilot context
   const [mentionOpen, setMentionOpen] = useState(false);
@@ -935,6 +935,13 @@ function GeezCodeIDEContent() {
     loadWorkspaceProjects();
   }, [loadIntakeIdeas, loadWorkspaceProjects]);
 
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => {
+      setToastMessage((curr) => (curr === msg ? null : curr));
+    }, 2400);
+  }, []);
+
   // Poll the FIFO idea-stock counts (authoritative, from the intake DB) every 15s.
   // Surfaces a live badge + a notification when new applicant ideas arrive.
   useEffect(() => {
@@ -1049,14 +1056,6 @@ function GeezCodeIDEContent() {
   useEffect(() => {
     fetchModels();
   }, [fetchModels]);
-
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => {
-      setToastMessage((curr) => (curr === msg ? null : curr));
-    }, 2400);
-  }, []);
-
   const isFileDirty = useCallback((f: FileNode) => {
     const current = f.content ?? "";
     const saved = f.savedContent ?? f.content ?? "";
@@ -1754,9 +1753,8 @@ function GeezCodeIDEContent() {
           id: `msg-${Date.now()}`,
           sender: "agent",
           agentName: "Parallel Builder",
-          text: `Build complete: ${files.length} file(s) generated and written to your workspace.${
-            ast ? ` AST validation ${ast.passed ? "passed" : "failed"} across ${ast.files_scanned ?? 0} Python file(s).` : ""
-          }`,
+          text: `Build complete: ${files.length} file(s) generated and written to your workspace.${ast ? ` AST validation ${ast.passed ? "passed" : "failed"} across ${ast.files_scanned ?? 0} Python file(s).` : ""
+            }`,
           filesModified: files.map((f: any) => f.path),
           timestamp: "Just now",
         },
@@ -2254,9 +2252,9 @@ function GeezCodeIDEContent() {
     const activeFile = openFiles.find((f) => f.path === activeFilePath);
     const activeFilePayload = activeFile
       ? {
-          path: activeFile.path,
-          content: activeFilePath === activeFile.path ? editorContent : activeFile.content || "",
-        }
+        path: activeFile.path,
+        content: activeFilePath === activeFile.path ? editorContent : activeFile.content || "",
+      }
       : null;
     const openFilesPayload = openFiles
       .filter((f) => f.path !== activeFilePath)
@@ -2501,11 +2499,10 @@ function GeezCodeIDEContent() {
                 handleFileSelect(node);
               }
             }}
-            className={`flex w-full items-center gap-1.5 px-2 py-[3px] text-[13px] transition-colors ${
-              node.path === activeFilePath
+            className={`flex w-full items-center gap-1.5 px-2 py-[3px] text-[13px] transition-colors ${node.path === activeFilePath
                 ? "bg-surface-800 text-surface-100"
                 : "text-surface-400 hover:bg-surface-850 hover:text-surface-200"
-            }`}
+              }`}
             style={{ paddingLeft: `${8 + depth * 14}px` }}
           >
             {node.type === "directory" ? (
@@ -2532,7 +2529,7 @@ function GeezCodeIDEContent() {
     { id: "file.saveAs", category: "File", label: "Save As...", detail: "Clone buffer into new file path", shortcut: "Ctrl+Shift+S", icon: Save, action: handleSaveAs },
     { id: "file.saveAll", category: "File", label: "Save All Files", detail: "Flush all dirty open tabs to disk", shortcut: "Ctrl+K S", icon: Save, action: handleSaveAll },
     { id: "file.autoSave", category: "File", label: `Toggle Auto-Save (${autoSave ? "Currently ON" : "Currently OFF"})`, detail: "Auto-persist dirty buffers after 1.5s", icon: SlidersHorizontal, action: () => setAutoSave((prev) => !prev) },
-    { id: "file.close", category: "File", label: "Close Active File", detail: "Close active editor tab with guard", shortcut: "Ctrl+W", icon: X, action: () => openFiles.length > 0 && handleCloseTabRequest({ stopPropagation: () => {} } as any, activeFilePath) },
+    { id: "file.close", category: "File", label: "Close Active File", detail: "Close active editor tab with guard", shortcut: "Ctrl+W", icon: X, action: () => openFiles.length > 0 && handleCloseTabRequest({ stopPropagation: () => { } } as any, activeFilePath) },
     { id: "file.closeAll", category: "File", label: "Close All Files", detail: "Return to Welcome Screen", icon: X, action: () => { setOpenFiles([]); setActiveFilePath(""); } },
     { id: "file.intake", category: "File", label: "Architect Intake Wizard...", detail: "AI prompt intake to synthesize sovereign blueprint", shortcut: "Ctrl+Shift+N", icon: Sparkles, action: () => setShowIntakeModal(true) },
 
@@ -2645,48 +2642,48 @@ function GeezCodeIDEContent() {
     }
   };
 
-function generateCleanWorkspace(projectName: string): FileNode[] {
-  const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-  return [
-    {
-      name: "services",
-      path: "services",
-      type: "directory",
-      isOpen: true,
-      children: [
-        {
-          name: slug,
-          path: `services/${slug}`,
-          type: "directory",
-          isOpen: true,
-          children: [
-            {
-              name: "main.py",
-              path: `services/${slug}/main.py`,
-              type: "file",
-              language: "python",
-              content: `from fastapi import FastAPI\n\napp = FastAPI(title="${projectName}", version="1.0.0")\n\n@app.get("/health")\ndef health_check():\n    return {"status": "healthy", "project": "${projectName}", "sovereignty": "verified"}\n\n@app.get("/")\ndef root():\n    return {"message": "Welcome to ${projectName} API powered by geezcodE"}\n`,
-            },
-            {
-              name: "Dockerfile",
-              path: `services/${slug}/Dockerfile`,
-              type: "file",
-              language: "dockerfile",
-              content: `FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install fastapi uvicorn\nCMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]\n`,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: "README.md",
-      path: "README.md",
-      type: "file",
-      language: "markdown",
-      content: `# ${projectName}\n\nGenerated autonomously via geezcodE 2-Phase Architect Intake & Multi-Agent Swarm.\n\n## Stack\n- Python 3.12 + FastAPI\n- Cloud Run Serverless\n- PostgreSQL + pgvector\n`,
-    },
-  ];
-}
+  function generateCleanWorkspace(projectName: string): FileNode[] {
+    const slug = projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    return [
+      {
+        name: "services",
+        path: "services",
+        type: "directory",
+        isOpen: true,
+        children: [
+          {
+            name: slug,
+            path: `services/${slug}`,
+            type: "directory",
+            isOpen: true,
+            children: [
+              {
+                name: "main.py",
+                path: `services/${slug}/main.py`,
+                type: "file",
+                language: "python",
+                content: `from fastapi import FastAPI\n\napp = FastAPI(title="${projectName}", version="1.0.0")\n\n@app.get("/health")\ndef health_check():\n    return {"status": "healthy", "project": "${projectName}", "sovereignty": "verified"}\n\n@app.get("/")\ndef root():\n    return {"message": "Welcome to ${projectName} API powered by geezcodE"}\n`,
+              },
+              {
+                name: "Dockerfile",
+                path: `services/${slug}/Dockerfile`,
+                type: "file",
+                language: "dockerfile",
+                content: `FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install fastapi uvicorn\nCMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]\n`,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: "README.md",
+        path: "README.md",
+        type: "file",
+        language: "markdown",
+        content: `# ${projectName}\n\nGenerated autonomously via geezcodE 2-Phase Architect Intake & Multi-Agent Swarm.\n\n## Stack\n- Python 3.12 + FastAPI\n- Cloud Run Serverless\n- PostgreSQL + pgvector\n`,
+      },
+    ];
+  }
 
   const badgeFor = (id: string) => {
     const n = id === "intake" ? ideaStats.pending : id === "explorer" ? ideaStats.synced : 0;
@@ -2721,7 +2718,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             onDeleteFile={handleDeleteFile}
             onCloseFile={() => {
               if (openFiles.length > 0) {
-                handleCloseTabRequest({ stopPropagation: () => {} } as any, activeFilePath);
+                handleCloseTabRequest({ stopPropagation: () => { } } as any, activeFilePath);
               }
             }}
             onNewProject={() => setShowIntakeModal(true)}
@@ -2840,11 +2837,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                 key={item.id}
                 onClick={() => handleActivityClick(item.id)}
                 title={item.label}
-                className={`relative p-2 rounded-md transition-colors ${
-                  activeActivity === item.id && showLeftSidebar && item.id !== "intake"
+                className={`relative p-2 rounded-md transition-colors ${activeActivity === item.id && showLeftSidebar && item.id !== "intake"
                     ? "text-surface-100"
                     : "text-surface-500 hover:text-surface-200"
-                }`}
+                  }`}
               >
                 {activeActivity === item.id && showLeftSidebar && item.id !== "intake" && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
@@ -2860,11 +2856,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                 key={item.id}
                 onClick={() => handleActivityClick(item.id)}
                 title={item.label}
-                className={`relative p-2 rounded-md transition-colors ${
-                  activeActivity === item.id && showLeftSidebar && item.id !== "intake"
+                className={`relative p-2 rounded-md transition-colors ${activeActivity === item.id && showLeftSidebar && item.id !== "intake"
                     ? "text-surface-100"
                     : "text-surface-500 hover:text-surface-200"
-                }`}
+                  }`}
               >
                 {activeActivity === item.id && showLeftSidebar && item.id !== "intake" && (
                   <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
@@ -2876,9 +2871,8 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             <button
               onClick={() => { setActiveActivity("settings"); setShowLeftSidebar(true); }}
               title="Settings"
-              className={`relative p-2 rounded-md transition-colors ${
-                activeActivity === "settings" && showLeftSidebar ? "text-surface-100" : "text-surface-500 hover:text-surface-200"
-              }`}
+              className={`relative p-2 rounded-md transition-colors ${activeActivity === "settings" && showLeftSidebar ? "text-surface-100" : "text-surface-500 hover:text-surface-200"
+                }`}
             >
               {activeActivity === "settings" && showLeftSidebar && (
                 <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full bg-brand-500" />
@@ -3002,11 +2996,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                         <FileText className="h-4 w-4 text-brand-400" />
                         <span className="text-xs font-semibold text-surface-100">Implementation Plan</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${
-                        planApproved
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${planApproved
                           ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                           : "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                      }`}>
+                        }`}>
                         {planApproved ? "Approved & Executing" : "Review Required"}
                       </span>
                     </div>
@@ -3037,7 +3030,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                               Math.round(
                                 (Object.values(completedTasks).filter(Boolean).length /
                                   Math.max(1, (blueprintData?.milestones || []).flatMap((m) => m.tasks || []).length || 6)) *
-                                  100
+                                100
                               )
                             )}%`,
                           }}
@@ -3086,23 +3079,23 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       {(blueprintData?.milestones && blueprintData.milestones.length > 0
                         ? blueprintData.milestones
                         : [
-                            {
-                              id: "M1",
-                              name: "Core API Gateway",
-                              objective: "FastAPI microservices, Pydantic entity schemas",
-                              tasks: ["Initialize FastAPI gateway", "Define sovereign loan schema", "Configure PostgreSQL connection pool"],
-                              filesToCreate: ["services/api/main.py", "services/api/routes.py"],
-                              definitionsOfDone: ["RFC 7807 error envelopes active", "Pydantic validation passing"],
-                            },
-                            {
-                              id: "M2",
-                              name: "Frontend VFS & Monaco",
-                              objective: "Next.js 15 App Router IDE",
-                              tasks: ["Create dashboard layout", "Mount Monaco DiffEditor", "Register geezcodE DSL"],
-                              filesToCreate: ["apps/web/src/app/page.tsx", "apps/web/src/lib/geezcode-monaco.ts"],
-                              definitionsOfDone: ["Zero type errors", "Side-by-side diff review functional"],
-                            },
-                          ]
+                          {
+                            id: "M1",
+                            name: "Core API Gateway",
+                            objective: "FastAPI microservices, Pydantic entity schemas",
+                            tasks: ["Initialize FastAPI gateway", "Define sovereign loan schema", "Configure PostgreSQL connection pool"],
+                            filesToCreate: ["services/api/main.py", "services/api/routes.py"],
+                            definitionsOfDone: ["RFC 7807 error envelopes active", "Pydantic validation passing"],
+                          },
+                          {
+                            id: "M2",
+                            name: "Frontend VFS & Monaco",
+                            objective: "Next.js 15 App Router IDE",
+                            tasks: ["Create dashboard layout", "Mount Monaco DiffEditor", "Register geezcodE DSL"],
+                            filesToCreate: ["apps/web/src/app/page.tsx", "apps/web/src/lib/geezcode-monaco.ts"],
+                            definitionsOfDone: ["Zero type errors", "Side-by-side diff review functional"],
+                          },
+                        ]
                       ).map((m, mIdx) => (
                         <div key={m.id || mIdx} className="rounded-lg border border-surface-800 bg-surface-950 p-2.5 text-xs space-y-2">
                           <div className="flex items-center justify-between">
@@ -3132,9 +3125,8 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                                     readOnly
                                     className="mt-0.5 rounded border-surface-700 bg-surface-900 text-brand-500 focus:ring-0 cursor-pointer"
                                   />
-                                  <span className={`leading-tight transition-colors ${
-                                    isChecked ? "text-surface-500 line-through" : "text-surface-300 group-hover:text-surface-100"
-                                  }`}>
+                                  <span className={`leading-tight transition-colors ${isChecked ? "text-surface-500 line-through" : "text-surface-300 group-hover:text-surface-100"
+                                    }`}>
                                     {t}
                                   </span>
                                 </label>
@@ -3185,21 +3177,20 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                     {(swarmAgents.length > 0
                       ? swarmAgents
                       : [
-                          { name: "Architect", status: "completed" },
-                          { name: "CodeGen Worker 1", status: isBuilding ? "running" : "idle" },
-                          { name: "CodeGen Worker 2", status: "idle" },
-                          { name: "QA & AST Runner", status: "idle" },
-                          { name: "RegTech Auditor", status: "idle" },
-                        ]
+                        { name: "Architect", status: "completed" },
+                        { name: "CodeGen Worker 1", status: isBuilding ? "running" : "idle" },
+                        { name: "CodeGen Worker 2", status: "idle" },
+                        { name: "QA & AST Runner", status: "idle" },
+                        { name: "RegTech Auditor", status: "idle" },
+                      ]
                     ).map((a: any) => (
                       <div key={a.name} className="flex items-center justify-between rounded border border-surface-750 bg-surface-950 px-2.5 py-2">
                         <div className="flex flex-col gap-0.5">
                           <span className="text-xs text-surface-200">{a.name}</span>
                           {a.current_task && <span className="text-[10px] text-surface-500">{a.current_task}</span>}
                         </div>
-                        <span className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide ${
-                          a.status === "completed" || a.status === "complete" ? "text-emerald-400" : a.status === "running" ? "text-brand-400" : "text-surface-500"
-                        }`}>
+                        <span className={`flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide ${a.status === "completed" || a.status === "complete" ? "text-emerald-400" : a.status === "running" ? "text-brand-400" : "text-surface-500"
+                          }`}>
                           {a.status === "running" && <Loader2 className="h-3 w-3 animate-spin" />}
                           {a.status}
                         </span>
@@ -3374,9 +3365,8 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                       setEditorContent(f.content || "");
                     }
                   }}
-                  className={`group flex h-full items-center gap-2 border-r border-surface-800 px-3 text-xs font-mono cursor-pointer transition-colors ${
-                    isActive ? "bg-surface-950 text-surface-100" : "text-surface-500 hover:text-surface-200"
-                  }`}
+                  className={`group flex h-full items-center gap-2 border-r border-surface-800 px-3 text-xs font-mono cursor-pointer transition-colors ${isActive ? "bg-surface-950 text-surface-100" : "text-surface-500 hover:text-surface-200"
+                    }`}
                 >
                   <FileTypeIcon name={f.name} />
                   <span className="whitespace-nowrap">{f.name}</span>
@@ -3429,11 +3419,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                 <React.Fragment key={idx}>
                   <ChevronRight className="h-3 w-3 text-surface-600 shrink-0" />
                   <span
-                    className={`flex items-center gap-1 transition-colors ${
-                      isLast
+                    className={`flex items-center gap-1 transition-colors ${isLast
                         ? "font-medium text-surface-200"
                         : "text-surface-400 hover:text-surface-200 cursor-pointer"
-                    }`}
+                      }`}
                   >
                     {isLast ? (
                       <FileTypeIcon name={part} />
@@ -3569,7 +3558,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                             ],
                           };
                         },
-                        freeInlineCompletions: () => {},
+                        freeInlineCompletions: () => { },
                       });
                     }}
                     beforeMount={(monaco) => registerGeezCodeLanguage(monaco)}
@@ -3612,11 +3601,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                         <button
                           key={t.id}
                           onClick={() => setTerminalTab(t.id as any)}
-                          className={`flex items-center gap-1.5 rounded-[4px] px-2.5 py-0.5 text-xs transition-colors ${
-                            isActive
+                          className={`flex items-center gap-1.5 rounded-[4px] px-2.5 py-0.5 text-xs transition-colors ${isActive
                               ? "bg-surface-800 text-surface-100 font-medium"
                               : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/40"
-                          }`}
+                            }`}
                         >
                           <span>{t.label}</span>
                           {t.badge !== undefined && (
@@ -3662,11 +3650,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                                 setTerminalTab("terminal");
                                 setShowShellDropdown(false);
                               }}
-                              className={`flex w-full items-center justify-between px-2 py-1.5 rounded text-left text-xs transition-colors ${
-                                activeSessionId === s.id
+                              className={`flex w-full items-center justify-between px-2 py-1.5 rounded text-left text-xs transition-colors ${activeSessionId === s.id
                                   ? "bg-surface-800 text-surface-100 font-medium"
                                   : "text-surface-300 hover:bg-surface-800/60 hover:text-surface-100"
-                              }`}
+                                }`}
                             >
                               <div className="flex items-center gap-2">
                                 <TerminalIcon className="h-3 w-3 text-brand-400" />
@@ -3791,11 +3778,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                           return next;
                         });
                       }}
-                      className={`rounded p-1 transition-colors ${
-                        isSplitTerminal
+                      className={`rounded p-1 transition-colors ${isSplitTerminal
                           ? "bg-surface-800 text-brand-400 font-semibold"
                           : "hover:bg-surface-800 hover:text-surface-200"
-                      }`}
+                        }`}
                       title={isSplitTerminal ? "Unsplit Terminal" : "Split Terminal View (Side-by-Side)"}
                     >
                       <Columns className="h-3.5 w-3.5" />
@@ -4007,7 +3993,7 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                                     const existing = openFiles.find((x) => x.path === f);
                                     if (!existing) {
                                       const content = findFileContentByPath(fileTree, f) || "";
-                                      setOpenFiles((prev) => [...prev, { name: f.split("/").pop() || f, path: f, content, savedContent: content, isDirty: false }]);
+                                      setOpenFiles((prev) => [...prev, { name: f.split("/").pop() || f, path: f, type: "file", content, savedContent: content }]);
                                     }
                                     setActiveFilePath(f);
                                   }}
@@ -4103,11 +4089,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                         else if (!indexingCodebase) setCodebaseRetrieval((v) => !v);
                       }}
                       disabled={indexingCodebase}
-                      className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-60 ${
-                        codebaseIndexed && codebaseRetrieval
+                      className={`flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-60 ${codebaseIndexed && codebaseRetrieval
                           ? "bg-brand-500/15 text-brand-300"
                           : "text-surface-300 hover:bg-surface-800 hover:text-surface-100"
-                      }`}
+                        }`}
                       title={codebaseIndexed ? "Toggle codebase-aware retrieval (pgvector)" : "Index the workspace for semantic retrieval"}
                     >
                       {indexingCodebase ? <Loader2 className="h-3 w-3 animate-spin text-brand-400" /> : <Sparkles className="h-3 w-3 text-brand-400" />}
@@ -4301,11 +4286,10 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             type="button"
             onClick={() => handleSaveFile()}
             title={dirtyFilesCount > 0 ? `${dirtyFilesCount} unsaved file(s) — Click to Save (Ctrl+S)` : "All changes saved to disk"}
-            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer ${
-              dirtyFilesCount > 0
+            className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition-colors cursor-pointer ${dirtyFilesCount > 0
                 ? "text-brand-300 hover:bg-surface-800/80 hover:text-brand-200"
                 : "text-surface-400 hover:bg-surface-800/60 hover:text-surface-200"
-            }`}
+              }`}
           >
             {dirtyFilesCount > 0 ? (
               <>
@@ -4325,9 +4309,8 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
             type="button"
             onClick={() => setAutoSave(!autoSave)}
             title="Toggle Auto-Save (1.5s debounce)"
-            className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors cursor-pointer font-sans text-[11px] ${
-              autoSave ? "text-emerald-400 hover:bg-surface-800/60" : "text-surface-500 hover:text-surface-300"
-            }`}
+            className={`flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors cursor-pointer font-sans text-[11px] ${autoSave ? "text-emerald-400 hover:bg-surface-800/60" : "text-surface-500 hover:text-surface-300"
+              }`}
           >
             <span>Auto-Save:</span>
             <span className="font-medium">{autoSave ? "ON" : "OFF"}</span>
@@ -4683,18 +4666,16 @@ function generateCleanWorkspace(projectName: string): FileNode[] {
                   <button
                     type="button"
                     onClick={() => setDiffSideBySide(true)}
-                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
-                      diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
-                    }`}
+                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
+                      }`}
                   >
                     Side-by-Side
                   </button>
                   <button
                     type="button"
                     onClick={() => setDiffSideBySide(false)}
-                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${
-                      !diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
-                    }`}
+                    className={`px-2.5 py-1 rounded-md transition-colors font-medium ${!diffSideBySide ? "bg-brand-600 text-white shadow" : "text-surface-400 hover:text-surface-200"
+                      }`}
                   >
                     Inline Diff
                   </button>
