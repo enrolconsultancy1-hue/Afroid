@@ -1197,6 +1197,8 @@ function GeezCodeIDEContent() {
         showToast(`Saved ${path}`);
         // Refresh diagnostics (real linter) for the just-saved buffer.
         void runDiagnostics(path, contentToWrite);
+        // Keep the codebase vector index current — re-embed this file silently.
+        void indexOneFile(path, contentToWrite);
         return;
       }
     } catch {
@@ -2234,6 +2236,25 @@ function GeezCodeIDEContent() {
       }));
     } catch {
       return [];
+    }
+  };
+
+  // Re-embed a single file into pgvector after it is saved so the Copilot's
+  // codebase retrieval stays current without a full manual re-index.
+  // Runs silently in the background — failures are swallowed intentionally.
+  const indexOneFile = async (path: string, content: string): Promise<void> => {
+    if (!codebaseIndexed || !content.trim()) return;
+    const ns = codebaseNamespace();
+    const chunks: string[] = [];
+    for (let i = 0; i < content.length; i += 1200) chunks.push(content.slice(i, i + 1200));
+    try {
+      await fetch(`${API_BASE}/v1/vector/embed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...authHeaders() },
+        body: JSON.stringify({ texts: chunks, metadata: { path }, namespace: ns }),
+      });
+    } catch {
+      /* silent — never block the save flow */
     }
   };
 
